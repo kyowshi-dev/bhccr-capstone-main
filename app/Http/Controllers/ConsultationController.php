@@ -820,6 +820,145 @@ class ConsultationController extends Controller
         return redirect()->back()->with('success', 'Diagnosis added successfully!');
     }
 
+    public function referralContext($id)
+    {
+        if (! auth()->user()->hasPermission('consultations')) {
+            abort(403, 'Unauthorized');
+        }
+
+        $consultation = DB::table('consultations')->where('id', $id)->first();
+        if (! $consultation) {
+            abort(404, 'Consultation not found');
+        }
+
+        $patient = DB::table('patients')->find($consultation->patient_id);
+        if (! $patient) {
+            abort(404, 'Patient not found');
+        }
+
+        $latestVitals = DB::table('vitals')
+            ->where('consultation_id', $id)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->first();
+
+        $patientName = trim((string) (($patient->last_name ?? '') . ', ' . ($patient->first_name ?? '')));
+        $patientMetaParts = [];
+        if (! empty($patient->date_of_birth)) {
+            $patientMetaParts[] = Carbon::parse($patient->date_of_birth)->age . ' y/o';
+        }
+        if (! empty($patient->gender)) {
+            $patientMetaParts[] = ucfirst($patient->gender);
+        }
+        $patientMeta = implode(' · ', $patientMetaParts);
+
+        $vitalsSummaryParts = [];
+        if ($latestVitals) {
+            if ($latestVitals->bp_systolic !== null || $latestVitals->bp_diastolic !== null) {
+                $vitalsSummaryParts[] = 'BP ' . ($latestVitals->bp_systolic ?? '—') . '/' . ($latestVitals->bp_diastolic ?? '—') . ' mmHg';
+            }
+            if ($latestVitals->temperature_c !== null) {
+                $vitalsSummaryParts[] = 'Temp ' . $latestVitals->temperature_c . '°C';
+            }
+            if ($latestVitals->weight_kg !== null) {
+                $vitalsSummaryParts[] = 'Weight ' . $latestVitals->weight_kg . ' kg';
+            }
+            if ($latestVitals->height_cm !== null) {
+                $vitalsSummaryParts[] = 'Height ' . $latestVitals->height_cm . ' cm';
+            }
+        }
+        $vitalsSummary = implode(' · ', $vitalsSummaryParts);
+
+        return response()->json([
+            'patient_name' => $patientName ?: '—',
+            'patient_meta' => $patientMeta ?: '—',
+            'vitals_summary' => $vitalsSummary ?: '—',
+        ]);
+    }
+
+    public function refer(Request $request, $id)
+    {
+        if (! auth()->user()->hasPermission('consultations')) {
+            abort(403, 'Unauthorized');
+        }
+
+        $currentUserRole = DB::table('health_workers')
+            ->where('user_id', Auth::id())
+            ->value('role');
+
+        if (! in_array(strtolower((string) $currentUserRole), ['doctor', 'nurse'], true)) {
+            abort(403, 'Only Nurse and Doctor roles can refer patients.');
+        }
+
+        $validated = $request->validate([
+            'referred_to' => ['required', 'string', 'max:255'],
+            'referral_reasons' => ['nullable', 'array'],
+            'referral_reasons.*' => ['string'],
+            'referral_reason_details' => ['nullable', 'string', 'max:1000'],
+            'pertinent_history' => ['required', 'nullable', 'string'],
+            'actions_taken' => ['nullable', 'string'],
+        ]);
+
+        $consultation = DB::table('consultations')->where('id', $id)->first();
+        if (! $consultation) {
+            abort(404, 'Consultation not found');
+        }
+
+        if (! in_array($consultation->status, ['pending_validation', 'pending_doctor', 'in_progress'], true)) {
+            return redirect()->back()->withErrors(['referral' => 'Referral can only be submitted while the consultation is active or pending validation.']);
+        }
+
+        DB::transaction(function () use ($validated, $id) {
+            $existingReferral = DB::table('outward_referrals')
+                ->where('consultation_id', $id)
+                ->first();
+
+            $reasonLabels = [
+                'specialized_evaluation' => 'Need for specialized medical evaluation / physician',
+                'lack_diagnostics' => 'Lack of diagnostic equipment / laboratory tests',
+                'lack_medicines' => 'Lack of available medicines / vaccines',
+                'emergency_trauma' => 'Emergency / trauma stabilization required',
+            ];
+
+            $reasons = array_filter(array_map(function ($reason) use ($reasonLabels) {
+                return $reasonLabels[$reason] ?? $reason;
+            }, $validated['referral_reasons'] ?? []));
+
+            $details = trim($validated['referral_reason_details'] ?? '');
+            $reasonText = $reasons ? 'Reasons: '.implode(', ', $reasons) : '';
+            $specificDetails = trim($reasonText.($details ? "\n\n".$details : '')) ?: null;
+
+            $referralPayload = [
+                'consultation_id' => $id,
+                'destination_facility' => $validated['referred_to'],
+                'pertinent_history' => $validated['pertinent_history'],
+                'actions_taken' => $validated['actions_taken'] ?? null,
+                'specific_details' => $specificDetails,
+                'status' => 'pending',
+                'updated_at' => now(),
+            ];
+
+            if ($existingReferral) {
+                DB::table('outward_referrals')
+                    ->where('id', $existingReferral->id)
+                    ->update($referralPayload);
+            } else {
+                $referralPayload['created_at'] = now();
+                DB::table('outward_referrals')->insert($referralPayload);
+            }
+
+            DB::table('consultations')
+                ->where('id', $id)
+                ->update([
+                    'status' => 'referred',
+                    'updated_at' => now(),
+                ]);
+        });
+
+        return redirect()->route('consultations.show', $id)
+            ->with('success', 'Referral request submitted and consultation marked as referred.');
+    }
+
     public function finalizeConsultation(Request $request, $id)
     {
         if (! auth()->user()->hasPermission('consultations')) {
@@ -828,8 +967,12 @@ class ConsultationController extends Controller
 
         $validated = $request->validate([
             'refer_to_higher_facility' => ['nullable', 'boolean'],
-            'referred_to' => ['nullable', 'string', 'max:255'],
-            'referral_reason' => ['nullable', 'string', 'max:1000'],
+            'referred_to' => ['required_if:refer_to_higher_facility,1', 'nullable', 'string', 'max:255'],
+            'referral_reasons' => ['nullable', 'array'],
+            'referral_reasons.*' => ['string'],
+            'referral_reason_details' => ['nullable', 'string', 'max:1000'],
+            'pertinent_history' => ['required_if:refer_to_higher_facility,1', 'nullable', 'string'],
+            'actions_taken' => ['nullable', 'string'],
         ]);
 
         $consultation = DB::table('consultations')->where('id', $id)->first();
@@ -881,13 +1024,27 @@ class ConsultationController extends Controller
                 ->where('consultation_id', $id)
                 ->first();
 
-            $specificDetails = trim($validated['referral_reason'] ?? null);
+            $reasonLabels = [
+                'specialized_evaluation' => 'Need for specialized medical evaluation / physician',
+                'lack_diagnostics' => 'Lack of diagnostic equipment / laboratory tests',
+                'lack_medicines' => 'Lack of available medicines / vaccines',
+                'emergency_trauma' => 'Emergency / trauma stabilization required',
+            ];
+
+            $reasons = array_filter(array_map(function ($reason) use ($reasonLabels) {
+                return $reasonLabels[$reason] ?? $reason;
+            }, $validated['referral_reasons'] ?? []));
+
+            $details = trim($validated['referral_reason_details'] ?? '');
+            $reasonText = $reasons ? 'Reasons: '.implode(', ', $reasons) : '';
+            $specificDetails = trim($reasonText.($details ? "\n\n".$details : '')) ?: null;
+
             $referralPayload = [
                 'consultation_id' => $id,
                 'destination_facility' => $validated['referred_to'] ?? null,
-                'pertinent_history' => $existingReferral->pertinent_history ?? '',
-                'actions_taken' => $existingReferral->actions_taken ?? null,
-                'specific_details' => $specificDetails,
+                'pertinent_history' => $validated['pertinent_history'] ?? $existingReferral->pertinent_history ?? null,
+                'actions_taken' => $validated['actions_taken'] ?? $existingReferral->actions_taken ?? null,
+                'specific_details' => $specificDetails ?? $existingReferral->specific_details ?? null,
                 'updated_at' => now(),
             ];
 

@@ -114,6 +114,7 @@
          data-patient-name="{{ e($consultationPatientName ?: '—') }}"
          data-patient-meta="{{ e($consultationPatientMeta ?: '—') }}"
          data-vitals="{{ e($consultationVitalsSummary ?: '—') }}"
+         data-referral-context-url="{{ route('consultations.referral-context', $consultation->id) }}"
          class="hidden"></div>
 
     <div x-show="showVitalsModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" style="display: none;" class="fixed inset-0 z-[100] overflow-y-auto bg-black/40 p-4">
@@ -411,17 +412,29 @@
                     <p class="text-xs" style="color: var(--ink-muted);">Only Nurse and Doctor roles can trigger external referral.</p>
                 @endif
             </form>
+        @elseif ($consultation->status === 'pending_validation' && $canReferExternally)
+            <form id="consultationShowReferralForm" action="{{ route('consultations.refer', $consultation->id) }}" method="POST" class="hidden">
+                @csrf
+                <input id="outward_refer_to_higher_facility" type="hidden" name="refer_to_higher_facility" value="1">
+                <input id="outward_hidden_referred_to" type="hidden" name="referred_to" value="">
+                <input id="outward_hidden_referral_reason_details" type="hidden" name="referral_reason_details" value="">
+                <input id="outward_hidden_pertinent_history" type="hidden" name="pertinent_history" value="">
+                <input id="outward_hidden_actions_taken" type="hidden" name="actions_taken" value="">
+                <div id="outward_hidden_referral_reasons"></div>
+            </form>
         @endif
     </main>
 
-    @if ($clinicalReviewOpen && ! in_array($consultation->status, ['completed', 'referred'], true))
+    @if (($clinicalReviewOpen || ($consultation->status === 'pending_validation' && $canReferExternally)) && ! in_array($consultation->status, ['completed', 'referred'], true))
         <div class="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 px-4 py-3 backdrop-blur" style="border-color: var(--border);">
             <div class="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-xs" style="color: var(--ink-muted);">
-                    @if (($diagnoses->count() ?? 0) > 0 && ($prescriptions->count() ?? 0) > 0)
+                    @if ($clinicalReviewOpen && ($diagnoses->count() ?? 0) > 0 && ($prescriptions->count() ?? 0) > 0)
                         Diagnosis and prescription recorded. Finalize to close this visit, or add more entries above.
-                    @else
+                    @elseif ($clinicalReviewOpen)
                         Add at least one diagnosis before finalizing. Prescription is optional but recommended when medicines are given.
+                    @else
+                        Nurse review is in progress. Refer the patient to a higher facility if needed.
                     @endif
                 </p>
                 <div class="flex flex-wrap items-center gap-2 justify-end">
@@ -430,9 +443,11 @@
                             Refer to higher facility
                         </button>
                     @endif
-                    <button type="submit" form="finalizeForm" class="rounded-xl bg-emerald-900 px-5 py-2 text-sm font-semibold text-white">
-                        Finalize &amp; Save Consultation
-                    </button>
+                    @if ($clinicalReviewOpen)
+                        <button type="submit" form="finalizeForm" class="rounded-xl bg-emerald-900 px-5 py-2 text-sm font-semibold text-white">
+                            Finalize &amp; Save Consultation
+                        </button>
+                    @endif
                 </div>
             </div>
         </div>

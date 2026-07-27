@@ -1146,16 +1146,55 @@
                 syncOutwardReferralStep1FromPreview(previewEl);
             });
 
-            var subtitle = document.getElementById('consultationCreateModalSubtitle');
-            var meta = document.getElementById('consultationCreateModalMeta');
             var patientNameEl = document.getElementById('outward_confirm_patient_name');
             var patientMetaEl = document.getElementById('outward_confirm_patient_meta');
+            var contextEl = document.getElementById('consultationReferralContext');
 
-            if (patientNameEl && subtitle) {
-                patientNameEl.textContent = subtitle.textContent.replace(/^Attending to\s*/i, '').trim() || '—';
-            }
-            if (patientMetaEl && meta) {
-                patientMetaEl.textContent = meta.textContent.trim() || '—';
+            if (contextEl) {
+                var patientName = contextEl.dataset.patientName?.trim() || '—';
+                var patientMeta = contextEl.dataset.patientMeta?.trim() || '—';
+                if (patientNameEl) {
+                    patientNameEl.textContent = patientName;
+                }
+                if (patientMetaEl) {
+                    patientMetaEl.textContent = patientMeta;
+                }
+
+                var contextUrl = contextEl.dataset.referralContextUrl;
+                if (contextUrl && window.fetch) {
+                    fetch(contextUrl, { headers: { 'Accept': 'application/json' } })
+                        .then(function(response) {
+                            if (!response.ok) {
+                                throw new Error('Referral context request failed.');
+                            }
+                            return response.json();
+                        })
+                        .then(function(data) {
+                            if (patientNameEl && data.patient_name) {
+                                patientNameEl.textContent = data.patient_name;
+                            }
+                            if (patientMetaEl && data.patient_meta) {
+                                patientMetaEl.textContent = data.patient_meta;
+                            }
+                            var confirmVitals = document.getElementById('outward_confirm_vitals');
+                            if (confirmVitals && data.vitals_summary) {
+                                confirmVitals.textContent = data.vitals_summary;
+                            }
+                        })
+                        .catch(function() {
+                            // silent fallback to existing page data
+                        });
+                }
+            } else {
+                var subtitle = document.getElementById('consultationCreateModalSubtitle');
+                var meta = document.getElementById('consultationCreateModalMeta');
+
+                if (patientNameEl && subtitle) {
+                    patientNameEl.textContent = subtitle.textContent.replace(/^Attending to\s*/i, '').trim() || '—';
+                }
+                if (patientMetaEl && meta) {
+                    patientMetaEl.textContent = meta.textContent.trim() || '—';
+                }
             }
 
             var referredTo = document.getElementById('outward_referred_to');
@@ -1216,8 +1255,14 @@
             });
             copyOutwardReferralDataToMainForm();
 
-            var intakeForm = document.querySelector('#consultationCreateIntakeView form') || document.querySelector('#finalizeForm');
+            var intakeForm = document.querySelector('#consultationCreateIntakeView form') || document.querySelector('#finalizeForm') || document.querySelector('#consultationShowReferralForm');
             if (!intakeForm) {
+                var message = 'Referral submission failed because the referral form was not found. Please refresh the page and try again.';
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'error', title: 'Referral failed', text: message, confirmButtonColor: '#0d4a3c' });
+                } else {
+                    alert(message);
+                }
                 return;
             }
 

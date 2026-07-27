@@ -100,6 +100,10 @@ Route::middleware('auth')->group(function () {
         ->name('consultations.diagnosis');
     Route::post('/consultations/{id}/finalize', [ConsultationController::class, 'finalizeConsultation'])
         ->name('consultations.finalize');
+    Route::post('/consultations/{id}/refer', [ConsultationController::class, 'refer'])
+        ->name('consultations.refer');
+    Route::get('/consultations/{id}/referral-context', [ConsultationController::class, 'referralContext'])
+        ->name('consultations.referral-context');
     Route::post('/consultations/{id}/acknowledge-intake', [ConsultationController::class, 'acknowledgeIntake'])
         ->name('consultations.acknowledge-intake');
     Route::delete('/consultations/{id}', [ConsultationController::class, 'cancelIntake'])

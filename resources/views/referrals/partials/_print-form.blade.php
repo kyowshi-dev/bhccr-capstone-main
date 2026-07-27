@@ -99,6 +99,14 @@
         width: 100%;
     }
 
+    .field-line.name {
+        width: 290px;
+    }
+
+    .field-line.address {
+        width: 360px;
+    }
+
     .field-line.age {
         width: 34px;
         margin-right: 18px;
@@ -267,7 +275,7 @@
 
             <div class="field-row">
                 <span class="field-label">Name:</span>
-                <span class="field-line full">{{ $patientName }}</span>
+                <span class="field-line name">{{ $patientName }}</span>
             </div>
 
             <div class="field-row">
@@ -279,7 +287,7 @@
 
             <div class="field-row">
                 <span class="field-label">Address:</span>
-                <span class="field-line full">{{ $patient->residential_address ?? '' }}</span>
+                <span class="field-line address">{{ $patient->residential_address ?? '' }}</span>
             </div>
         </div>
 
@@ -334,38 +342,27 @@
 
     <div class="referral-section">
         <p class="section-heading upper">Pertinent History of Illnesses and Findings</p>
-        <table style="width: 100%; border-collapse: collapse;">
-            @foreach ($historyLines as $line)
-                <tr>
-                    <td style="border: 1px solid #000; padding: 2px; min-height: 18px; height: 18px;">{{ $line !== '' ? $line : '' }}</td>
-                </tr>
-            @endforeach
-        </table>
+        @foreach ($historyLines as $line)
+            <div class="lined-block">{{ $line }}</div>
+        @endforeach
     </div>
 
     <div class="referral-section">
-        <p class="section-heading upper">Reasons for Referral</p>
-        <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-                <td style="border: 1px solid #000; padding: 2px; min-height: 18px; height: auto;">{{ $reasonsForReferral }}</td>
-            </tr>
-        </table>
+        <p class="section-heading upper">
+        {{ $reasonsForReferral }}
+        </p>
     </div>
 
     <div class="referral-section">
         <p class="section-heading upper">Action/s Taken:</p>
-        <table style="width: 100%; border-collapse: collapse;">
-            @foreach ($actionLines as $line)
-                <tr>
-                    <td style="border: 1px solid #000; padding: 2px; min-height: 18px; height: 18px;">{{ trim($line) !== '' ? $line : '' }}</td>
-                </tr>
-            @endforeach
-        </table>
+        @foreach ($actionLines as $line)
+            <div class="lined-block">{{ trim($line) !== '' ? $line : '' }}</div>
+        @endforeach
     </div>
 
     <div class="signature-row">
         <div class="signature-block">
-            <p class="signature-name">{{ $attendingProvider }}</p>
+            <p class="signature-name">&nbsp;</p>
             <p class="signature-line">RHM</p>
         </div>
         <div class="signature-block">
