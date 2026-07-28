@@ -110,7 +110,7 @@
         <div>
             <div class="rounded-xl border p-5 lg:p-6" style="background: var(--bg-surface); border-color: var(--border); margin-top: 10vh;">
                 <h2 class="font-display font-semibold text-lg mb-4" style="color: var(--ink);">Import CSV</h2>
-                <p class="text-sm mb-4" style="color: var(--ink-muted);">Upload a CSV file to bulk import medicines. The file should have columns: medicine_name (required), category, description, expiration_date.</p>
+                <p class="text-sm mb-4" style="color: var(--ink-muted);">Upload a CSV file to bulk import medicines. The file should have columns: medicine_name (required), category, expiration_date.</p>
                 
                 <form action="{{ route('medicines.import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                     @csrf
@@ -128,9 +128,9 @@
                     <details class="text-sm">
                         <summary class="cursor-pointer font-medium" style="color: var(--ink-muted);">CSV Format Example</summary>
                         <div class="mt-2 p-3 rounded-lg" style="background: var(--bg-surface-elevated); border: 1px solid var(--border);">
-                            <pre class="text-xs" style="color: var(--ink-muted);">medicine_name,category,description,expiration_date
-Paracetamol 500mg Tablet,Analgesic,Pain relief medication,2025-12-31
-Amoxicillin 500mg Capsule,Antibiotic,Bacterial infection treatment,2024-06-15</pre>
+                            <pre class="text-xs" style="color: var(--ink-muted);">medicine_name,category,expiration_date
+Paracetamol 500mg Tablet,Analgesic,2025-12-31
+Amoxicillin 500mg Capsule,Antibiotic,2024-06-15</pre>
                         </div>
                     </details>
                 </div>

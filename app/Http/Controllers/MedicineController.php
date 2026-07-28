@@ -15,7 +15,7 @@ class MedicineController extends Controller
 
         $medicines = DB::table('medicines_lookup')
             ->orderBy('medicine_name')
-            ->paginate(5)
+            ->paginate(25)
             ->withQueryString();
 
         return view('medicines.index', [
@@ -41,14 +41,12 @@ class MedicineController extends Controller
         $validated = $request->validate([
             'medicine_name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,medicine_name'],
             'category' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:1000'],
             'expiration_date' => ['nullable', 'date'],
         ]);
 
         DB::table('medicines_lookup')->insert([
             'medicine_name' => $validated['medicine_name'],
             'category' => $validated['category'] ?? null,
-            'description' => $validated['description'] ?? null,
             'expiration_date' => $validated['expiration_date'] ?? null,
             'created_at' => now(),
             'updated_at' => now(),
@@ -80,7 +78,7 @@ class MedicineController extends Controller
             $header = fgetcsv($handle, 1000, ',');
 
             // Validate header
-            $expectedHeaders = ['medicine_name', 'category', 'description', 'expiration_date'];
+            $expectedHeaders = ['medicine_name', 'category', 'expiration_date'];
             if (! $header || count($header) < 1) {
                 return redirect()
                     ->route('medicines.index')
@@ -135,7 +133,6 @@ class MedicineController extends Controller
                 $data[] = [
                     'medicine_name' => $medicineData['medicine_name'],
                     'category' => $medicineData['category'] ?? null,
-                    'description' => $medicineData['description'] ?? null,
                     'expiration_date' => $medicineData['expiration_date'] ?? null,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -227,7 +224,6 @@ class MedicineController extends Controller
         $validated = $request->validate([
             'medicine_name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,medicine_name,'.$id],
             'category' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:1000'],
             'expiration_date' => ['nullable', 'date'],
         ]);
 
@@ -236,7 +232,6 @@ class MedicineController extends Controller
             ->update([
                 'medicine_name' => $validated['medicine_name'],
                 'category' => $validated['category'] ?? null,
-                'description' => $validated['description'] ?? null,
                 'expiration_date' => $validated['expiration_date'] ?? null,
                 'updated_at' => now(),
             ]);

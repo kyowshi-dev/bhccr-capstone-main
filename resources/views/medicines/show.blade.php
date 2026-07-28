@@ -38,12 +38,6 @@
                         <dd style="color: var(--ink);">{{ $medicine->category }}</dd>
                     </div>
                 @endif
-                @if ($medicine->description)
-                    <div>
-                        <dt class="text-xs font-medium" style="color: var(--ink-muted);">Description</dt>
-                        <dd style="color: var(--ink);">{{ $medicine->description }}</dd>
-                    </div>
-                @endif
                 @if ($medicine->expiration_date)
                     <div>
                         <dt class="text-xs font-medium" style="color: var(--ink-muted);">Expiration Date</dt>

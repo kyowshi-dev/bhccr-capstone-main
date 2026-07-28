@@ -330,7 +330,6 @@
                 <div class="space-y-3">
                     <div class="flex items-center justify-between gap-2 mb-1">
                         <label class="block text-xs font-medium" style="color: var(--ink-muted);">Medicine search</label>
-                        <span class="text-[11px] text-emerald-900" x-show="query.length < 2" style="display:none;">Type 2 or more letters to see matches</span>
                     </div>
                     <div class="relative" @click.away="results = []">
                         <input type="text" x-model="query" @input.debounce.300ms="search()" @keydown.escape="results = []" placeholder="e.g. Paracetamol, Amoxicillin..." class="w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30 transition" style="border-color: var(--border); color: var(--ink);" autocomplete="off" aria-autocomplete="list" aria-expanded="false" :aria-expanded="results.length > 0">
@@ -343,7 +342,7 @@
                                 </template>
                             </ul>
                         </div>
-                        <div x-show="query.length >= 2 && results.length === 0 && !searching" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border bg-white px-3 py-2 text-sm text-slate-500" style="display:none; border-color: var(--border);">
+                        <div x-show="query.length >= 2 && results.length === 0 && !searching && !selectedId" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border bg-white px-3 py-2 text-sm text-slate-500" style="display:none; border-color: var(--border);">
                             No medicines found. Try a different search term.
                         </div>
                         <div x-show="searching" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border border-emerald-900/20 bg-white px-3 py-2 text-sm text-emerald-900" style="display:none; border-color: var(--border);">
@@ -363,7 +362,7 @@
                         <input id="rx_dosage" type="text" name="dosage" value="{{ old('dosage') }}" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30 transition" style="border-color: var(--border); color: var(--ink);" required>
                         <div class="flex flex-wrap gap-2">
                             <button type="button" onclick="appendSig('rx_dosage', '1 tab')" class="px-3 py-1 rounded-full text-xs bg-emerald-900/10 text-emerald-900">1 tab</button>
-                            <button type="button" onclick="appendSig('rx_dosage', '3x a day')" class="px-3 py-1 rounded-full text-xs bg-emerald-900/10 text-emerald-900">3x/day</button>
+                            <button type="button" onclick="appendSig('rx_dosage', '2 tabs')" class="px-3 py-1 rounded-full text-xs bg-emerald-900/10 text-emerald-900">2 tabs</button>
                         </div>
                     </div>
                     <div class="space-y-2">

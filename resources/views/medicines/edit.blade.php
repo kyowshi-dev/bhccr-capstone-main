@@ -28,11 +28,6 @@
                     @error('category')<p class="mt-1 text-xs" style="color: var(--accent);">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label for="description" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Description</label>
-                    <textarea id="description" name="description" rows="3" class="w-full rounded-lg border py-2 px-3 text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">{{ old('description', $medicine->description) }}</textarea>
-                    @error('description')<p class="mt-1 text-xs" style="color: var(--accent);">{{ $message }}</p>@enderror
-                </div>
-                <div>
                     <label for="expiration_date" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Expiration date</label>
                     <input type="date" id="expiration_date" name="expiration_date" value="{{ old('expiration_date', $medicine->expiration_date) }}" class="w-full rounded-lg border py-2 px-3 text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">
                     @error('expiration_date')<p class="mt-1 text-xs" style="color: var(--accent);">{{ $message }}</p>@enderror
