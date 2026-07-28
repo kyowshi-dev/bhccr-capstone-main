@@ -102,15 +102,15 @@ class SearchController extends Controller
         }
 
         $medicines = DB::table('medicines_lookup')
-            ->where('medicine_name', 'LIKE', "%{$query}%")
-            ->select('id', 'medicine_name')
+            ->where('name', 'LIKE', "%{$query}%")
+            ->select('id', 'name')
             ->limit(15)
             ->get();
 
         $results = $medicines->map(function ($m) {
             return [
                 'id' => $m->id,
-                'text' => $m->medicine_name,
+                'text' => $m->name,
             ];
         });
 

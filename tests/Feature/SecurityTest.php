@@ -357,7 +357,7 @@ class SecurityTest extends TestCase
     {
         $bhw = $this->createUserWithPermissions(['household', 'patients']);
         $medicineId = DB::table('medicines_lookup')->insertGetId([
-            'medicine_name' => 'Test Medicine',
+            'name' => 'Test Medicine',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -371,7 +371,7 @@ class SecurityTest extends TestCase
     {
         $admin = $this->createUserWithPermissions(['medicines']);
         $medicineId = DB::table('medicines_lookup')->insertGetId([
-            'medicine_name' => 'Test Medicine',
+            'name' => 'Test Medicine',
             'created_at' => now(),
             'updated_at' => now(),
         ]);

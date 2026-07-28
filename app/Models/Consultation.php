@@ -16,7 +16,6 @@ class Consultation extends Model
         'worker_id',
         'status',
         'is_locked',
-        'chief_complaint_id',
         'nature_of_visit',
     ];
 
@@ -32,11 +31,6 @@ class Consultation extends Model
     public function worker(): BelongsTo
     {
         return $this->belongsTo(HealthWorker::class, 'worker_id');
-    }
-
-    public function chiefComplaint()
-    {
-        return $this->belongsTo(ComplaintLookup::class, 'chief_complaint_id');
     }
 
     public function outwardReferral(): HasOne

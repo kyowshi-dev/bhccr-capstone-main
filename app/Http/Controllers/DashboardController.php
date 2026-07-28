@@ -139,7 +139,7 @@ class DashboardController extends Controller
             ->leftJoin('diagnosis_lookup', 'diagnosis_records.diagnosis_id', '=', 'diagnosis_lookup.id')
             ->leftJoin('consultations', 'diagnosis_records.consultation_id', '=', 'consultations.id')
             ->whereBetween('consultations.created_at', [$illnessStart, $illnessEnd])
-            ->selectRaw("COALESCE(diagnosis_lookup.diagnosis_name, diagnosis_records.custom_diagnosis_name, 'Unspecified') as name, COUNT(*) as total")
+            ->selectRaw("COALESCE(diagnosis_lookup.diagnosis_name, 'Unspecified') as name, COUNT(*) as total")
             ->groupBy('name')
             ->orderByDesc('total')
             ->limit(6)
@@ -163,8 +163,6 @@ class DashboardController extends Controller
         }
 
         $doctorsOnDuty = DB::table('health_workers')->count();
-
-        $pendingPasswordResets = DB::table('password_reset_requests')->where('status', 'pending')->count();
 
         $onDutyStaff = DB::table('health_workers')
             ->select('first_name', 'last_name', 'role')
@@ -208,7 +206,6 @@ class DashboardController extends Controller
             'overdueImmunizations' => $overdueImmunizations,
             'followUpConsultationsToday' => $followUpConsultationsToday,
             'doctorsOnDuty' => $doctorsOnDuty,
-            'pendingPasswordResets' => $pendingPasswordResets,
             'onDutyStaff' => $onDutyStaff,
             'recentActivity' => $recentActivity,
             'patientVolumeChartModel' => $patientVolumeChartModel,

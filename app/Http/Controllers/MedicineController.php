@@ -14,7 +14,7 @@ class MedicineController extends Controller
         }
 
         $medicines = DB::table('medicines_lookup')
-            ->orderBy('medicine_name')
+            ->orderBy('name')
             ->paginate(25)
             ->withQueryString();
 
@@ -38,16 +38,26 @@ class MedicineController extends Controller
             abort(403, 'Unauthorized');
         }
 
+        $request->merge(["name" => $request->input('name', $request->input('medicine_name'))]);
+
         $validated = $request->validate([
-            'medicine_name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,medicine_name'],
-            'category' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,name'],
+            'generic_name' => ['nullable', 'string', 'max:255'],
+            'strength' => ['nullable', 'string', 'max:255'],
+            'form' => ['nullable', 'string', 'max:255'],
+            'manufacturer' => ['nullable', 'string', 'max:255'],
             'expiration_date' => ['nullable', 'date'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
         DB::table('medicines_lookup')->insert([
-            'medicine_name' => $validated['medicine_name'],
-            'category' => $validated['category'] ?? null,
+            'name' => $validated['name'],
+            'generic_name' => $validated['generic_name'] ?? null,
+            'strength' => $validated['strength'] ?? null,
+            'form' => $validated['form'] ?? null,
+            'manufacturer' => $validated['manufacturer'] ?? null,
             'expiration_date' => $validated['expiration_date'] ?? null,
+            'is_active' => $request->boolean('is_active', true),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -78,11 +88,11 @@ class MedicineController extends Controller
             $header = fgetcsv($handle, 1000, ',');
 
             // Validate header
-            $expectedHeaders = ['medicine_name', 'category', 'expiration_date'];
+            $expectedHeaders = ['name'];
             if (! $header || count($header) < 1) {
                 return redirect()
                     ->route('medicines.index')
-                    ->with('error', 'CSV file must have at least a medicine_name column.');
+                    ->with('error', 'CSV file must have at least a name column.');
             }
 
             $rowNumber = 1;
@@ -101,8 +111,10 @@ class MedicineController extends Controller
                     }
                 }
 
+                $medicineData['name'] = $medicineData['name'] ?? $medicineData['medicine_name'] ?? null;
+
                 // Validate required fields
-                if (empty($medicineData['medicine_name'])) {
+                if (empty($medicineData['name'])) {
                     $errors[] = "Row {$rowNumber}: Medicine name is required.";
 
                     continue;
@@ -110,11 +122,11 @@ class MedicineController extends Controller
 
                 // Check for duplicates
                 $existing = DB::table('medicines_lookup')
-                    ->where('medicine_name', $medicineData['medicine_name'])
+                    ->where('name', $medicineData['name'])
                     ->exists();
 
                 if ($existing) {
-                    $errors[] = "Row {$rowNumber}: Medicine '{$medicineData['medicine_name']}' already exists.";
+                    $errors[] = "Row {$rowNumber}: Medicine '{$medicineData['name']}' already exists.";
 
                     continue;
                 }
@@ -131,9 +143,13 @@ class MedicineController extends Controller
                 }
 
                 $data[] = [
-                    'medicine_name' => $medicineData['medicine_name'],
-                    'category' => $medicineData['category'] ?? null,
+                    'name' => $medicineData['name'],
+                    'generic_name' => $medicineData['generic_name'] ?? null,
+                    'strength' => $medicineData['strength'] ?? null,
+                    'form' => $medicineData['form'] ?? null,
+                    'manufacturer' => $medicineData['manufacturer'] ?? null,
                     'expiration_date' => $medicineData['expiration_date'] ?? null,
+                    'is_active' => $this->normalizeBoolean($medicineData['is_active'] ?? 'true'),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -221,18 +237,28 @@ class MedicineController extends Controller
             abort(404, 'Resource not found');
         }
 
+        $request->merge(["name" => $request->input('name', $request->input('medicine_name'))]);
+
         $validated = $request->validate([
-            'medicine_name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,medicine_name,'.$id],
-            'category' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,name,'.$id],
+            'generic_name' => ['nullable', 'string', 'max:255'],
+            'strength' => ['nullable', 'string', 'max:255'],
+            'form' => ['nullable', 'string', 'max:255'],
+            'manufacturer' => ['nullable', 'string', 'max:255'],
             'expiration_date' => ['nullable', 'date'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
         DB::table('medicines_lookup')
             ->where('id', $id)
             ->update([
-                'medicine_name' => $validated['medicine_name'],
-                'category' => $validated['category'] ?? null,
+                'name' => $validated['name'],
+                'generic_name' => $validated['generic_name'] ?? null,
+                'strength' => $validated['strength'] ?? null,
+                'form' => $validated['form'] ?? null,
+                'manufacturer' => $validated['manufacturer'] ?? null,
                 'expiration_date' => $validated['expiration_date'] ?? null,
+                'is_active' => $request->boolean('is_active', false),
                 'updated_at' => now(),
             ]);
 
@@ -298,7 +324,7 @@ class MedicineController extends Controller
             $usedInPrescriptions = DB::table('prescriptions')->where('medicine_id', $id)->exists();
 
             if ($usedInPrescriptions) {
-                $failed[] = "{$medicine->medicine_name} is used in prescriptions.";
+                $failed[] = "{$medicine->name} is used in prescriptions.";
                 continue;
             }
 
@@ -306,7 +332,7 @@ class MedicineController extends Controller
                 DB::table('medicines_lookup')->where('id', $id)->delete();
                 $deleted++;
             } catch (\Exception $e) {
-                $failed[] = "{$medicine->medicine_name}: DB error.";
+                $failed[] = "{$medicine->name}: DB error.";
             }
         }
 
@@ -323,5 +349,19 @@ class MedicineController extends Controller
             ->route('medicines.index')
             ->with($deleted > 0 ? 'success' : 'error', $message)
             ->with('delete_errors', $failed);
+    }
+
+    private function normalizeBoolean(?string $value): ?bool
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        $normalized = strtolower(trim($value));
+        if (in_array($normalized, ['0', 'false', 'no', 'off'], true)) {
+            return false;
+        }
+
+        return true;
     }
 }

@@ -74,10 +74,7 @@ class ConsultationController extends Controller
                         ->from('diagnosis_records')
                         ->leftJoin('diagnosis_lookup', 'diagnosis_records.diagnosis_id', '=', 'diagnosis_lookup.id')
                         ->whereColumn('diagnosis_records.consultation_id', 'consultations.id')
-                        ->where(function ($dx) use ($q) {
-                            $dx->where('diagnosis_lookup.diagnosis_name', 'like', '%'.$q.'%')
-                                ->orWhere('diagnosis_records.custom_diagnosis_name', 'like', '%'.$q.'%');
-                        });
+                        ->where('diagnosis_lookup.diagnosis_name', 'like', '%'.$q.'%');
                 });
             });
         }
@@ -106,7 +103,7 @@ class ConsultationController extends Controller
                 ->whereIn('diagnosis_records.consultation_id', $consultationIds)
                 ->select(
                     'diagnosis_records.consultation_id',
-                    DB::raw('COALESCE(diagnosis_lookup.diagnosis_name, diagnosis_records.custom_diagnosis_name) as diagnosis_name'),
+                    'diagnosis_lookup.diagnosis_name as diagnosis_name',
                     'diagnosis_records.remarks'
                 )
                 ->orderBy('diagnosis_records.id')
@@ -119,7 +116,7 @@ class ConsultationController extends Controller
                 ->whereIn('prescriptions.consultation_id', $consultationIds)
                 ->select(
                     'prescriptions.consultation_id',
-                    DB::raw('COALESCE(medicines_lookup.medicine_name, prescriptions.custom_medicine_name) as medicine_name'),
+                    'medicines_lookup.name as medicine_name',
                     'prescriptions.dosage',
                     'prescriptions.duration'
                 )
@@ -268,7 +265,6 @@ class ConsultationController extends Controller
                 'nature_of_visit' => $validated['nature_of_visit'],
                 'mode_of_transaction' => $validated['mode_of_transaction'],
                 'referred_from' => $validated['referred_from'] ?? null,
-                'chief_complaint_id' => null,
                 'complaint_text' => $validated['chief_complaint'] ?? null,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -404,8 +400,8 @@ class ConsultationController extends Controller
             ->where('diagnosis_records.consultation_id', $id)
             ->select(
                 'diagnosis_records.*',
-                DB::raw('COALESCE(diagnosis_lookup.diagnosis_code, diagnosis_records.custom_diagnosis_code) as diagnosis_code'),
-                DB::raw('COALESCE(diagnosis_lookup.diagnosis_name, diagnosis_records.custom_diagnosis_name) as diagnosis_name'),
+                'diagnosis_lookup.diagnosis_code as diagnosis_code',
+                'diagnosis_lookup.diagnosis_name as diagnosis_name',
                 DB::raw('(diagnosis_records.diagnosis_id IS NULL) as is_custom')
             )
             ->get();
@@ -414,14 +410,14 @@ class ConsultationController extends Controller
             ->where('prescriptions.consultation_id', $id)
             ->select(
                 'prescriptions.*',
-                DB::raw('COALESCE(medicines_lookup.medicine_name, prescriptions.custom_medicine_name) as medicine_name'),
+                'medicines_lookup.name as medicine_name',
                 DB::raw('(prescriptions.medicine_id IS NULL) as is_custom')
             )
             ->get();
 
         // 3. NEW: Fetch Dropdown Options (The "Menu" for the Doctor)
         $diagnosisOptions = DB::table('diagnosis_lookup')->orderBy('diagnosis_name')->get();
-        $medicineOptions = DB::table('medicines_lookup')->orderBy('medicine_name')->get();
+        $medicineOptions = DB::table('medicines_lookup')->orderBy('name')->get();
 
         return view('consultations.show', [
             'consultation' => $consultation,
@@ -582,8 +578,8 @@ class ConsultationController extends Controller
         $diagnoses = $this->diagnosisRecordsQuery()
             ->where('diagnosis_records.consultation_id', $id)
             ->select(
-                DB::raw('COALESCE(diagnosis_lookup.diagnosis_name, diagnosis_records.custom_diagnosis_name) as diagnosis_name'),
-                DB::raw('COALESCE(diagnosis_lookup.diagnosis_code, diagnosis_records.custom_diagnosis_code) as diagnosis_code'),
+                'diagnosis_lookup.diagnosis_name as diagnosis_name',
+                'diagnosis_lookup.diagnosis_code as diagnosis_code',
                 'diagnosis_records.remarks'
             )
             ->orderBy('diagnosis_records.id')
@@ -592,7 +588,7 @@ class ConsultationController extends Controller
         $prescriptions = $this->prescriptionsQuery()
             ->where('prescriptions.consultation_id', $id)
             ->select(
-                DB::raw('COALESCE(medicines_lookup.medicine_name, prescriptions.custom_medicine_name) as medicine_name'),
+                'medicines_lookup.name as medicine_name',
                 'prescriptions.dosage',
                 'prescriptions.frequency',
                 'prescriptions.duration',
@@ -1153,7 +1149,7 @@ class ConsultationController extends Controller
             ->where('diagnosis_records.consultation_id', $id)
             ->select(
                 'diagnosis_records.id',
-                DB::raw('COALESCE(diagnosis_lookup.diagnosis_name, diagnosis_records.custom_diagnosis_name) as diagnosis_name'),
+                'diagnosis_lookup.diagnosis_name as diagnosis_name',
                 'diagnosis_records.remarks'
             )
             ->get();
@@ -1163,7 +1159,7 @@ class ConsultationController extends Controller
             ->where('prescriptions.consultation_id', $id)
             ->select(
                 'prescriptions.id',
-                DB::raw('COALESCE(medicines_lookup.medicine_name, prescriptions.custom_medicine_name) as medicine_name'),
+                'medicines_lookup.name as medicine_name',
                 'prescriptions.dosage',
                 'prescriptions.frequency',
                 'prescriptions.duration',

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PasswordResetRequest;
 use App\Models\Permission;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -276,29 +275,4 @@ class UserManagementController extends Controller
             ->with('success', 'User permissions updated successfully.');
     }
 
-    public function passwordResetRequests()
-    {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
-
-        $requests = PasswordResetRequest::with('user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(12);
-
-        return view('users.password-reset-requests', [
-            'requests' => $requests,
-        ]);
-    }
-
-    public function completePasswordResetRequest(Request $request, PasswordResetRequest $passwordResetRequest)
-    {
-        $passwordResetRequest->update([
-            'status' => 'completed',
-            'admin_note' => $request->input('admin_note'),
-            'completed_at' => now(),
-        ]);
-
-        return redirect()->route('users.password-reset-requests')->with('success', 'Password reset request marked as completed.');
-    }
 }

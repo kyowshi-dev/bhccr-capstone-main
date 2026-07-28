@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', $medicine->medicine_name)
+@section('title', $medicine->name)
 
 @section('content')
 <div class="space-y-5 lg:space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
             <a href="{{ route('medicines.index') }}" class="text-sm font-medium hover:underline mb-1 inline-block" style="color: var(--primary);">← Back to medicines</a>
-            <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">{{ $medicine->medicine_name }}</h1>
+            <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">{{ $medicine->name }}</h1>
             <p class="text-sm mt-1" style="color: var(--ink-muted);">Medicine details</p>
         </div>
         <div class="flex gap-2">
@@ -29,18 +29,40 @@
             <h2 class="font-display font-semibold text-lg mb-4" style="color: var(--ink);">Details</h2>
             <dl class="space-y-3">
                 <div>
-                    <dt class="text-xs font-medium" style="color: var(--ink-muted);">Medicine Name</dt>
-                    <dd style="color: var(--ink);">{{ $medicine->medicine_name }}</dd>
+                    <dt class="text-xs font-medium" style="color: var(--ink-muted);">Name</dt>
+                    <dd style="color: var(--ink);">{{ $medicine->name }}</dd>
                 </div>
-                @if ($medicine->category)
+                @if ($medicine->generic_name)
                     <div>
-                        <dt class="text-xs font-medium" style="color: var(--ink-muted);">Category</dt>
-                        <dd style="color: var(--ink);">{{ $medicine->category }}</dd>
+                        <dt class="text-xs font-medium" style="color: var(--ink-muted);">Generic Name</dt>
+                        <dd style="color: var(--ink);">{{ $medicine->generic_name }}</dd>
                     </div>
                 @endif
+                @if ($medicine->strength)
+                    <div>
+                        <dt class="text-xs font-medium" style="color: var(--ink-muted);">Strength</dt>
+                        <dd style="color: var(--ink);">{{ $medicine->strength }}</dd>
+                    </div>
+                @endif
+                @if ($medicine->form)
+                    <div>
+                        <dt class="text-xs font-medium" style="color: var(--ink-muted);">Form</dt>
+                        <dd style="color: var(--ink);">{{ $medicine->form }}</dd>
+                    </div>
+                @endif
+                @if ($medicine->manufacturer)
+                    <div>
+                        <dt class="text-xs font-medium" style="color: var(--ink-muted);">Manufacturer</dt>
+                        <dd style="color: var(--ink);">{{ $medicine->manufacturer }}</dd>
+                    </div>
+                @endif
+                <div>
+                    <dt class="text-xs font-medium" style="color: var(--ink-muted);">Active</dt>
+                    <dd style="color: var(--ink);">{{ $medicine->is_active ? 'Yes' : 'No' }}</dd>
+                </div>
                 @if ($medicine->expiration_date)
                     <div>
-                        <dt class="text-xs font-medium" style="color: var(--ink-muted);">Expiration Date</dt>
+                        <dt class="text-xs font-medium" style="color: var(--ink-muted);">Expiration date</dt>
                         <dd style="color: var(--ink);">
                             {{ \Carbon\Carbon::parse($medicine->expiration_date)->format('M d, Y') }}
                             @if (\Carbon\Carbon::parse($medicine->expiration_date)->isPast())

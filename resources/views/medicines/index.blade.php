@@ -55,9 +55,11 @@
                             <thead style="background: var(--teal-soft);">
                                 <tr>
                                     <th class="w-10 px-2 py-2 lg:py-3 text-left" style="color: var(--ink-muted);"><input type="checkbox" id="select-all" class="align-middle"></th>
-                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium" style="color: var(--ink-muted);">Medicine Name</th>
-                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden sm:table-cell" style="color: var(--ink-muted);">Category</th>
-                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden md:table-cell" style="color: var(--ink-muted);">Expiration</th>
+                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium" style="color: var(--ink-muted);">Name</th>
+                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden md:table-cell" style="color: var(--ink-muted);">Strength</th>
+                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden xl:table-cell" style="color: var(--ink-muted);">Form</th>
+                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden xl:table-cell" style="color: var(--ink-muted);">Manufacturer</th>
+                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden lg:table-cell" style="color: var(--ink-muted);">Expiration</th>
                                     <th class="px-3 lg:px-4 py-2 lg:py-3 text-right text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);"></th>
                                 </tr>
                             </thead>
@@ -65,9 +67,11 @@
                                 @forelse ($medicines as $medicine)
                                     <tr class="transition-colors hover:bg-black/[0.02]">
                                         <td class="w-10 px-2 py-2 lg:py-3 text-center" style="color: var(--ink);"><input type="checkbox" name="ids[]" value="{{ $medicine->id }}" class="row-checkbox align-middle"></td>
-                                        <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $medicine->medicine_name }}</td>
-                                        <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink-muted);">{{ $medicine->category ?? '—' }}</td>
-                                        <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">
+                                        <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $medicine->name ?? '—' }}</td>
+                                        <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ $medicine->strength ?? '—' }}</td>
+                                        <td class="px-3 lg:px-4 py-2 lg:py-3 hidden xl:table-cell" style="color: var(--ink-muted);">{{ $medicine->form ?? '—' }}</td>
+                                        <td class="px-3 lg:px-4 py-2 lg:py-3 hidden xl:table-cell" style="color: var(--ink-muted);">{{ $medicine->manufacturer ?? '—' }}</td>
+                                        <td class="px-3 lg:px-4 py-2 lg:py-3 hidden lg:table-cell" style="color: var(--ink-muted);">
                                             @if ($medicine->expiration_date)
                                                 {{ \Carbon\Carbon::parse($medicine->expiration_date)->format('M d, Y') }}
                                                 @if (\Carbon\Carbon::parse($medicine->expiration_date)->isPast())
@@ -87,7 +91,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="px-3 lg:px-4 py-12 text-center">
+                                        <td colspan="7" class="px-3 lg:px-4 py-12 text-center">
                                             <div class="flex justify-center mb-3"><i class="fa-solid fa-pills text-3xl" style="color: var(--ink-subtle);"></i></div>
                                             <p class="text-sm font-medium" style="color: var(--ink);">No medicines in inventory</p>
                                             <p class="text-xs mt-1 mb-3" style="color: var(--ink-muted);">Add your first medicine or import from CSV to get started</p>
@@ -110,7 +114,7 @@
         <div>
             <div class="rounded-xl border p-5 lg:p-6" style="background: var(--bg-surface); border-color: var(--border); margin-top: 10vh;">
                 <h2 class="font-display font-semibold text-lg mb-4" style="color: var(--ink);">Import CSV</h2>
-                <p class="text-sm mb-4" style="color: var(--ink-muted);">Upload a CSV file to bulk import medicines. The file should have columns: medicine_name (required), category, expiration_date.</p>
+                <p class="text-sm mb-4" style="color: var(--ink-muted);">Upload a CSV file to bulk import medicines. The file should have columns: name (required), generic_name, strength, form, manufacturer, expiration_date, is_active.</p>
                 
                 <form action="{{ route('medicines.import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                     @csrf
@@ -128,9 +132,9 @@
                     <details class="text-sm">
                         <summary class="cursor-pointer font-medium" style="color: var(--ink-muted);">CSV Format Example</summary>
                         <div class="mt-2 p-3 rounded-lg" style="background: var(--bg-surface-elevated); border: 1px solid var(--border);">
-                            <pre class="text-xs" style="color: var(--ink-muted);">medicine_name,category,expiration_date
-Paracetamol 500mg Tablet,Analgesic,2025-12-31
-Amoxicillin 500mg Capsule,Antibiotic,2024-06-15</pre>
+                            <pre class="text-xs" style="color: var(--ink-muted);">name,generic_name,strength,form,manufacturer,expiration_date,is_active
+Paracetamol 500mg Tablet,Paracetamol,500mg,Tablet,Acme Pharma,2025-12-31,1
+Amoxicillin 500mg Capsule,Amoxicillin,500mg,Capsule,BioMed Ltd,2024-06-15,1</pre>
                         </div>
                     </details>
                 </div>

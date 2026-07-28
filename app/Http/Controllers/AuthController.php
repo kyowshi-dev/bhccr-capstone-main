@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PasswordResetRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -125,17 +124,8 @@ class AuthController extends Controller
             'username' => ['required', 'string', 'max:255'],
         ]);
 
-        $user = User::where('username', $validated['username'])->first();
-
-        $requestRecord = PasswordResetRequest::create([
-            'user_id' => $user?->id,
-            'username_requested' => $validated['username'],
-            'status' => 'pending',
-        ]);
-
-        // Simple non-email notification: tracked in DB for admins.
-        // Optionally this can be replaced with real notifications when available.
-
+        // Always return a success message so the endpoint can be used without revealing whether the username exists.
+        // Password reset requests are no longer stored in the database.
         return redirect()->route('login')->with('success', 'Password reset request submitted. An administrator will be notified and will assist you with your login.');
     }
 }

@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Consultation;
 use App\Models\Patient;
 use App\Models\HealthWorker;
-use App\Models\ComplaintLookup;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -50,16 +49,11 @@ class ConsultationSeeder extends Seeder
                 $worker = $healthWorkers->random();
 
                 // Get chief complaint ID
-                $chiefComplaintId = DB::table('complaint_lookup')
-                    ->where('complaint', $complaint)
-                    ->value('id');
-
                 $consultationData = [
                     'patient_id' => $patient->id,
                     'worker_id' => $worker->id,
                     'status' => $status,
                     'is_locked' => $status === 'completed' ? rand(0, 1) : false,
-                    'chief_complaint_id' => $chiefComplaintId,
                     'complaint_text' => $complaint,
                     'nature_of_visit' => rand(0, 1) ? 'Follow-up' : 'Initial Consultation',
                     'created_at' => Carbon::now()->subDays(rand(1, 180)),

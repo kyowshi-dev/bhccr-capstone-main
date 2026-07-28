@@ -61,34 +61,20 @@ class DatabaseSeeder extends Seeder
 
         // 6. MEDICINES (Basic RHU Formulary)
         $medicines = [
-            ['medicine_name' => 'Paracetamol 500mg Tablet'],
-            ['medicine_name' => 'Paracetamol 250mg/5mL Syrup'],
-            ['medicine_name' => 'Amoxicillin 500mg Capsule'],
-            ['medicine_name' => 'Amoxicillin 250mg/5mL Suspension'],
-            ['medicine_name' => 'Losartan 50mg Tablet'],
-            ['medicine_name' => 'Amlodipine 5mg Tablet'],
-            ['medicine_name' => 'Metformin 500mg Tablet'],
-            ['medicine_name' => 'ORS (Oral Rehydration Salts) Sachet'],
-            ['medicine_name' => 'Multivitamins Capsule'],
-            ['medicine_name' => 'Vitamin B Complex Tablet'],
+            ['name' => 'Paracetamol 500mg Tablet'],
+            ['name' => 'Paracetamol 250mg/5mL Syrup'],
+            ['name' => 'Amoxicillin 500mg Capsule'],
+            ['name' => 'Amoxicillin 250mg/5mL Suspension'],
+            ['name' => 'Losartan 50mg Tablet'],
+            ['name' => 'Amlodipine 5mg Tablet'],
+            ['name' => 'Metformin 500mg Tablet'],
+            ['name' => 'ORS (Oral Rehydration Salts) Sachet'],
+            ['name' => 'Multivitamins Capsule'],
+            ['name' => 'Vitamin B Complex Tablet'],
         ];
         DB::table('medicines_lookup')->insertOrIgnore($medicines);
 
-        // 7. COMPLAINTS (Chief Complaints)
-        $complaints = [
-            ['complaint' => 'Cough and Cold'],
-            ['complaint' => 'Fever'],
-            ['complaint' => 'Headache'],
-            ['complaint' => 'Stomach Pain'],
-            ['complaint' => 'Dizziness'],
-            ['complaint' => 'High Blood Pressure'],
-            ['complaint' => 'Wound/Injury'],
-            ['complaint' => 'Prenatal Checkup'],
-            ['complaint' => 'Immunization'],
-        ];
-        DB::table('complaint_lookup')->insertOrIgnore($complaints);
-
-        // 8. ZONES (Barangay Sta. Ana Specific)
+        // 7. ZONES (Barangay Sta. Ana Specific)
         $zones = [];
         for ($i = 1; $i <= 8; $i++) {
             $zones[] = ['zone_number' => "Zone $i"];
