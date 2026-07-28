@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE consultations MODIFY COLUMN status ENUM('triage', 'pending_validation', 'pending_doctor', 'in_progress', 'completed', 'referred') NOT NULL");
+        DB::statement("ALTER TABLE consultations MODIFY COLUMN status ENUM('triage', 'nurse_review', 'doctor_review', 'in_progress', 'completed', 'referred') NOT NULL");
 
         Schema::table('consultations', function (Blueprint $table) {
             $table->timestamp('nurse_validated_at')->nullable()->after('status');

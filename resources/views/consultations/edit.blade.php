@@ -26,8 +26,8 @@
             </div>
             @php
                 $statusLabel = match ($consultation->status) {
-                    'pending_validation' => 'Awaiting Review',
-                    'pending_doctor' => 'Waiting',
+                    'nurse_review' => 'Nurse Review',
+                    'doctor_review' => 'Doctor Review',
                     default => ucfirst(str_replace('_', ' ', $consultation->status)),
                 };
             @endphp

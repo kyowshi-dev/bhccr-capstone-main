@@ -45,7 +45,7 @@
                     @endif
                 </p>
             </div>
-            <a href="{{ route('consultations.index', ['queue' => 1, 'status' => 'pending_validation']) }}" class="text-xs font-semibold hover:underline" style="color: var(--primary);">View All</a>
+            <a href="{{ route('consultations.index', ['queue' => 1, 'status' => 'nurse_review']) }}" class="text-xs font-semibold hover:underline" style="color: var(--primary);">View All</a>
         </div>
         <ul class="space-y-2">
             @forelse ($validationQueue as $item)

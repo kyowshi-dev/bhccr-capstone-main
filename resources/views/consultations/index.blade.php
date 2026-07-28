@@ -131,8 +131,8 @@
                             <label for="status" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Status</label>
                             <select id="status" name="status" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">
                                 <option value="">All in queue</option>
-                                <option value="pending_validation" @selected(request('status') === 'pending_validation')>Awaiting Review</option>
-                                <option value="pending_doctor" @selected(request('status') === 'pending_doctor')>Waiting</option>
+                                <option value="nurse_review" @selected(request('status') === 'nurse_review')>Nurse Review</option>
+                                <option value="doctor_review" @selected(request('status') === 'doctor_review')>Doctor Review</option>
                                 <option value="in_progress" @selected(request('status') === 'in_progress')>In progress</option>
                             </select>
                         </div>
@@ -154,8 +154,8 @@
 
             @php
                 $statusFilterLabels = [
-                    'pending_validation' => 'Awaiting Review',
-                    'pending_doctor' => 'Waiting',
+                    'nurse_review' => 'Nurse Review',
+                    'doctor_review' => 'Doctor Review',
                     'in_progress' => 'In progress',
                     'completed' => 'Completed',
                     'referred' => 'Referred',
@@ -246,8 +246,8 @@
                                 $isCritical = \App\Support\VitalsThresholds::isCritical($latestVitals);
                                 $statusLabel = match ($consultation->status) {
                                     'completed' => ['text' => 'Completed', 'bg' => 'var(--teal-soft)', 'color' => 'var(--primary)'],
-                                    'pending_validation' => ['text' => 'Awaiting Review', 'bg' => 'var(--accent-soft)', 'color' => 'var(--accent)'],
-                                    'pending_doctor' => ['text' => 'Waiting', 'bg' => 'rgba(0,0,0,0.06)', 'color' => 'var(--ink-muted)'],
+                                    'nurse_review' => ['text' => 'Nurse Review', 'bg' => 'var(--accent-soft)', 'color' => 'var(--accent)'],
+                                    'doctor_review' => ['text' => 'Doctor Review', 'bg' => 'rgba(0,0,0,0.06)', 'color' => 'var(--ink-muted)'],
                                     'referred' => ['text' => 'Referred', 'bg' => '#fef3c7', 'color' => '#78350f'],
                                     default => ['text' => ucfirst(str_replace('_', ' ', $consultation->status)), 'bg' => 'rgba(0,0,0,0.06)', 'color' => 'var(--ink-muted)'],
                                 };
@@ -274,7 +274,7 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-4 text-sm">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: {{ $statusLabel['bg'] }}; color: {{ $statusLabel['color'] }};">
+                                    <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: {{ $statusLabel['bg'] }}; color: {{ $statusLabel['color'] }};">
                                         {{ $statusLabel['text'] }}
                                     </span>
                                 </td>

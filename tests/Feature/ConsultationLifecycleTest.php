@@ -35,8 +35,8 @@ class ConsultationLifecycleTest extends TestCase
         $consultation = DB::table('consultations')->where('patient_id', $patientId)->first();
 
         $this->assertNotNull($consultation);
-        $this->assertSame('pending_validation', $consultation->status);
-        $this->assertNotSame('pending_doctor', $consultation->status);
+        $this->assertSame('nurse_review', $consultation->status);
+        $this->assertNotSame('doctor_review', $consultation->status);
     }
 
     public function test_nurse_acknowledgement_moves_case_to_doctor_queue(): void
@@ -56,7 +56,7 @@ class ConsultationLifecycleTest extends TestCase
             ->assertRedirect(route('consultations.show', $consultationId));
 
         $this->assertSame(
-            'pending_doctor',
+            'doctor_review',
             DB::table('consultations')->where('id', $consultationId)->value('status')
         );
     }
@@ -85,7 +85,7 @@ class ConsultationLifecycleTest extends TestCase
         ])->assertRedirect();
 
         $this->assertSame(
-            'pending_validation',
+            'nurse_review',
             DB::table('consultations')->where('id', $consultationId)->value('status')
         );
         $this->assertSame(

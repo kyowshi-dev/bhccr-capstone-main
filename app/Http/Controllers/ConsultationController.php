@@ -152,7 +152,7 @@ class ConsultationController extends Controller
 
         // Only fetch consultations waiting for doctor that haven't been notified yet
         $consultation = DB::table('consultations')
-            ->where('status', 'pending_doctor')
+            ->where('status', 'doctor_review')
             ->whereNull('notified_at')  // Only unnotified consultations
             ->orderByDesc('created_at')
             ->first();
@@ -264,7 +264,7 @@ class ConsultationController extends Controller
             $consultationId = DB::table('consultations')->insertGetId([
                 'patient_id' => $patientId,
                 'worker_id' => $workerId,
-                'status' => 'pending_validation',
+                'status' => 'nurse_review',
                 'nature_of_visit' => $validated['nature_of_visit'],
                 'mode_of_transaction' => $validated['mode_of_transaction'],
                 'referred_from' => $validated['referred_from'] ?? null,
@@ -457,14 +457,14 @@ class ConsultationController extends Controller
             abort(404, 'Consultation not found');
         }
 
-        if ($consultation->status !== 'pending_validation') {
+        if ($consultation->status !== 'nurse_review') {
             return redirect()->back()->withErrors([
                 'intake' => 'This consultation is not awaiting nurse validation.',
             ]);
         }
 
         $updates = [
-            'status' => 'pending_doctor',
+            'status' => 'doctor_review',
             'updated_at' => now(),
         ];
 
@@ -495,7 +495,7 @@ class ConsultationController extends Controller
             abort(404, 'Consultation not found');
         }
 
-        if ($consultation->status !== 'pending_validation') {
+        if ($consultation->status !== 'nurse_review') {
             return redirect()->back()->withErrors([
                 'intake' => 'Only consultations awaiting nurse validation can be canceled.',
             ]);
@@ -904,7 +904,7 @@ class ConsultationController extends Controller
             abort(404, 'Consultation not found');
         }
 
-        if (! in_array($consultation->status, ['pending_validation', 'pending_doctor', 'in_progress'], true)) {
+        if (! in_array($consultation->status, ['nurse_review', 'doctor_review', 'in_progress'], true)) {
             return redirect()->back()->withErrors(['referral' => 'Referral can only be submitted while the consultation is active or pending validation.']);
         }
 
@@ -1256,12 +1256,12 @@ class ConsultationController extends Controller
 
     private function guardClinicalReviewStage(object $consultation): ?RedirectResponse
     {
-        if (in_array($consultation->status, ['pending_doctor', 'in_progress'], true)) {
+        if (in_array($consultation->status, ['doctor_review', 'in_progress'], true)) {
             return null;
         }
 
         $message = match ($consultation->status) {
-            'pending_validation' => 'Nurse intake validation must be completed before clinical review.',
+            'nurse_review' => 'Nurse intake validation must be completed before clinical review.',
             'triage' => 'Triage intake must be completed before clinical review.',
             default => 'This consultation is not open for clinical review.',
         };

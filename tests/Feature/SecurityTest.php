@@ -212,7 +212,7 @@ class SecurityTest extends TestCase
         $consultation = DB::table('consultations')->insertGetId([
             'patient_id' => $patient,
             'worker_id' => 1,
-            'status' => 'pending_doctor',
+            'status' => 'doctor_review',
             'nature_of_visit' => 'Test',
             'created_at' => now(),
             'updated_at' => now(),
@@ -251,7 +251,7 @@ class SecurityTest extends TestCase
         $consultation = DB::table('consultations')->insertGetId([
             'patient_id' => $patient,
             'worker_id' => 1,
-            'status' => 'pending_doctor',
+            'status' => 'doctor_review',
             'nature_of_visit' => 'Test',
             'created_at' => now(),
             'updated_at' => now(),

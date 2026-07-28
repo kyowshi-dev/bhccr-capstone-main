@@ -28,8 +28,8 @@
         <div class="mt-2 flex flex-wrap items-center gap-3">
             @php
                 $statusLabel = match ($consultation->status) {
-                    'pending_validation' => 'Awaiting Review',
-                    'pending_doctor' => 'Waiting',
+                    'nurse_review' => 'Nurse Review',
+                    'doctor_review' => 'Doctor Review',
                     default => ucfirst(str_replace('_', ' ', $consultation->status)),
                 };
                 $statusStyle = match ($consultation->status) {
@@ -38,7 +38,7 @@
                     default => 'background: rgba(0,0,0,0.06); color: var(--ink-muted);',
                 };
             @endphp
-            <span class="rounded-full px-2.5 py-1 text-xs font-semibold" style="{{ $statusStyle }}">{{ $statusLabel }}</span>
+            <span class="inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold" style="{{ $statusStyle }}">{{ $statusLabel }}</span>
             <a href="{{ route('patients.show', $patient->id) }}" class="text-xs font-medium text-emerald-900 hover:underline lg:text-sm">Back to patient</a>
             <a href="{{ route('consultations.index') }}" class="text-xs font-medium text-emerald-900 hover:underline lg:text-sm">History</a>
             @if (in_array($consultation->status, ['completed', 'referred'], true) && auth()->user()->canPrintHandout())
@@ -49,7 +49,7 @@
                 </a>
             @endif
         </div>
-        @if ($consultation->status === 'pending_validation' && ($canAcknowledgeIntake ?? false))
+        @if ($consultation->status === 'nurse_review' && ($canAcknowledgeIntake ?? false))
             <div class="mt-3 rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                  style="background: var(--accent-soft); border-color: var(--border);">
                 <div>
@@ -63,7 +63,7 @@
                     </button>
                 </form>
             </div>
-        @elseif ($consultation->status === 'pending_validation')
+        @elseif ($consultation->status === 'nurse_review')
             <div class="mt-3 rounded-xl border px-4 py-3" style="background: rgba(0,0,0,0.03); border-color: var(--border);">
                 <p class="text-sm font-semibold" style="color: var(--ink);">Awaiting nurse intake validation</p>
                 <p class="text-xs mt-0.5" style="color: var(--ink-muted);">Clinical review opens after nurse acknowledgment and doctor queue routing.</p>
@@ -79,7 +79,7 @@
     ])
 
     @php
-        $clinicalReviewOpen = in_array($consultation->status, ['pending_doctor', 'in_progress'], true);
+        $clinicalReviewOpen = in_array($consultation->status, ['doctor_review', 'in_progress'], true);
     @endphp
 
     @php
@@ -412,7 +412,7 @@
                     <p class="text-xs" style="color: var(--ink-muted);">Only Nurse and Doctor roles can trigger external referral.</p>
                 @endif
             </form>
-        @elseif ($consultation->status === 'pending_validation' && $canReferExternally)
+        @elseif ($consultation->status === 'nurse_review' && $canReferExternally)
             <form id="consultationShowReferralForm" action="{{ route('consultations.refer', $consultation->id) }}" method="POST" class="hidden">
                 @csrf
                 <input id="outward_refer_to_higher_facility" type="hidden" name="refer_to_higher_facility" value="1">
@@ -425,7 +425,7 @@
         @endif
     </main>
 
-    @if (($clinicalReviewOpen || ($consultation->status === 'pending_validation' && $canReferExternally)) && ! in_array($consultation->status, ['completed', 'referred'], true))
+    @if (($clinicalReviewOpen || ($consultation->status === 'nurse_review' && $canReferExternally)) && ! in_array($consultation->status, ['completed', 'referred'], true))
         <div class="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 px-4 py-3 backdrop-blur" style="border-color: var(--border);">
             <div class="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-xs" style="color: var(--ink-muted);">

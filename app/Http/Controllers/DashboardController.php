@@ -25,12 +25,12 @@ class DashboardController extends Controller
                 ->count();
 
             $pendingConsultations = DB::table('consultations')
-                ->whereIn('status', ['triage', 'pending_validation', 'pending_doctor', 'in_progress'])
+                ->whereIn('status', ['triage', 'nurse_review', 'doctor_review', 'in_progress'])
                 ->count();
 
             $pendingQueue = DB::table('consultations')
                 ->join('patients', 'consultations.patient_id', '=', 'patients.id')
-                ->whereIn('consultations.status', ['triage', 'pending_validation', 'pending_doctor', 'in_progress'])
+                ->whereIn('consultations.status', ['triage', 'nurse_review', 'doctor_review', 'in_progress'])
                 ->orderBy('consultations.created_at')
                 ->limit(5)
                 ->select(
@@ -87,7 +87,7 @@ class DashboardController extends Controller
         $totalPatients = DB::table('patients')->count();
 
         $pendingAppointments = DB::table('consultations')
-            ->whereIn('status', ['triage', 'pending_validation', 'pending_doctor', 'in_progress'])
+            ->whereIn('status', ['triage', 'nurse_review', 'doctor_review', 'in_progress'])
             ->count();
 
         $overdueImmunizations = DB::table('immunization_records')
@@ -226,16 +226,16 @@ class DashboardController extends Controller
             ->count();
 
         $pendingValidationCount = DB::table('consultations')
-            ->where('status', 'pending_validation')
+            ->where('status', 'nurse_review')
             ->count();
 
         $intakePipelineCount = DB::table('consultations')
-            ->whereIn('status', ['triage', 'pending_validation'])
+            ->whereIn('status', ['triage', 'nurse_review'])
             ->count();
 
         $validationQueue = DB::table('consultations')
             ->join('patients', 'consultations.patient_id', '=', 'patients.id')
-            ->where('consultations.status', 'pending_validation')
+            ->where('consultations.status', 'nurse_review')
             ->orderBy('consultations.created_at')
             ->limit(8)
             ->select(
@@ -264,7 +264,7 @@ class DashboardController extends Controller
     private function doctorDashboard(Request $request, $user, Carbon $today)
     {
         $pendingDoctorCount = DB::table('consultations')
-            ->whereIn('status', ['pending_doctor', 'in_progress'])
+            ->whereIn('status', ['doctor_review', 'in_progress'])
             ->count();
 
         $completedConsultationsToday = DB::table('consultations')
@@ -281,7 +281,7 @@ class DashboardController extends Controller
 
         $doctorQueue = DB::table('consultations')
             ->join('patients', 'consultations.patient_id', '=', 'patients.id')
-            ->whereIn('consultations.status', ['pending_doctor', 'in_progress'])
+            ->whereIn('consultations.status', ['doctor_review', 'in_progress'])
             ->orderBy('consultations.created_at')
             ->limit(8)
             ->select(
@@ -298,7 +298,7 @@ class DashboardController extends Controller
                     'id' => $row->id,
                     'patient_name' => trim("{$row->first_name} {$row->last_name}"),
                     'status' => match ($row->status) {
-                        'pending_doctor' => 'Waiting',
+                        'doctor_review' => 'Doctor Review',
                         'in_progress' => 'In progress',
                         default => ucfirst(str_replace('_', ' ', (string) $row->status)),
                     },

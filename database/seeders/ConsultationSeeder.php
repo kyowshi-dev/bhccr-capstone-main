@@ -15,7 +15,7 @@ class ConsultationSeeder extends Seeder
 {
     public function run(): void
     {
-        $statuses = ['triage', 'pending_doctor', 'in_progress', 'completed', 'referred'];
+        $statuses = ['triage', 'nurse_review', 'doctor_review', 'in_progress', 'completed', 'referred'];
         $modeOfTransaction = ['Walk-in', 'Referral', 'Scheduled', 'Emergency'];
         $chiefComplaints = [
             'Cough and Cold',
