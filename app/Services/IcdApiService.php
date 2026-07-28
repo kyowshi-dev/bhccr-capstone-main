@@ -32,14 +32,20 @@ class IcdApiService
         }
 
         $base = rtrim(config('bhcis.icd_api.base_url'), '/');
-        $path = config('bhcis.icd_api.search_path') ?: '/search';
+        $pathTemplate = config('bhcis.icd_api.search_path') ?: '/search';
+        $path = $this->buildSearchPath($pathTemplate, $query, $limit);
         $url = $base . $path;
 
-        try {
-            $resp = Http::withToken($token)->get($url, [
+        $requestData = [];
+        if (! str_contains($pathTemplate, '{query}') && ! str_contains($pathTemplate, '{code}') && ! str_contains($pathTemplate, '{limit}')) {
+            $requestData = [
                 'q' => $query,
                 'limit' => $limit,
-            ]);
+            ];
+        }
+
+        try {
+            $resp = Http::withToken($token)->get($url, $requestData);
 
             if (! $resp->successful()) {
                 Log::warning('ICD API search request failed', [
@@ -62,17 +68,32 @@ class IcdApiService
             }
 
             $items = [];
-            foreach ($data as $item) {
+            $itemsData = $data;
+            if (isset($data['results']) && is_array($data['results'])) {
+                $itemsData = $data['results'];
+            } elseif (isset($data['items']) && is_array($data['items'])) {
+                $itemsData = $data['items'];
+            } elseif (isset($data['concepts']) && is_array($data['concepts'])) {
+                $itemsData = $data['concepts'];
+            } elseif (isset($data['child']) && is_array($data['child'])) {
+                $itemsData = $data['child'];
+            } elseif (array_key_exists('code', $data) || array_key_exists('title', $data) || array_key_exists('fullySpecifiedName', $data) || array_key_exists('diagnosis_code', $data) || array_key_exists('diagnosis_name', $data)) {
+                $itemsData = [$data];
+            }
+
+            foreach ($itemsData as $item) {
                 if (is_string($item)) {
                     $items[] = ['id' => $item, 'text' => $item];
                     continue;
                 }
-                if (! is_array($item)) {
+                if (! is_array($item) && ! is_object($item)) {
                     continue;
                 }
 
-                $code = $item['code'] ?? $item['diagnosis_code'] ?? ($item['id'] ?? null);
-                $name = $item['name'] ?? $item['diagnosis_name'] ?? ($item['label'] ?? ($item['title'] ?? null));
+                $itemArray = is_array($item) ? $item : get_object_vars($item);
+
+                $code = $itemArray['code'] ?? $itemArray['diagnosis_code'] ?? ($itemArray['id'] ?? null);
+                $name = $itemArray['name'] ?? $itemArray['diagnosis_name'] ?? ($itemArray['title'] ?? ($itemArray['fullySpecifiedName'] ?? ($itemArray['label'] ?? ($itemArray['description'] ?? null))));
 
                 if (! $code && ! $name) {
                     continue;
@@ -95,6 +116,20 @@ class IcdApiService
             ]);
             return [];
         }
+    }
+
+    /**
+     * Build the request path by substituting supported placeholders.
+     */
+    private function buildSearchPath(string $pathTemplate, string $query, int $limit): string
+    {
+        $replacements = [
+            '{query}' => rawurlencode($query),
+            '{code}' => rawurlencode($query),
+            '{limit}' => (string) $limit,
+        ];
+
+        return strtr($pathTemplate, $replacements);
     }
 
     /**

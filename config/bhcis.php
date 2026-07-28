@@ -10,7 +10,7 @@ return [
         'enabled' => env('BHCIS_ICD_API_ENABLED', false),
         'base_url' => env('BHCIS_ICD_API_BASE_URL', ''),
         'token_url' => env('BHCIS_ICD_API_TOKEN_URL', ''),
-        'search_path' => env('BHCIS_ICD_API_SEARCH_PATH', '/search'),
+        'search_path' => env('BHCIS_ICD_API_SEARCH_PATH', '/icd/release/10/{code}'),
         'client_id' => env('BHCIS_ICD_API_CLIENT_ID', ''),
         'client_secret' => env('BHCIS_ICD_API_CLIENT_SECRET', ''),
     ],
