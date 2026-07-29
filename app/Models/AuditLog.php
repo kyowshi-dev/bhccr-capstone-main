@@ -24,6 +24,16 @@ class AuditLog extends Model
         'created_at' => 'datetime',
     ];
 
+    public function getFormattedActivityAttribute(): string
+    {
+        $time = \Carbon\Carbon::parse($this->created_at)->format('M d, Y H:i');
+        $user = $this->user?->username ?: 'System';
+        $action = ucfirst($this->action);
+        $table = ucfirst(str_replace('_', ' ', $this->table_name));
+
+        return "{$time} – {$user} {$action} {$table} #{$this->record_id}";
+    }
+
     public $timestamps = false;
 
     // Disable auto timestamps since we use created_at only

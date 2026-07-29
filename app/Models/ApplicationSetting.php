@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\LogsActivity;
 
 class ApplicationSetting extends Model
 {
+    use LogsActivity;
     protected $table = 'application_settings';
 
     protected $fillable = ['key', 'value'];

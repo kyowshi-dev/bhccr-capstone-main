@@ -123,7 +123,7 @@
                     <p class="muted-xs leading-tight">Sta. Ana Health Center</p>
                 </div>
             </div>
-            <p class="text-xs mt-4 muted-xs leading-relaxed">Pag-log in aron maka-access sa mga rekord sa pasyente ug mga serbisyo.</p>
+            <p class="text-xs mt-4 muted-xs leading-relaxed">Pag-log in aron maka-access sa mga record sa pasyente ug mga serbisyo.</p>
             </div>
 
             <form action="{{ route('login.process') }}" method="POST" id="login-form">

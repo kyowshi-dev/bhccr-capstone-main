@@ -194,24 +194,47 @@
             <div class="animate-in opacity-0 delay-6 rounded-xl border p-4 lg:p-5"
                  style="background: var(--bg-surface); border-color: var(--border); box-shadow: var(--shadow-sm);">
                 <h2 class="font-display font-semibold text-lg lg:text-xl mb-4" style="color: var(--ink);">Recent activity</h2>
-                <ul class="divide-y divide-[var(--border)] space-y-0">
-                    @forelse($recentActivity as $activity)
-                        <li class="py-3 text-sm transition-colors hover:bg-black/[0.02]" style="color: var(--ink-muted);">
-                            {{ $activity }}
+                    <ul class="divide-y divide-[var(--border)] space-y-0">
+                    @forelse($recentActivity as $log)
+                        @php
+                            // Clean up display labels dynamically
+                            $time = \Carbon\Carbon::parse($log->created_at)->format('M d, Y H:i');
+                            $user = $log->username ?: 'System';
+                            $table = Str::singular(ucfirst(str_replace('_', ' ', $log->table_name)));
+                            
+                            // Map actions to semantic styling classes/variables
+                            $badgeStyle = match($log->action) {
+                                'created' => 'background: rgba(34, 197, 94, 0.1); color: #16a34a;', // Soft Green
+                                'updated' => 'background: rgba(234, 179, 8, 0.1); color: #ca8a04;',  // Soft Amber
+                                'deleted' => 'background: rgba(239, 68, 68, 0.1); color: #dc2626;',   // Soft Red
+                                default   => 'background: rgba(107, 114, 128, 0.1); color: #4b5563;'
+                            };
+                        @endphp
+
+                        <li class="py-3.5 flex items-center justify-between text-sm transition-colors hover:bg-black/[0.01]">
+                            <div class="flex items-center space-x-3">
+                                <!-- Action Status Badge -->
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider uppercase" style="{{ $badgeStyle }}">
+                                    {{ $log->action }}
+                                </span>
+                                
+                                <!-- Activity Narrative -->
+                                <span style="color: var(--ink-muted);">
+                                    <strong class="font-semibold text-[var(--ink)]">{{ $user }}</strong> 
+                                    modified 
+                                    <span class="font-medium">{{ $table }}</span> 
+                                    <code class="text-xs px-1.5 py-0.5 rounded bg-black/[0.04] text-[var(--ink-subtle)]">#{{ $log->record_id }}</code>
+                                </span>
+                            </div>
+                            
+                            <!-- Timestamp -->
+                            <time class="text-xs font-medium shrink-0" style="color: var(--ink-subtle);">
+                                {{ $time }}
+                            </time>
                         </li>
                     @empty
-                        <li class="py-8 px-4 text-center space-y-4">
-                            <div class="space-y-2">
-                                <div class="text-sm font-semibold" style="color: var(--ink);">No recent activity</div>
-                                <div class="text-xs" style="color: var(--ink-subtle);">Activity from patient registrations, consultations, and updates will appear here</div>
-                            </div>
-                            <div class="pt-2">
-                                <a href="{{ route('patients.create') }}"
-                                   class="inline-flex items-center justify-center px-3 py-2 rounded-lg text-xs font-bold transition-[transform,box-shadow,background] duration-200 hover:shadow-sm hover:scale-[1.01] active:scale-[0.98]"
-                                   style="background: var(--primary); color: #fff; box-shadow: var(--shadow-sm);">
-                                    Get started
-                                </a>
-                            </div>
+                        <li class="py-3.5 text-center text-sm" style="color: var(--ink-muted);">
+                            No activity has been recorded yet.
                         </li>
                     @endforelse
                 </ul>

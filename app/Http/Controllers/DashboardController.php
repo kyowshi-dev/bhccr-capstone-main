@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use Asantibanez\LivewireCharts\Models\LineChartModel;
 use Asantibanez\LivewireCharts\Models\PieChartModel;
 use Carbon\Carbon;
@@ -47,10 +48,17 @@ class DashboardController extends Controller
                     ];
                 });
 
+            $recentActivity = DB::table('audit_logs')
+                ->leftJoin('users', 'audit_logs.user_id', '=', 'users.id')
+                ->select('audit_logs.*', 'users.username')
+                ->orderByDesc('audit_logs.created_at')
+                ->limit(5)
+                ->get();
+
             $recentPatients = DB::table('patients')
+                ->select('id', 'first_name', 'last_name')
                 ->orderByDesc('created_at')
                 ->limit(3)
-                ->select('id', 'first_name', 'last_name')
                 ->get()
                 ->map(function ($row) {
                     return (object) [
@@ -186,14 +194,6 @@ class DashboardController extends Controller
             ->orderByDesc('audit_logs.created_at')
             ->limit(5)
             ->get()
-            ->map(function ($log) {
-                $time = Carbon::parse($log->created_at)->format('M d, Y H:i');
-                $user = $log->username ?: 'System';
-                $action = ucfirst($log->action);
-                $table = ucfirst(str_replace('_', ' ', $log->table_name));
-
-                return "{$time} – {$user} {$action} {$table} #{$log->record_id}";
-            })
             ->all();
 
         $handoutData = $user->canViewDashboardHandouts('admin')

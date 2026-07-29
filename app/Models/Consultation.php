@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Traits\LogsActivity;
 
 use App\Models\OutwardReferral;
 
 class Consultation extends Model
 {
+    use LogsActivity;
     protected $fillable = [
         'patient_id',
         'worker_id',

@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\LogsActivity;
 
 class Patient extends Model
 {
+    use LogsActivity;
     protected $fillable = [
         'household_id',
         'last_name',
