@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FHSIS Morbidity Report - {{ $reportDate }}</title>
+    <title>Month Morbidity Disease Report - {{ $reportDate }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -88,13 +88,14 @@
     <div class="header">
         <h1>Barangay Health Center Information System</h1>
         <p>Sta. Ana Barangay Health Center</p>
-        <p>Department of Health — Field Health Service Information System (FHSIS)</p>
+        <p>Department of Health Field Health Service Information System (FHSIS)</p>
     </div>
 
     <div class="report-info">
-        <h2 style="font-size: 14px; margin: 0;">FHSIS Morbidity Report</h2>
+        <h2 style="font-size: 14px; margin: 0;">Monthly Morbidity Disease Report</h2>
         <p style="margin: 5px 0;">Leading Causes of Morbidity</p>
         <p style="margin: 5px 0;">Report Period: {{ $reportDate }}</p>
+        <p style="margin: 5px 0; font-weight: bold;">Selected filters: Sex: {{ $sexLabel }} | Zone: {{ $zoneLabel }} | Age group: {{ $ageGroupLabel }}</p>
     </div>
 
     @if($rows->isNotEmpty())
