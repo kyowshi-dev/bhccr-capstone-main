@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "laravel-quality": {
+      "source": "leeovery/agentic-skills",
+      "sourceType": "github",
+      "skillPath": "laravel/skills/laravel-quality/SKILL.md",
+      "computedHash": "76fbd2b85885ffbf50bf07ec39d0e2ecef071e35c783faca16a0bcaafacec430"
+    },
+    "refactor-laravel": {
+      "source": "snakeo/claude-debug-and-refactor-skills-plugin",
+      "sourceType": "github",
+      "skillPath": "plugins/debug-and-refactor/skills/refactor-laravel/SKILL.md",
+      "computedHash": "installed-local"
+    },
+    "laravel-simplifier": {
+      "source": "tmeister/skills",
+      "sourceType": "github",
+      "skillPath": "skills/laravel-simplifier/SKILL.md",
+      "computedHash": "installed-local"
+    }
+  }
+}

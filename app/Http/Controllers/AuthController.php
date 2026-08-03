@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ForgotPasswordOtp;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -124,8 +128,83 @@ class AuthController extends Controller
             'username' => ['required', 'string', 'max:255'],
         ]);
 
-        // Always return a success message so the endpoint can be used without revealing whether the username exists.
-        // Password reset requests are no longer stored in the database.
-        return redirect()->route('login')->with('success', 'Password reset request submitted. An administrator will be notified and will assist you with your login.');
+        // Always respond the same way to avoid revealing whether a username exists.
+        $user = User::where('username', $validated['username'])->first();
+
+        if ($user && $user->email) {
+            $otp = (string) random_int(100000, 999999);
+            $expiresInMinutes = 15;
+
+            DB::table('password_resets')->insert([
+                'user_id' => $user->id,
+                'token' => Hash::make($otp),
+                'expires_at' => now()->addMinutes($expiresInMinutes),
+                'used' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            Mail::to($user->email)->send(new ForgotPasswordOtp($otp, $expiresInMinutes));
+
+            session()->put('password_reset_username', $user->username);
+        }
+
+        return redirect()->route('password.forgot.verify')
+            ->with('status', 'If an account exists for that username, a verification code was sent to its registered email.');
+    }
+
+    public function showForgotVerify(Request $request)
+    {
+        $username = session('password_reset_username');
+
+        if (! $username) {
+            return redirect()->route('password.forgot');
+        }
+
+        return view('auth.forgot-otp', ['username' => $username]);
+    }
+
+    public function submitForgotVerify(Request $request)
+    {
+        $sessionUsername = session('password_reset_username');
+
+        if (! $sessionUsername) {
+            return redirect()->route('password.forgot');
+        }
+
+        $validated = $request->validate([
+            'username' => ['required', 'string'],
+            'otp' => ['required', 'string', 'size:6'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if ($validated['username'] !== $sessionUsername) {
+            return back()->withErrors(['otp' => 'Invalid or expired verification code.']);
+        }
+
+        $user = User::where('username', $sessionUsername)->first();
+
+        if (! $user) {
+            return back()->withErrors(['otp' => 'Invalid or expired verification code.']);
+        }
+
+        $record = DB::table('password_resets')
+            ->where('user_id', $user->id)
+            ->where('used', false)
+            ->where('expires_at', '>', now())
+            ->latest('id')
+            ->first();
+
+        if (! $record || ! Hash::check($validated['otp'], $record->token)) {
+            return back()->withErrors(['otp' => 'Invalid or expired verification code.']);
+        }
+
+        $user->password = Hash::make($validated['password']);
+        $user->save();
+
+        DB::table('password_resets')->where('user_id', $user->id)->update(['used' => true]);
+        session()->forget('password_reset_username');
+
+        return redirect()->route('login')->with('success', 'Your password has been reset. Please sign in with your new password.');
     }
 }

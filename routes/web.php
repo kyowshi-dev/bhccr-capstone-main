@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationController;
-use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\ImmunizationController;
@@ -10,6 +9,7 @@ use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
@@ -34,6 +34,10 @@ Route::get('/password/forgot', [AuthController::class, 'showForgotPassword'])->n
 Route::post('/password/forgot', [AuthController::class, 'submitForgotPassword'])
     ->middleware('throttle:3,1')  // 3 attempts per minute
     ->name('password.forgot.submit');
+Route::get('/password/forgot/verify', [AuthController::class, 'showForgotVerify'])->name('password.forgot.verify');
+Route::post('/password/forgot/verify', [AuthController::class, 'submitForgotVerify'])
+    ->middleware('throttle:5,1')  // 5 attempts per minute
+    ->name('password.forgot.verify.submit');
 
 // --- PROTECTED ROUTES (Only for logged-in users) ---
 Route::middleware('auth')->group(function () {
@@ -65,14 +69,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/households/bulk-update-zone', [HouseholdController::class, 'updateZone'])
         ->name('households.update-zone');
 
-    //3a. Patients
+    // 3a. Patients
     Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
 
-    //3b. Create Patient (Order matters: This must be BEFORE {id})
+    // 3b. Create Patient (Order matters: This must be BEFORE {id})
     Route::get('/patients/create', [PatientController::class, 'create'])->name('patients.create');
     Route::post('/patients', [PatientController::class, 'store'])->name('patients.store');
 
-    //3c. Show Patient Profile (Wildcard catches IDs like 1, 2, 100)
+    // 3c. Show Patient Profile (Wildcard catches IDs like 1, 2, 100)
     Route::get('/patients/{id}', [PatientController::class, 'show'])->name('patients.show');
 
     // 4. CONSULTATION MODULE
@@ -139,8 +143,6 @@ Route::middleware('auth')->group(function () {
         ->name('reports.morbidity');
     Route::get('/reports/morbidity/download', [ReportController::class, 'downloadMorbidityPdf'])
         ->name('reports.morbidity.download');
-    Route::get('/reports/consultation-summary', [ReportController::class, 'consultationSummary'])
-        ->name('reports.consultation-summary');
 
     // 8. USER MANAGEMENT
     Route::get('/users', [UserManagementController::class, 'index'])

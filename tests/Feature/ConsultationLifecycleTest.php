@@ -28,8 +28,13 @@ class ConsultationLifecycleTest extends TestCase
         $this->actingAs($bhw)->post("/patients/{$patientId}/consultations", [
             'mode_of_transaction' => 'Walk-in',
             'nature_of_visit' => 'Checkup',
+            'purpose_of_visit' => 'General checkup',
             'chief_complaint' => 'Fever',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
             'temperature' => 37.5,
+            'weight' => 60,
+            'height' => 165,
         ])->assertRedirect(route('patients.show', $patientId));
 
         $consultation = DB::table('consultations')->where('patient_id', $patientId)->first();
@@ -47,7 +52,12 @@ class ConsultationLifecycleTest extends TestCase
         $this->actingAs($bhw)->post("/patients/{$patientId}/consultations", [
             'mode_of_transaction' => 'Walk-in',
             'nature_of_visit' => 'Checkup',
+            'purpose_of_visit' => 'General checkup',
+            'bp_systolic' => 110,
+            'bp_diastolic' => 70,
             'temperature' => 36.8,
+            'weight' => 58,
+            'height' => 160,
         ]);
 
         $consultationId = (int) DB::table('consultations')->where('patient_id', $patientId)->value('id');
@@ -69,15 +79,18 @@ class ConsultationLifecycleTest extends TestCase
         $this->actingAs($bhw)->post("/patients/{$patientId}/consultations", [
             'mode_of_transaction' => 'Walk-in',
             'nature_of_visit' => 'Checkup',
+            'purpose_of_visit' => 'General checkup',
+            'bp_systolic' => 115,
+            'bp_diastolic' => 75,
             'temperature' => 36.8,
+            'weight' => 62,
+            'height' => 168,
         ]);
 
         $consultationId = (int) DB::table('consultations')->where('patient_id', $patientId)->value('id');
         $diagnosisId = DB::table('diagnosis_lookup')->insertGetId([
             'diagnosis_code' => 'J06.9',
             'diagnosis_name' => 'Acute upper respiratory infection',
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         $this->actingAs($doctor)->post("/consultations/{$consultationId}/diagnosis", [
@@ -117,6 +130,10 @@ class ConsultationLifecycleTest extends TestCase
             'date_of_birth' => '1990-01-01',
             'civil_status' => 'Single',
             'employment_status' => 'Employed',
+            'mother_name' => 'Jane Senior',
+            'spouse_name' => 'N/A',
+            'family_relationship' => 'Mother',
+            'residential_address' => 'Sta. Ana, Tagoloan',
             'created_at' => now(),
             'updated_at' => now(),
         ]);

@@ -32,11 +32,6 @@
             <h3 class="font-display font-semibold text-base mb-1" style="color: var(--ink);">Morbidity report</h3>
             <p class="text-sm" style="color: var(--ink-muted);">Leading causes of morbidity by diagnosis (ICD). FHSIS standard format.</p>
         </a>
-        {{-- <a href="{{ route('reports.consultation-summary', ['month' => $month, 'year' => $year]) }}"
-           class="block p-5 lg:p-6 rounded-xl border transition-all duration-200 hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
-            <h3 class="font-display font-semibold text-base mb-1" style="color: var(--ink);">Program summary</h3>
-            <p class="text-sm" style="color: var(--ink-muted);">Monthly consolidation of consultations by program (general, prenatal, postpartum, immunization, family planning).</p>
-        </a> --}}
         </div>
 
     <script>

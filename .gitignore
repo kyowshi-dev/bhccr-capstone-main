@@ -29,4 +29,5 @@ _ide_helper_models.php
 /storage/logs/laravel.log
 /docs
 NOTIFICATIONS_QUICKSTART.md
-
+.opencode
+.agents

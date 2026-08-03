@@ -214,6 +214,7 @@ class SecurityTest extends TestCase
             'worker_id' => 1,
             'status' => 'doctor_review',
             'nature_of_visit' => 'Test',
+            'mode_of_transaction' => 'Walk-in',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -253,6 +254,7 @@ class SecurityTest extends TestCase
             'worker_id' => 1,
             'status' => 'doctor_review',
             'nature_of_visit' => 'Test',
+            'mode_of_transaction' => 'Walk-in',
             'created_at' => now(),
             'updated_at' => now(),
         ]);

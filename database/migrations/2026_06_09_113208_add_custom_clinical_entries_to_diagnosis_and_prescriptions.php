@@ -21,8 +21,8 @@ return new class extends Migration
         $driver = Schema::getConnection()->getDriverName();
 
         if ($driver === 'sqlite') {
-            $this->makeForeignKeyNullableSqlite('diagnosis_records', 'diagnosis_id', 'diagnosis_lookup');
-            $this->makeForeignKeyNullableSqlite('prescriptions', 'medicine_id', 'medicines_lookup');
+            $this->makeForeignKeyNullableSqlite('diagnosis_records', 'diagnosis_id');
+            $this->makeForeignKeyNullableSqlite('prescriptions', 'medicine_id');
         } else {
             Schema::table('diagnosis_records', function (Blueprint $table) {
                 $table->dropForeign(['diagnosis_id']);
@@ -81,41 +81,39 @@ return new class extends Migration
         });
     }
 
-    private function makeForeignKeyNullableSqlite(string $table, string $column, string $referencedTable): void
+    private function makeForeignKeyNullableSqlite(string $table, string $column): void
     {
-        DB::statement('PRAGMA foreign_keys=off');
+        $this->rebuildSqliteTable($table, function (array $columns, array $foreignKeys) use ($column) {
+            $columns[$column] = [...$columns[$column], 'notnull' => 0];
 
-        $rows = DB::select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [$table]);
-        if (empty($rows)) {
-            DB::statement('PRAGMA foreign_keys=on');
-
-            return;
-        }
-
-        $createSql = (string) $rows[0]->sql;
-        $createSql = preg_replace(
-            '/\s*foreign key\s*\(\s*["`]?'.$column.'["`]?\s*\)\s*references\s*["`]?'.$referencedTable.'["`]?\s*\(\s*["`]?id["`]?\s*\)/i',
-            '',
-            $createSql
-        );
-        $createSql = preg_replace('/,\s*,/', ',', $createSql);
-        $createSql = preg_replace('/\(\s*,/', '(', $createSql);
-        $createSql = preg_replace('/,\s*\)/', ')', $createSql);
-
-        $tempTable = $table.'_tmp_custom_entries';
-        $createSql = preg_replace('/create table\s+["`]?'.$table.'["`]?/i', 'CREATE TABLE "'.$tempTable.'"', $createSql, 1);
-        $createSql = preg_replace('/\b'.$column.'\b(?!\s+nullable)/i', $column.' INTEGER NULL', $createSql, 1);
-
-        DB::statement($createSql);
-        DB::statement('INSERT INTO "'.$tempTable.'" SELECT * FROM "'.$table.'"');
-        DB::statement('DROP TABLE "'.$table.'"');
-        DB::statement('ALTER TABLE "'.$tempTable.'" RENAME TO "'.$table.'"');
-
-        DB::statement('PRAGMA foreign_keys=on');
+            return [$columns, $foreignKeys];
+        });
     }
 
     private function makeForeignKeyRequiredSqlite(string $table, string $column, string $referencedTable): void
     {
+        $this->rebuildSqliteTable($table, function (array $columns, array $foreignKeys) use ($column, $referencedTable) {
+            $columns[$column] = [...$columns[$column], 'notnull' => 1];
+
+            $hasForeignKey = collect($foreignKeys)
+                ->contains(fn (array $group) => $group[0]['from'] === $column);
+
+            if (! $hasForeignKey) {
+                $foreignKeys[] = [[
+                    'from' => $column,
+                    'table' => $referencedTable,
+                    'to' => 'id',
+                    'on_update' => 'NO ACTION',
+                    'on_delete' => 'NO ACTION',
+                ]];
+            }
+
+            return [$columns, $foreignKeys];
+        });
+    }
+
+    private function rebuildSqliteTable(string $table, callable $transform): void
+    {
         DB::statement('PRAGMA foreign_keys=off');
 
         $rows = DB::select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [$table]);
@@ -125,21 +123,66 @@ return new class extends Migration
             return;
         }
 
-        $createSql = (string) $rows[0]->sql;
-        $createSql = preg_replace('/\b'.$column.'\s+INTEGER\s+NULL\b/i', $column.' INTEGER NOT NULL', $createSql, 1);
+        $columns = collect(DB::select('PRAGMA table_info("'.$table.'")'))
+            ->mapWithKeys(fn ($column) => [
+                $column->name => [
+                    'type' => $column->type,
+                    'notnull' => (int) $column->notnull,
+                    'dflt_value' => $column->dflt_value,
+                    'pk' => (int) $column->pk,
+                ],
+            ])
+            ->all();
+
+        $foreignKeys = collect(DB::select('PRAGMA foreign_key_list("'.$table.'")'))
+            ->groupBy('id')
+            ->map(fn ($group) => $group->map(fn ($fk) => [
+                'from' => $fk->from,
+                'table' => $fk->table,
+                'to' => $fk->to,
+                'on_update' => $fk->on_update,
+                'on_delete' => $fk->on_delete,
+            ])->values()->all())
+            ->values()
+            ->all();
+
+        [$columns, $foreignKeys] = $transform($columns, $foreignKeys);
+
+        $definitions = collect($columns)
+            ->map(function (array $column, string $name): string {
+                $definition = '"'.$name.'" '.$column['type']
+                    .($column['notnull'] ? ' NOT NULL' : ' NULL');
+
+                if ($column['dflt_value'] !== null && strtoupper((string) $column['dflt_value']) !== 'NULL') {
+                    $definition .= ' DEFAULT '.$column['dflt_value'];
+                }
+
+                if ($column['pk']) {
+                    $definition .= ' PRIMARY KEY AUTOINCREMENT';
+                }
+
+                return $definition;
+            })
+            ->merge(
+                collect($foreignKeys)->map(function (array $group): string {
+                    $columns = implode(', ', array_map(fn (array $fk) => '"'.$fk['from'].'"', $group));
+                    $references = implode(', ', array_map(fn (array $fk) => '"'.$fk['table'].'"("'.$fk['to'].'")', $group));
+
+                    return sprintf(
+                        'FOREIGN KEY (%s) REFERENCES %s ON UPDATE %s ON DELETE %s',
+                        $columns,
+                        $references,
+                        $group[0]['on_update'] ?? 'NO ACTION',
+                        $group[0]['on_delete'] ?? 'NO ACTION'
+                    );
+                })
+            )
+            ->all();
 
         $tempTable = $table.'_tmp_custom_entries';
-        $createSql = preg_replace('/create table\s+["`]?'.$table.'["`]?/i', 'CREATE TABLE "'.$tempTable.'"', $createSql, 1);
 
-        if (! preg_match('/foreign key\s*\(\s*["`]?'.$column.'["`]?\s*\)/i', $createSql)) {
-            $createSql = preg_replace(
-                '/\)\s*$/',
-                ', foreign key("'.$column.'") references "'.$referencedTable.'"(id))',
-                $createSql
-            );
-        }
-
-        DB::statement($createSql);
+        DB::statement('DROP TABLE IF EXISTS "'.$tempTable.'"');
+        DB::statement('CREATE TABLE "'.$tempTable.'" ('.implode(', ', $definitions).')');
         DB::statement('INSERT INTO "'.$tempTable.'" SELECT * FROM "'.$table.'"');
         DB::statement('DROP TABLE "'.$table.'"');
         DB::statement('ALTER TABLE "'.$tempTable.'" RENAME TO "'.$table.'"');

@@ -52,6 +52,9 @@ return new class extends Migration
         if (Schema::hasColumn('medicines_lookup', 'medicine_name')) {
             DB::table('medicines_lookup')->whereNull('name')->update(['name' => DB::raw('medicine_name')]);
             Schema::table('medicines_lookup', function (Blueprint $table) {
+                if (Schema::getConnection()->getDriverName() === 'sqlite' && Schema::hasIndex('medicines_lookup', 'unique_medicine_name')) {
+                    $table->dropUnique('unique_medicine_name');
+                }
                 $table->dropColumn('medicine_name');
             });
         }
@@ -121,6 +124,11 @@ return new class extends Migration
             Schema::table('medicines_lookup', function (Blueprint $table) {
                 $table->string('medicine_name')->nullable()->after('id');
             });
+            if (Schema::getConnection()->getDriverName() === 'sqlite' && ! Schema::hasIndex('medicines_lookup', 'unique_medicine_name')) {
+                Schema::table('medicines_lookup', function (Blueprint $table) {
+                    $table->unique('medicine_name', 'unique_medicine_name');
+                });
+            }
         }
 
         if (Schema::hasColumn('medicines_lookup', 'name')) {

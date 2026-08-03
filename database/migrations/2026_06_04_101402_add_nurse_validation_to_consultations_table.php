@@ -9,7 +9,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE consultations MODIFY COLUMN status ENUM('triage', 'nurse_review', 'doctor_review', 'in_progress', 'completed', 'referred') NOT NULL");
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE consultations MODIFY COLUMN status ENUM('triage', 'nurse_review', 'doctor_review', 'in_progress', 'completed', 'referred') NOT NULL");
+        }
 
         Schema::table('consultations', function (Blueprint $table) {
             $table->timestamp('nurse_validated_at')->nullable()->after('status');
@@ -24,6 +26,8 @@ return new class extends Migration
             $table->dropColumn(['nurse_validated_at', 'nurse_validated_by']);
         });
 
-        DB::statement("ALTER TABLE consultations MODIFY COLUMN status ENUM('triage', 'pending_doctor', 'in_progress', 'completed', 'referred') NOT NULL");
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE consultations MODIFY COLUMN status ENUM('triage', 'pending_doctor', 'in_progress', 'completed', 'referred') NOT NULL");
+        }
     }
 };

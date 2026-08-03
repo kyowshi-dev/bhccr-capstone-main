@@ -18,38 +18,40 @@ return new class extends Migration
             $table->unique('medicine_name', 'unique_medicine_name');
         });
         Schema::table('patients', function (Blueprint $table) {
-        // Copilot prompt: create a composite unique index for first_name, last_name, middle_name, and date_of_birth named 'unique_patient_record
+            // Copilot prompt: create a composite unique index for first_name, last_name, middle_name, and date_of_birth named 'unique_patient_record
             $table->unique(['first_name', 'last_name', 'middle_name', 'date_of_birth'], 'unique_patient_record');
-    });
+        });
 
-        // 2. Add Triggers (Using raw SQL)
-        DB::unprepared('
-            CREATE TRIGGER auto_capitalize_insert
-            BEFORE INSERT ON patients
-            FOR EACH ROW
-            BEGIN
-                IF NEW.first_name IS NOT NULL THEN
-                    SET NEW.first_name = CONCAT(UPPER(SUBSTRING(NEW.first_name, 1, 1)), LOWER(SUBSTRING(NEW.first_name, 2)));
-                END IF;
-                IF NEW.last_name IS NOT NULL THEN
-                    SET NEW.last_name = CONCAT(UPPER(SUBSTRING(NEW.last_name, 1, 1)), LOWER(SUBSTRING(NEW.last_name, 2)));
-                END IF;
-            END;
-        ');
+        // 2. Add Triggers (MySQL only — raw SQL is not supported on SQLite test runner)
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            DB::unprepared('
+                CREATE TRIGGER auto_capitalize_insert
+                BEFORE INSERT ON patients
+                FOR EACH ROW
+                BEGIN
+                    IF NEW.first_name IS NOT NULL THEN
+                        SET NEW.first_name = CONCAT(UPPER(SUBSTRING(NEW.first_name, 1, 1)), LOWER(SUBSTRING(NEW.first_name, 2)));
+                    END IF;
+                    IF NEW.last_name IS NOT NULL THEN
+                        SET NEW.last_name = CONCAT(UPPER(SUBSTRING(NEW.last_name, 1, 1)), LOWER(SUBSTRING(NEW.last_name, 2)));
+                    END IF;
+                END;
+            ');
 
-        DB::unprepared('
-            CREATE TRIGGER auto_capitalize_update
-            BEFORE UPDATE ON patients
-            FOR EACH ROW
-            BEGIN
-                IF NEW.first_name IS NOT NULL THEN
-                    SET NEW.first_name = CONCAT(UPPER(SUBSTRING(NEW.first_name, 1, 1)), LOWER(SUBSTRING(NEW.first_name, 2)));
-                END IF;
-                IF NEW.last_name IS NOT NULL THEN
-                    SET NEW.last_name = CONCAT(UPPER(SUBSTRING(NEW.last_name, 1, 1)), LOWER(SUBSTRING(NEW.last_name, 2)));
-                END IF;
-            END;
-        ');
+            DB::unprepared('
+                CREATE TRIGGER auto_capitalize_update
+                BEFORE UPDATE ON patients
+                FOR EACH ROW
+                BEGIN
+                    IF NEW.first_name IS NOT NULL THEN
+                        SET NEW.first_name = CONCAT(UPPER(SUBSTRING(NEW.first_name, 1, 1)), LOWER(SUBSTRING(NEW.first_name, 2)));
+                    END IF;
+                    IF NEW.last_name IS NOT NULL THEN
+                        SET NEW.last_name = CONCAT(UPPER(SUBSTRING(NEW.last_name, 1, 1)), LOWER(SUBSTRING(NEW.last_name, 2)));
+                    END IF;
+                END;
+            ');
+        }
     }
 
     public function down(): void
