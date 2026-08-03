@@ -56,7 +56,7 @@
                                 <tr>
                                     <th class="w-10 px-2 py-2 lg:py-3 text-left" style="color: var(--ink-muted);"><input type="checkbox" id="select-all" class="align-middle"></th>
                                     <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium" style="color: var(--ink-muted);">Name</th>
-                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden md:table-cell" style="color: var(--ink-muted);">Strength</th>
+                                    
                                     <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden xl:table-cell" style="color: var(--ink-muted);">Form</th>
                                     <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden xl:table-cell" style="color: var(--ink-muted);">Manufacturer</th>
                                     <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden lg:table-cell" style="color: var(--ink-muted);">Expiration</th>
@@ -68,7 +68,6 @@
                                     <tr class="transition-colors hover:bg-black/[0.02]">
                                         <td class="w-10 px-2 py-2 lg:py-3 text-center" style="color: var(--ink);"><input type="checkbox" name="ids[]" value="{{ $medicine->id }}" class="row-checkbox align-middle"></td>
                                         <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $medicine->name ?? '—' }}</td>
-                                        <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ $medicine->strength ?? '—' }}</td>
                                         <td class="px-3 lg:px-4 py-2 lg:py-3 hidden xl:table-cell" style="color: var(--ink-muted);">{{ $medicine->form ?? '—' }}</td>
                                         <td class="px-3 lg:px-4 py-2 lg:py-3 hidden xl:table-cell" style="color: var(--ink-muted);">{{ $medicine->manufacturer ?? '—' }}</td>
                                         <td class="px-3 lg:px-4 py-2 lg:py-3 hidden lg:table-cell" style="color: var(--ink-muted);">

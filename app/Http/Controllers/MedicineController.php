@@ -43,7 +43,7 @@ class MedicineController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,name'],
             'generic_name' => ['nullable', 'string', 'max:255'],
-            'strength' => ['nullable', 'string', 'max:255'],
+            //'strength' => ['nullable', 'string', 'max:255'],
             'form' => ['nullable', 'string', 'max:255'],
             'manufacturer' => ['nullable', 'string', 'max:255'],
             'expiration_date' => ['nullable', 'date'],

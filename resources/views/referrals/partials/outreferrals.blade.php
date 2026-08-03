@@ -67,7 +67,7 @@
                             name="referral_reason_details"
                             id="outward_referral_reason_details"
                             rows="3"
-                            placeholder="Add clinical justification, urgency level, or other DOH-required notes…"
+                            placeholder=""
                             class="w-full rounded-md border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 resize-y min-h-[5rem]"
                             style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);"
                         ></textarea>
@@ -84,7 +84,7 @@
                         name="pertinent_history"
                         id="outward_pertinent_history"
                         rows="1"
-                        placeholder="e.g., Patient presented with high-grade fever (39°C) for 4 days, persistent dry cough, and loss of appetite. No rashes observed."
+                        placeholder=""
                         class="w-full flex-1 rounded-md border px-3 py-2.5 text-sm leading-relaxed focus:outline-none focus:ring-2 resize-none min-h-0"
                         style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);"
                         required
@@ -102,7 +102,7 @@
                         name="actions_taken"
                         id="outward_actions_taken"
                         rows="6"
-                        placeholder="e.g., Administered Paracetamol 500mg, cold compress applied, vitals monitored, and hydration encouraged."
+                        placeholder=""
                         class="w-full flex-1 rounded-md border px-3 py-2.5 text-sm leading-relaxed focus:outline-none focus:ring-2 resize-none min-h-0"
                         style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);"
                     ></textarea>

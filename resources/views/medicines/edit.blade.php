@@ -27,11 +27,7 @@
                     <input type="text" id="generic_name" name="generic_name" value="{{ old('generic_name', $medicine->generic_name) }}" class="w-full rounded-lg border py-2 px-3 text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">
                     @error('generic_name')<p class="mt-1 text-xs" style="color: var(--accent);">{{ $message }}</p>@enderror
                 </div>
-                <div>
-                    <label for="strength" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Strength</label>
-                    <input type="text" id="strength" name="strength" value="{{ old('strength', $medicine->strength) }}" class="w-full rounded-lg border py-2 px-3 text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">
-                    @error('strength')<p class="mt-1 text-xs" style="color: var(--accent);">{{ $message }}</p>@enderror
-                </div>
+                
                 <div>
                     <label for="form" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Form</label>
                     <input type="text" id="form" name="form" value="{{ old('form', $medicine->form) }}" class="w-full rounded-lg border py-2 px-3 text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">
