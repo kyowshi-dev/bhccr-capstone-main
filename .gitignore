@@ -31,3 +31,8 @@ _ide_helper_models.php
 NOTIFICATIONS_QUICKSTART.md
 .opencode
 .agents
+!.opencode/opencode.json
+!.opencode/opencode.jsonc
+!.opencode/commands/
+!.opencode/agents/
+!.opencode/rules/

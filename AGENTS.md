@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Laravel 12 app: **BHCCR System Sta. Ana** — Barangay Health Center Consultation and Referral System (capstone, DOH-aligned but not affiliated with DOH). PHP 8.2+, Blade + Tailwind v4, session-based auth (custom `AuthController`, no Breeze/Jetstream/Filament).
+Laravel 12 app: **BHCIS System Sta. Ana** — Barangay Health Center Information System (maternal tracking, child & adult immunization, consultations & referrals, other barangay services; capstone, DOH-aligned but not affiliated with DOH). PHP 8.2+, Blade + Tailwind v4, session-based auth (custom `AuthController`, no Breeze/Jetstream/Filament).
 
 ## Commands
 

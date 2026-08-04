@@ -119,7 +119,7 @@
                     <img src="{{ asset('img/logo.svg') }}" alt="Santa Ana logo">
                 </div>
                 <div class="text-left">
-                    <h1 class="font-extrabold brand-title leading-snug mb-0" style="color: var(--primary);">Barangay Health Center Consultation and Referral System</h1>
+                    <h1 class="font-extrabold brand-title leading-snug mb-0" style="color: var(--primary);">Barangay Health Center Information System</h1>
                     <p class="muted-xs leading-tight">Sta. Ana Health Center</p>
                 </div>
             </div>
