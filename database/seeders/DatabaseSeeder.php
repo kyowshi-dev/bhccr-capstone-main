@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             ['id' => 3, 'role_name' => 'Midwife'], // Midwife
             ['id' => 4, 'role_name' => 'BHW'],     // Encoder
             ['id' => 5, 'role_name' => 'BNS'],     // Nutrition Scholar
+            ['role_name' => 'Doctor'],
+            ['role_name' => 'User'],
         ];
         DB::table('user_roles')->insertOrIgnore($roles);
 
@@ -27,6 +29,7 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
             'email' => 'admin@sta-ana.ph',
             'is_active' => true,
+            'role_id' => 1,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -42,7 +45,7 @@ class DatabaseSeeder extends Seeder
 
         // 3. PERMISSIONS
         $this->call(PermissionSeeder::class);
-        $this->call(AssignInitialPermissionsSeeder::class);
+        $this->call(AssignInitialRolesSeeder::class);
 
         // 4. INITIAL USERS (Admin, BHW, Nurse, Doctor)
         $this->call(CreateInitialUsersSeeder::class);

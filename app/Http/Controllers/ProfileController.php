@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
-
 class ProfileController extends Controller
 {
     public function show()
@@ -60,10 +59,6 @@ class ProfileController extends Controller
 
     public function settings()
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
-
         $sessionTimeout = ApplicationSetting::get('session_timeout', 120);
 
         return view('profile.settings', [
@@ -73,10 +68,6 @@ class ProfileController extends Controller
 
     public function updateSettings(Request $request)
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
-
         $validated = $request->validate([
             'session_timeout' => ['required', 'integer', 'min:5', 'max:2880'], // 5 minutes to 2 days
         ], [

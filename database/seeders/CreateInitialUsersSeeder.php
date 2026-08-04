@@ -20,6 +20,7 @@ class CreateInitialUsersSeeder extends Seeder
                 'first_name' => 'System',
                 'last_name' => 'Administrator',
                 'role' => 'Administrator',
+                'role_id' => 1,
                 'contact_number' => '09171234567',
             ],
             [
@@ -29,6 +30,7 @@ class CreateInitialUsersSeeder extends Seeder
                 'first_name' => 'Maria',
                 'last_name' => 'Santos',
                 'role' => 'BHW',
+                'role_id' => 4,
                 'contact_number' => '09171234568',
             ],
             [
@@ -38,6 +40,7 @@ class CreateInitialUsersSeeder extends Seeder
                 'first_name' => 'John',
                 'last_name' => 'Reyes',
                 'role' => 'Nurse',
+                'role_id' => 2,
                 'contact_number' => '09171234569',
             ],
             [
@@ -47,6 +50,7 @@ class CreateInitialUsersSeeder extends Seeder
                 'first_name' => 'Dr. Carlos',
                 'last_name' => 'Garcia',
                 'role' => 'Doctor',
+                'role_id' => 6,
                 'contact_number' => '09171234570',
             ],
         ];
@@ -71,6 +75,7 @@ class CreateInitialUsersSeeder extends Seeder
                 'email' => $userData['email'],
                 'password' => $userData['password'],
                 'is_active' => true,
+                'role_id' => $userData['role_id'],
             ]);
 
             // Create health worker record

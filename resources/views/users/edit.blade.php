@@ -4,7 +4,7 @@
 <div class="space-y-4 lg:space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-            <h1 class="text-xl lg:text-2xl font-extrabold text-sky-700">Edit User</h1>
+            <h1 class="text-xl lg:text-2xl font-extrabold" style="color: var(--ink);">Edit User</h1>
             <p class="text-xs lg:text-sm text-gray-600 mt-1">
                 Update user information and settings.
             </p>
@@ -118,6 +118,26 @@
                     placeholder="Leave blank to keep current password"
                 >
                 @error('password')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label for="role_id" class="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
+                    Role <span class="text-red-500">*</span>
+                </label>
+                <select
+                    id="role_id"
+                    name="role_id"
+                    class="block w-full px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 text-sm"
+                    required
+                >
+                    <option value="">Select a role</option>
+                    @foreach ($roles as $role)
+                        <option value="{{ $role->id }}" @selected(old('role_id', $user->role_id) == $role->id)>{{ $role->role_name }}</option>
+                    @endforeach
+                </select>
+                @error('role_id')
                     <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                 @enderror
             </div>

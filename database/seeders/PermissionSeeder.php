@@ -24,6 +24,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'print_handouts', 'description' => 'Print consultation Rx and diagnosis handouts'],
             ['name' => 'dashboard_handouts_bhw', 'description' => 'BHW dashboard — Results ready panel'],
             ['name' => 'dashboard_handouts_clinical', 'description' => 'Clinical dashboard — Recent completed handouts panel'],
+            ['name' => 'dashboard_handouts_midwife', 'description' => 'Midwife dashboard — Maternal tracking panel'],
             ['name' => 'dashboard_handouts_admin', 'description' => 'Admin dashboard — Completed consultations handouts panel'],
         ];
 

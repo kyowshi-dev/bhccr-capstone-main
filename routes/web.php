@@ -11,6 +11,7 @@ use App\Http\Controllers\PatientController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RoleManagementController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserManagementController;
@@ -46,10 +47,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // 2. SEARCH API (For AJAX/autocomplete)
-    Route::get('/search/patients', [SearchController::class, 'patients'])->name('search.patients');
-    Route::get('/search/diagnoses', [SearchController::class, 'diagnoses'])->name('search.diagnoses');
-    Route::get('/search/medicines', [SearchController::class, 'medicines'])->name('search.medicines');
-    Route::get('/search/households', [SearchController::class, 'households'])->name('search.households');
+    // PII-bearing endpoints are permission-gated; all searches are rate-limited.
+    Route::get('/search/patients', [SearchController::class, 'patients'])
+        ->middleware('permission:patients', 'throttle:60,1')
+        ->name('search.patients');
+    Route::get('/search/households', [SearchController::class, 'households'])
+        ->middleware('permission:household', 'throttle:60,1')
+        ->name('search.households');
+    Route::get('/search/diagnoses', [SearchController::class, 'diagnoses'])
+        ->middleware('throttle:60,1')
+        ->name('search.diagnoses');
+    Route::get('/search/medicines', [SearchController::class, 'medicines'])
+        ->middleware('throttle:60,1')
+        ->name('search.medicines');
 
     // 3. PATIENT MANAGEMENT
     Route::get('/households', [HouseholdController::class, 'index'])
@@ -162,13 +172,13 @@ Route::middleware('auth')->group(function () {
     Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])
         ->name('users.destroy');
 
-    // 9. User Permissions
-    Route::get('/users/{user}/permissions', [UserManagementController::class, 'editPermissions'])
-        ->name('users.permissions.edit');
-    Route::get('/users/{user}/permissions-data', [UserManagementController::class, 'getPermissionsData'])
-        ->name('users.permissions.data');
-    Route::put('/users/{user}/permissions', [UserManagementController::class, 'updatePermissions'])
-        ->name('users.permissions.update');
+    // 9. ROLE MANAGEMENT
+    Route::get('/roles', [RoleManagementController::class, 'index'])
+        ->name('roles.index');
+    Route::get('/roles/{role}/edit', [RoleManagementController::class, 'edit'])
+        ->name('roles.edit');
+    Route::put('/roles/{role}', [RoleManagementController::class, 'update'])
+        ->name('roles.update');
 
     // 10. ZONE MANAGEMENT
     Route::get('/zones', [ZoneController::class, 'index'])
@@ -221,8 +231,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::get('/profile/settings', [ProfileController::class, 'settings'])->name('profile.settings');
-    Route::put('/profile/settings', [ProfileController::class, 'updateSettings'])->name('profile.settings.update');
+    Route::get('/profile/settings', [ProfileController::class, 'settings'])
+        ->middleware('permission:users')
+        ->name('profile.settings');
+    Route::put('/profile/settings', [ProfileController::class, 'updateSettings'])
+        ->middleware('permission:users')
+        ->name('profile.settings.update');
     Route::get('/session/status', [ProfileController::class, 'sessionStatus'])->name('session.status');
 
     // 14. NOTIFICATIONS

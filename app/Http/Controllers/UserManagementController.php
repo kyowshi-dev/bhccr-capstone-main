@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -19,12 +19,10 @@ class UserManagementController extends Controller
 
         $pageSize = auth()->check() && auth()->user()->isAdmin() ? 10 : 15;
 
-        $users = User::with('permissions')->orderBy('username')->paginate($pageSize);
-        $permissions = Permission::all();
+        $users = User::with('role')->orderBy('username')->paginate($pageSize);
 
         return view('users.index', [
             'users' => $users,
-            'permissions' => $permissions,
         ]);
     }
 
@@ -34,7 +32,9 @@ class UserManagementController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        return view('users.create');
+        return view('users.create', [
+            'roles' => Role::orderBy('role_name')->get(),
+        ]);
     }
 
     public function store(Request $request)
@@ -50,21 +50,25 @@ class UserManagementController extends Controller
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role_id' => ['required', 'exists:user_roles,id'],
         ]);
 
-        DB::transaction(function () use ($validated) {
+        $role = Role::findOrFail($validated['role_id']);
+
+        DB::transaction(function () use ($validated, $role) {
             $user = User::query()->create([
                 'username' => $validated['username'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'is_active' => true,
+                'role_id' => $role->id,
             ]);
 
             DB::table('health_workers')->insert([
                 'user_id' => $user->id,
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
-                'role' => 'User',
+                'role' => $role->role_name,
                 'contact_number' => $validated['contact_number'] ?? null,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -87,6 +91,7 @@ class UserManagementController extends Controller
         return view('users.edit', [
             'user' => $user,
             'healthWorker' => $healthWorker,
+            'roles' => Role::orderBy('role_name')->get(),
         ]);
     }
 
@@ -103,9 +108,12 @@ class UserManagementController extends Controller
             'username' => ['required', 'string', 'max:255', 'unique:users,username,'.$user->id],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'role_id' => ['required', 'exists:user_roles,id'],
         ]);
 
-        DB::transaction(function () use ($user, $validated) {
+        $role = Role::findOrFail($validated['role_id']);
+
+        DB::transaction(function () use ($user, $validated, $role) {
             if ($user->username !== $validated['username']) {
                 $user->username = $validated['username'];
             }
@@ -118,14 +126,17 @@ class UserManagementController extends Controller
                 $user->password = Hash::make($validated['password']);
             }
 
+            $user->role_id = $role->id;
             $user->save();
+
+            Cache::forget("user_permissions_{$user->id}");
 
             DB::table('health_workers')
                 ->where('user_id', $user->id)
                 ->update([
                     'first_name' => $validated['first_name'],
                     'last_name' => $validated['last_name'],
-                    'role' => 'User',
+                    'role' => $role->role_name,
                     'contact_number' => $validated['contact_number'] ?? null,
                     'updated_at' => now(),
                 ]);
@@ -212,67 +223,4 @@ class UserManagementController extends Controller
             ->route('users.index')
             ->with('success', 'User deleted successfully.');
     }
-
-    public function editPermissions(User $user)
-    {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
-
-        $permissions = Permission::all();
-
-        return view('users.permissions', [
-            'user' => $user,
-            'permissions' => $permissions,
-        ]);
-    }
-
-    public function getPermissionsData(User $user)
-    {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
-
-        $authUser = auth()->user();
-        $isAdminEditingSelf = $authUser->id === $user->id && $authUser->isAdmin();
-
-        return response()->json([
-            'permissions' => $user->permissions->pluck('name')->toArray(),
-            'isAdminEditingSelf' => $isAdminEditingSelf,
-        ]);
-    }
-
-    public function updatePermissions(Request $request, User $user)
-    {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
-
-        $request->validate([
-            'permissions' => 'array',
-            'permissions.*' => 'exists:permissions,name',
-        ]);
-
-        // Prevent admin from removing the 'users' permission from themselves
-        $authUser = auth()->user();
-        if ($authUser->id === $user->id && $authUser->isAdmin()) {
-            $requestedPermissions = $request->permissions ?? [];
-            if (! in_array('users', $requestedPermissions)) {
-                return redirect()
-                    ->route('users.index')
-                    ->with('error', 'You cannot remove the "User Management" permission from your own account. This would lock you out of the system.')
-                    ->with('warning', true);
-            }
-        }
-
-        $user->permissions()->sync(Permission::whereIn('name', $request->permissions ?? [])->pluck('id'));
-
-        // Clear cache
-        Cache::forget("user_permissions_{$user->id}");
-
-        return redirect()
-            ->route('users.index')
-            ->with('success', 'User permissions updated successfully.');
-    }
-
 }
