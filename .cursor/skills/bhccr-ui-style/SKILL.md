@@ -1,1 +1,0 @@
-../../../.opencode/skills/bhccr-ui-style/SKILL.md
