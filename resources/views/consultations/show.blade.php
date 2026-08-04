@@ -8,7 +8,7 @@
         </div>
     @endif
     @if ($errors->any())
-        <div class="rounded-xl border px-4 py-3 text-sm" style="background: var(--accent-soft); border-color: var(--border); color: var(--accent);">
+        <div class="rounded-xl border px-4 py-3 text-sm" style="background: var(--danger-soft); border-color: var(--danger-soft); color: var(--danger);">
             <ul class="list-disc list-inside space-y-1">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -22,26 +22,14 @@
             <h1 class="font-display text-2xl font-semibold lg:text-3xl" style="color: var(--ink);">Consultation Details</h1>
             <div class="text-right text-xs lg:text-sm" style="color: var(--ink-muted);">
                 Consultation #{{ $consultation->id }}<br>
-                {{ \Carbon\Carbon::parse($consultation->created_at)->format('M j, Y g:i A') }}
+                {{ \Carbon\Carbon::parse($consultation->created_at)->format(\App\Helpers\DateFormat::DATETIME_AMPM) }}
             </div>
         </div>
         <div class="mt-2 flex flex-wrap items-center gap-3">
-            @php
-                $statusLabel = match ($consultation->status) {
-                    'nurse_review' => 'Nurse Review',
-                    'doctor_review' => 'Doctor Review',
-                    default => ucfirst(str_replace('_', ' ', $consultation->status)),
-                };
-                $statusStyle = match ($consultation->status) {
-                    'completed' => 'background: var(--teal-soft); color: var(--primary);',
-                    'referred' => 'background: var(--accent-soft); color: var(--accent);',
-                    default => 'background: rgba(0,0,0,0.06); color: var(--ink-muted);',
-                };
-            @endphp
-            <span class="inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold" style="{{ $statusStyle }}">{{ $statusLabel }}</span>
+            <span class="inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold" style="{{ $consultation->status_style }}">{{ $consultation->status_label }}</span>
             <a href="{{ route('patients.show', $patient->id) }}" class="text-xs font-medium text-emerald-900 hover:underline lg:text-sm">Back to patient</a>
             <a href="{{ route('consultations.index') }}" class="text-xs font-medium text-emerald-900 hover:underline lg:text-sm">History</a>
-            @if (in_array($consultation->status, ['completed', 'referred'], true) && auth()->user()->canPrintHandout())
+            @if (in_array($consultation->status, \App\Enums\ConsultationStatus::terminalValues(), true) && auth()->user()->canPrintHandout())
                 <a href="{{ route('consultations.handout', $consultation->id) }}" target="_blank" rel="noopener"
                    class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
                    style="background: var(--primary);">
@@ -49,7 +37,7 @@
                 </a>
             @endif
         </div>
-        @if ($consultation->status === 'nurse_review' && ($canAcknowledgeIntake ?? false))
+        @if ($consultation->status === \App\Enums\ConsultationStatus::NurseReview->value && ($canAcknowledgeIntake ?? false))
             <div class="mt-3 rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                  style="background: var(--accent-soft); border-color: var(--border);">
                 <div>
@@ -63,7 +51,7 @@
                     </button>
                 </form>
             </div>
-        @elseif ($consultation->status === 'nurse_review')
+        @elseif ($consultation->status === \App\Enums\ConsultationStatus::NurseReview->value)
             <div class="mt-3 rounded-xl border px-4 py-3" style="background: rgba(0,0,0,0.03); border-color: var(--border);">
                 <p class="text-sm font-semibold" style="color: var(--ink);">Awaiting nurse intake validation</p>
                 <p class="text-xs mt-0.5" style="color: var(--ink-muted);">Clinical review opens after nurse acknowledgment and doctor queue routing.</p>
@@ -79,7 +67,7 @@
     ])
 
     @php
-        $clinicalReviewOpen = in_array($consultation->status, ['doctor_review', 'in_progress'], true);
+        $clinicalReviewOpen = in_array($consultation->status, [\App\Enums\ConsultationStatus::DoctorReview->value, \App\Enums\ConsultationStatus::InProgress->value], true);
     @endphp
 
     @php
@@ -88,27 +76,11 @@
         if (! empty($patient->age)) {
             $consultationPatientMetaParts[] = $patient->age . ' y/o';
         }
-        if (! empty($patient->gender)) {
-            $consultationPatientMetaParts[] = ucfirst($patient->gender);
+        if (! empty($patient->sex)) {
+            $consultationPatientMetaParts[] = ucfirst($patient->sex);
         }
         $consultationPatientMeta = implode(' · ', $consultationPatientMetaParts);
-
-        $consultationVitalsParts = [];
-        if ($latestVitals) {
-            if ($latestVitals->bp_systolic !== null || $latestVitals->bp_diastolic !== null) {
-                $consultationVitalsParts[] = 'BP ' . ($latestVitals->bp_systolic ?? '—') . '/' . ($latestVitals->bp_diastolic ?? '—') . ' mmHg';
-            }
-            if ($latestVitals->temperature_c !== null) {
-                $consultationVitalsParts[] = 'Temp ' . $latestVitals->temperature_c . '°C';
-            }
-            if ($latestVitals->weight_kg !== null) {
-                $consultationVitalsParts[] = 'Weight ' . $latestVitals->weight_kg . ' kg';
-            }
-            if ($latestVitals->height_cm !== null) {
-                $consultationVitalsParts[] = 'Height ' . $latestVitals->height_cm . ' cm';
-            }
-        }
-        $consultationVitalsSummary = implode(' · ', $consultationVitalsParts);
+        $consultationVitalsSummary = $latestVitals?->summary ?? '';
     @endphp
     <div id="consultationReferralContext"
          data-patient-name="{{ e($consultationPatientName ?: '—') }}"
@@ -161,7 +133,7 @@
                                         <details>
                                             <summary class="cursor-pointer text-[11px] font-semibold text-emerald-900 hover:underline">Edit</summary>
                                             <div class="mt-2 w-[18rem] rounded-lg border bg-white p-2" style="border-color: var(--border);">
-                                                <form action="{{ route('consultations.vitals.update', ['consultationId' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" class="space-y-2">
+                                                <form action="{{ route('consultations.vitals.update', ['consultation' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" class="space-y-2">
                                                     @csrf
                                                     @method('PUT')
                                                     <div class="grid grid-cols-2 gap-2">
@@ -176,7 +148,7 @@
                                                 </form>
                                             </div>
                                         </details>
-                                        <form action="{{ route('consultations.vitals.delete', ['consultationId' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" onsubmit="return confirm('Delete this vitals version? This cannot be undone.');">
+                                        <form action="{{ route('consultations.vitals.delete', ['consultation' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" onsubmit="return confirm('Delete this vitals version? This cannot be undone.');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="text-[11px] font-semibold text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50" @if (($vitalVersion->phase ?? null) === 'triage' || $allVitals->count() <= 1) disabled @endif>Delete</button>
@@ -238,7 +210,7 @@
                                     <span class="font-semibold" style="color: var(--ink);">{{ $d->diagnosis_name }}</span>
                                 @endif
                                 @if ($d->is_custom)
-                                    <span class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style="background: var(--accent-soft); color: var(--accent);">Custom</span>
+                                    <span class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">Custom</span>
                                 @endif
                             </div>
                         </div>
@@ -309,7 +281,7 @@
                                     <td class="px-3 py-2">
                                         {{ $rx->medicine_name }}
                                         @if ($rx->is_custom)
-                                            <span class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style="background: var(--accent-soft); color: var(--accent);">Custom</span>
+                                            <span class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">Custom</span>
                                         @endif
                                     </td>
                                     <td class="px-3 py-2">{{ $rx->dosage }}{{ $rx->frequency ? ' · '.$rx->frequency : '' }}</td>
@@ -411,7 +383,7 @@
                     <p class="text-xs" style="color: var(--ink-muted);">Only Nurse and Doctor roles can trigger external referral.</p>
                 @endif
             </form>
-        @elseif ($consultation->status === 'nurse_review' && $canReferExternally)
+        @elseif ($consultation->status === \App\Enums\ConsultationStatus::NurseReview->value && $canReferExternally)
             <form id="consultationShowReferralForm" action="{{ route('consultations.refer', $consultation->id) }}" method="POST" class="hidden">
                 @csrf
                 <input id="outward_refer_to_higher_facility" type="hidden" name="refer_to_higher_facility" value="1">
@@ -424,7 +396,7 @@
         @endif
     </main>
 
-    @if (($clinicalReviewOpen || ($consultation->status === 'nurse_review' && $canReferExternally)) && ! in_array($consultation->status, ['completed', 'referred'], true))
+    @if (($clinicalReviewOpen || ($consultation->status === \App\Enums\ConsultationStatus::NurseReview->value && $canReferExternally)) && ! in_array($consultation->status, \App\Enums\ConsultationStatus::terminalValues(), true))
         <div class="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 px-4 py-3 backdrop-blur" style="border-color: var(--border);">
             <div class="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-xs" style="color: var(--ink-muted);">
@@ -539,7 +511,7 @@
                                 <details>
                                     <summary class="cursor-pointer text-[11px] font-semibold text-emerald-900 hover:underline">Edit</summary>
                                     <div class="mt-2 w-[18rem] rounded-lg border bg-white p-2" style="border-color: var(--border);">
-                                        <form action="{{ route('consultations.vitals.update', ['consultationId' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" class="space-y-2">
+                                        <form action="{{ route('consultations.vitals.update', ['consultation' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" class="space-y-2">
                                             @csrf
                                             @method('PUT')
                                             <div class="grid grid-cols-2 gap-2">
@@ -554,7 +526,7 @@
                                         </form>
                                     </div>
                                 </details>
-                                <form action="{{ route('consultations.vitals.delete', ['consultationId' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" onsubmit="return confirm('Delete this vitals version? This cannot be undone.');">
+                                <form action="{{ route('consultations.vitals.delete', ['consultation' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" onsubmit="return confirm('Delete this vitals version? This cannot be undone.');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-[11px] font-semibold text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50" @if (($vitalVersion->phase ?? null) === 'triage' || $allVitals->count() <= 1) disabled @endif>Delete</button>
@@ -611,7 +583,7 @@
                     return;
                 }
                 this.searching = true;
-                const response = await fetch('/search/diagnoses?query=' + encodeURIComponent(this.query));
+                const response = await fetch('{{ route('search.diagnoses') }}?query=' + encodeURIComponent(this.query));
                 this.results = await response.json();
                 this.searching = false;
             },
@@ -648,7 +620,7 @@
                 }
                 this.searching = true;
                 try {
-                    const response = await fetch('/search/medicines?query=' + encodeURIComponent(this.query));
+                    const response = await fetch('{{ route('search.medicines') }}?query=' + encodeURIComponent(this.query));
                     this.results = await response.json();
                 } catch (error) {
                     this.results = [];

@@ -2,35 +2,41 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ConsultationStatus;
+use App\Http\Requests\AddDiagnosisRequest;
+use App\Http\Requests\AddPrescriptionRequest;
+use App\Http\Requests\FinalizeConsultationRequest;
+use App\Http\Requests\ReferralRequest;
+use App\Http\Requests\StoreConsultationRequest;
+use App\Http\Requests\UpdateConsultationRequest;
+use App\Http\Requests\VitalsRequest;
 use App\Models\Consultation;
+use App\Models\HealthWorker;
 use App\Models\Patient;
+use App\Models\Vitals;
+use App\Services\ReferralService;
+use App\Services\VitalsService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 use Spatie\LaravelPdf\Enums\Format;
 use Spatie\LaravelPdf\Facades\Pdf;
 
 class ConsultationController extends Controller
 {
-    private ?bool $supportsVersionedVitals = null;
-
     public function index(Request $request)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
-        $query = DB::table('consultations')
+        $query = Consultation::query()
             ->join('patients', 'consultations.patient_id', '=', 'patients.id')
             ->join('health_workers', 'consultations.worker_id', '=', 'health_workers.id')
             ->select(
-                'consultations.id',
-                'consultations.patient_id',
-                'consultations.status',
-                'consultations.created_at',
+                'consultations.*',
                 'patients.first_name as patient_first_name',
                 'patients.last_name as patient_last_name',
                 'health_workers.first_name as worker_first_name',
@@ -126,9 +132,9 @@ class ConsultationController extends Controller
             }
         }
 
-        $totalConsultations = DB::table('consultations')->count();
-        $thisWeekCount = DB::table('consultations')->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->count();
-        $completedCount = DB::table('consultations')->where('status', 'completed')->count();
+        $totalConsultations = Consultation::count();
+        $thisWeekCount = Consultation::whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->count();
+        $completedCount = Consultation::where('status', ConsultationStatus::Completed->value)->count();
 
         return view('consultations.index', [
             'consultations' => $consultations,
@@ -149,7 +155,7 @@ class ConsultationController extends Controller
 
         // Only fetch consultations waiting for doctor that haven't been notified yet
         $consultation = DB::table('consultations')
-            ->where('status', 'doctor_review')
+            ->where('status', ConsultationStatus::DoctorReview->value)
             ->whereNull('notified_at')  // Only unnotified consultations
             ->orderByDesc('created_at')
             ->first();
@@ -174,31 +180,25 @@ class ConsultationController extends Controller
             'hasRequest' => true,
             'request' => [
                 'id' => $consultation->id,
-                'open_url' => route('consultations.show', ['id' => $consultation->id]),
+                'open_url' => route('consultations.show', ['consultation' => $consultation->id]),
                 'clinic_name' => 'Santa Ana Health Center',
                 'worker_name' => trim(($worker->first_name ?? '').' '.($worker->last_name ?? '')),
                 'patient_name' => trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')),
                 'patient_age' => $patient->date_of_birth ? Carbon::parse($patient->date_of_birth)->age : null,
-                'patient_gender' => $patient->gender ?? '',
+                'patient_gender' => $patient->sex ?? '',
                 'chief_complaint' => $consultation->complaint_text ?? $consultation->chief_complaint ?? 'No reason provided',
             ],
         ]);
     }
 
     // 1. Show the Admission Form (Triage) — modal partial via AJAX; redirect for direct navigation
-    public function create(Request $request, $patientId)
+    public function create(Request $request, Patient $patient)
     {
-        $patient = Patient::find($patientId);
-
-        if (! $patient) {
-            abort(404, 'Patient not found');
-        }
-
         $patient->age = Carbon::parse($patient->date_of_birth)->age;
 
         $previousVitals = DB::table('vitals')
             ->join('consultations', 'vitals.consultation_id', '=', 'consultations.id')
-            ->where('consultations.patient_id', $patientId)
+            ->where('consultations.patient_id', $patient->id)
             ->orderByDesc('vitals.created_at')
             ->orderByDesc('vitals.id')
             ->select([
@@ -215,53 +215,24 @@ class ConsultationController extends Controller
         }
 
         return redirect()
-            ->back(fallback: route('patients.show', $patientId))
-            ->with('open_consultation_for', $patientId);
+            ->back(fallback: route('patients.show', $patient->id))
+            ->with('open_consultation_for', $patient->id);
     }
 
     // 2. Save the Data (Triage Save)
-    public function store(Request $request, $patientId)
+    public function store(StoreConsultationRequest $request, Patient $patient)
     {
-        $validated = $request->validate([
-            'mode_of_transaction' => ['required', 'string', 'max:255'],
-            'referred_from' => ['nullable', 'string', 'max:255'],
-            'nature_of_visit' => ['required', 'string', 'max:255'],
-            'purpose_of_visit' => ['required', 'string', 'max:255'],
-            'chief_complaint' => ['nullable', 'string', 'max:1000'],
-            'bp_systolic' => ['required', 'numeric', 'min:0', 'max:300'],
-            'bp_diastolic' => ['required', 'numeric', 'min:0', 'max:200'],
-            'temperature' => ['required', 'numeric', 'min:30', 'max:45'],
-            'weight' => ['required', 'numeric', 'min:0', 'max:500'],
-            'height' => ['required', 'numeric', 'min:0', 'max:300'],
-            'refer_to_higher_facility' => ['nullable', 'boolean'],
-            'referred_to' => ['required_if:refer_to_higher_facility,1', 'nullable', 'string', 'max:255'],
-            'referral_reasons' => ['nullable', 'array'],
-            'referral_reasons.*' => ['string'],
-            'referral_reason_details' => ['nullable', 'string', 'max:1000'],
-            'pertinent_history' => ['required_if:refer_to_higher_facility,1', 'nullable', 'string'],
-            'actions_taken' => ['nullable', 'string'],
-        ], [
-            'temperature.required' => 'Temperature is required.',
-            'temperature.min' => 'Temperature must be at least 30°C.',
-            'temperature.max' => 'Temperature must not exceed 45°C.',
-        ]);
-
-        $workerId = DB::table('health_workers')
-            ->where('user_id', Auth::id())
-            ->value('id');
-
-        if ($workerId === null) {
-            abort(403, 'No health worker profile is linked to this user.');
-        }
+        $validated = $request->validated();
+        $worker = $this->currentWorker();
 
         $consultationId = null;
         $createdReferralId = null;
 
-        DB::transaction(function () use ($validated, $patientId, $workerId, &$consultationId, &$createdReferralId) {
+        DB::transaction(function () use ($validated, $patient, $worker, &$consultationId, &$createdReferralId) {
             $consultationId = DB::table('consultations')->insertGetId([
-                'patient_id' => $patientId,
-                'worker_id' => $workerId,
-                'status' => 'nurse_review',
+                'patient_id' => $patient->id,
+                'worker_id' => $worker->id,
+                'status' => ConsultationStatus::NurseReview->value,
                 'nature_of_visit' => $validated['nature_of_visit'],
                 'mode_of_transaction' => $validated['mode_of_transaction'],
                 'referred_from' => $validated['referred_from'] ?? null,
@@ -271,53 +242,30 @@ class ConsultationController extends Controller
             ]);
 
             if (! empty($validated['refer_to_higher_facility'])) {
-                $reasonLabels = [
-                    'specialized_evaluation' => 'Need for specialized medical evaluation / physician',
-                    'lack_diagnostics' => 'Lack of diagnostic equipment / laboratory tests',
-                    'lack_medicines' => 'Lack of available medicines / vaccines',
-                    'emergency_trauma' => 'Emergency / trauma stabilization required',
-                ];
-
-                $reasons = array_filter(array_map(function ($reason) use ($reasonLabels) {
-                    return $reasonLabels[$reason] ?? $reason;
-                }, $validated['referral_reasons'] ?? []));
-
-                $details = trim($validated['referral_reason_details'] ?? '');
-                $reasonText = $reasons ? 'Reasons: '.implode(', ', $reasons) : '';
-                $specificDetails = trim($reasonText.($details ? "\n\n".$details : '')) ?: null;
-
                 $createdReferralId = DB::table('outward_referrals')->insertGetId([
                     'consultation_id' => $consultationId,
                     'destination_facility' => $validated['referred_to'],
                     'pertinent_history' => $validated['pertinent_history'],
                     'actions_taken' => $validated['actions_taken'] ?? null,
-                    'specific_details' => $specificDetails,
+                    'specific_details' => ReferralService::specificDetails($validated['referral_reasons'] ?? [], $validated['referral_reason_details'] ?? null),
                     'status' => 'pending',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
             }
 
-            $vitalsPayload = [
+            $vitalsPayload = VitalsService::fromInput($validated) + [
                 'consultation_id' => $consultationId,
-                'bp_systolic' => $validated['bp_systolic'] ?? null,
-                'bp_diastolic' => $validated['bp_diastolic'] ?? null,
-                'weight_kg' => $validated['weight'] ?? null,
-                'height_cm' => $validated['height'] ?? null,
-                'temperature_c' => $validated['temperature'],
+                'phase' => 'triage',
+                'captured_by' => $worker->id,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
 
-            if ($this->vitalsSupportVersioning()) {
-                $vitalsPayload['phase'] = 'triage';
-                $vitalsPayload['captured_by'] = $workerId;
-            }
-
             DB::table('vitals')->insert($vitalsPayload);
         });
 
-        $redirect = redirect()->route('patients.show', $patientId)
+        $redirect = redirect()->route('patients.show', $patient->id)
             ->with('success', 'Consultation started. Patient is awaiting nurse intake validation.');
 
         if ($createdReferralId) {
@@ -328,51 +276,32 @@ class ConsultationController extends Controller
     }
 
     // 3. Show the Doctor's Workspace (View Consultation)
-    public function show($id)
+    public function show($consultation)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
-        $consultation = DB::table('consultations')
-            ->leftJoin('health_workers', 'consultations.worker_id', '=', 'health_workers.id')
-            ->where('consultations.id', $id)
-            ->select(
-                'consultations.*',
-                'health_workers.first_name as worker_first_name',
-                'health_workers.last_name as worker_last_name'
-            )
-            ->first();
-
-        if (! $consultation) {
-            abort(404, 'Resource not found');
-        }
-
         $patient = DB::table('patients')->find($consultation->patient_id);
 
-        $vitalsQuery = DB::table('vitals')
-            ->where('vitals.consultation_id', $id)
-            ->orderBy('vitals.created_at')
-            ->orderBy('vitals.id');
-
-        if ($this->vitalsSupportVersioning()) {
-            $vitalsQuery
-                ->leftJoin('health_workers', 'vitals.captured_by', '=', 'health_workers.id')
-                ->select(
-                    'vitals.*',
-                    'health_workers.first_name as captured_by_first_name',
-                    'health_workers.last_name as captured_by_last_name',
-                    'health_workers.role as captured_by_role'
-                );
-        } else {
-            $vitalsQuery->select('vitals.*');
+        if ($patient) {
+            $patient->age = Carbon::parse($patient->date_of_birth)->age;
         }
 
-        $allVitals = $vitalsQuery->get();
+        $allVitals = Vitals::query()
+            ->where('vitals.consultation_id', $consultation->id)
+            ->leftJoin('health_workers', 'vitals.captured_by', '=', 'health_workers.id')
+            ->orderBy('vitals.created_at')
+            ->orderBy('vitals.id')
+            ->select(
+                'vitals.*',
+                'health_workers.first_name as captured_by_first_name',
+                'health_workers.last_name as captured_by_last_name',
+                'health_workers.role as captured_by_role'
+            )
+            ->get();
 
-        $triageVitals = $this->vitalsSupportVersioning()
-            ? ($allVitals->firstWhere('phase', 'triage') ?? $allVitals->first())
-            : $allVitals->first();
+        $triageVitals = $allVitals->firstWhere('phase', 'triage') ?? $allVitals->first();
         $latestVitals = $allVitals->last();
         $vitals = $latestVitals;
         if (! $vitals) {
@@ -386,18 +315,16 @@ class ConsultationController extends Controller
             ];
         }
 
-        $currentUserRole = DB::table('health_workers')
-            ->where('user_id', Auth::id())
-            ->value('role');
+        $currentUserRole = strtolower((string) (auth()->user()->healthWorker?->role ?? ''));
 
-        $canReferExternally = in_array(strtolower((string) $currentUserRole), ['doctor', 'nurse'], true);
-        $canAcknowledgeIntake = strtolower((string) $currentUserRole) === 'nurse';
-        $canAddDiagnosis = strtolower((string) $currentUserRole) === 'doctor';
-        $canAddPrescription = strtolower((string) $currentUserRole) === 'doctor';
+        $canReferExternally = in_array($currentUserRole, ['doctor', 'nurse'], true);
+        $canAcknowledgeIntake = $currentUserRole === 'nurse';
+        $canAddDiagnosis = $currentUserRole === 'doctor';
+        $canAddPrescription = $currentUserRole === 'doctor';
 
         // 2. Fetch Existing Records (History)
         $existingDiagnoses = $this->diagnosisRecordsQuery()
-            ->where('diagnosis_records.consultation_id', $id)
+            ->where('diagnosis_records.consultation_id', $consultation->id)
             ->select(
                 'diagnosis_records.*',
                 'diagnosis_lookup.diagnosis_code as diagnosis_code',
@@ -407,7 +334,7 @@ class ConsultationController extends Controller
             ->get();
 
         $existingPrescriptions = $this->prescriptionsQuery()
-            ->where('prescriptions.consultation_id', $id)
+            ->where('prescriptions.consultation_id', $consultation->id)
             ->select(
                 'prescriptions.*',
                 'medicines_lookup.name as medicine_name',
@@ -437,84 +364,69 @@ class ConsultationController extends Controller
         ]);
     }
 
-    public function acknowledgeIntake($id)
+    public function acknowledgeIntake($consultation)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
-        $worker = DB::table('health_workers')->where('user_id', Auth::id())->first();
-        if ($worker === null || strtolower((string) $worker->role) !== 'nurse') {
+        $worker = $this->currentWorker();
+        if (strtolower((string) $worker->role) !== 'nurse') {
             abort(403, 'Only nurses can acknowledge intake.');
         }
 
-        $consultation = DB::table('consultations')->where('id', $id)->first();
-        if (! $consultation) {
-            abort(404, 'Consultation not found');
-        }
-
-        if ($consultation->status !== 'nurse_review') {
+        if ($consultation->status !== ConsultationStatus::NurseReview->value) {
             return redirect()->back()->withErrors([
                 'intake' => 'This consultation is not awaiting nurse validation.',
             ]);
         }
 
-        $updates = [
-            'status' => 'doctor_review',
+        DB::table('consultations')->where('id', $consultation->id)->update([
+            'status' => ConsultationStatus::DoctorReview->value,
+            'nurse_validated_at' => now(),
+            'nurse_validated_by' => $worker->id,
             'updated_at' => now(),
-        ];
+        ]);
 
-        if (Schema::hasColumn('consultations', 'nurse_validated_at')) {
-            $updates['nurse_validated_at'] = now();
-            $updates['nurse_validated_by'] = $worker->id;
-        }
-
-        DB::table('consultations')->where('id', $id)->update($updates);
-
-        return redirect()->route('consultations.show', $id)
+        return redirect()->route('consultations.show', $consultation->id)
             ->with('success', 'Intake acknowledged. Patient is now in the doctor queue.');
     }
 
-    public function cancelIntake($id)
+    public function cancelIntake($consultation)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
-        $worker = DB::table('health_workers')->where('user_id', Auth::id())->first();
-        if ($worker === null || strtolower((string) $worker->role) !== 'nurse') {
+        $worker = $this->currentWorker();
+        if (strtolower((string) $worker->role) !== 'nurse') {
             abort(403, 'Only nurses can cancel intake requests.');
         }
 
-        $consultation = DB::table('consultations')->where('id', $id)->first();
-        if (! $consultation) {
-            abort(404, 'Consultation not found');
-        }
-
-        if ($consultation->status !== 'nurse_review') {
+        if ($consultation->status !== ConsultationStatus::NurseReview->value) {
             return redirect()->back()->withErrors([
                 'intake' => 'Only consultations awaiting nurse validation can be canceled.',
             ]);
         }
 
-        DB::transaction(function () use ($id) {
-            DB::table('vitals')->where('consultation_id', $id)->delete();
-            DB::table('outward_referrals')->where('consultation_id', $id)->delete();
-            DB::table('consultations')->where('id', $id)->delete();
+        DB::transaction(function () use ($consultation) {
+            DB::table('vitals')->where('consultation_id', $consultation->id)->delete();
+            DB::table('outward_referrals')->where('consultation_id', $consultation->id)->delete();
+            DB::table('consultations')->where('id', $consultation->id)->delete();
         });
 
         return redirect()->route('dashboard')
             ->with('success', 'Intake canceled successfully.');
     }
 
-    public function printHandout($id)
+    public function printHandout($consultation)
     {
-        return view('consultations.handout', $this->resolveHandoutData($id));
+        return view('consultations.handout', $this->resolveHandoutData($consultation));
     }
 
-    public function downloadHandoutPdf($id)
+    public function downloadHandoutPdf($consultation)
     {
-        $data = $this->resolveHandoutData($id);
+        $data = $this->resolveHandoutData($consultation);
         $filename = 'iClinicSys-Handout-C'.str_pad((string) $data['consultation']->id, 4, '0', STR_PAD_LEFT).'.pdf';
 
         return Pdf::view('consultations.handout-pdf', $data)
@@ -526,7 +438,7 @@ class ConsultationController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function resolveHandoutData(int|string $id): array
+    private function resolveHandoutData($consultation): array
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
@@ -536,27 +448,13 @@ class ConsultationController extends Controller
             abort(403, 'You do not have permission to print consultation handouts.');
         }
 
-        $consultation = DB::table('consultations')
-            ->leftJoin('health_workers', 'consultations.worker_id', '=', 'health_workers.id')
-            ->where('consultations.id', $id)
-            ->select(
-                'consultations.*',
-                'health_workers.first_name as worker_first_name',
-                'health_workers.last_name as worker_last_name'
-            )
-            ->first();
-
-        if (! $consultation) {
-            abort(404, 'Consultation not found');
+        if (! in_array($consultation->status, ConsultationStatus::terminalValues(), true)) {
+            abort(403, 'Print handout is available only for completed consultations.');
         }
 
         $outwardReferral = DB::table('outward_referrals')
-            ->where('consultation_id', $id)
+            ->where('consultation_id', $consultation->id)
             ->first();
-
-        if (! in_array($consultation->status, ['completed', 'referred'], true)) {
-            abort(403, 'Print handout is available only for completed consultations.');
-        }
 
         $patient = DB::table('patients')
             ->join('households', 'patients.household_id', '=', 'households.id')
@@ -571,12 +469,12 @@ class ConsultationController extends Controller
             ->first();
 
         $vitals = DB::table('vitals')
-            ->where('consultation_id', $id)
+            ->where('consultation_id', $consultation->id)
             ->orderByDesc('id')
             ->first();
 
         $diagnoses = $this->diagnosisRecordsQuery()
-            ->where('diagnosis_records.consultation_id', $id)
+            ->where('diagnosis_records.consultation_id', $consultation->id)
             ->select(
                 'diagnosis_lookup.diagnosis_name as diagnosis_name',
                 'diagnosis_lookup.diagnosis_code as diagnosis_code',
@@ -586,7 +484,7 @@ class ConsultationController extends Controller
             ->get();
 
         $prescriptions = $this->prescriptionsQuery()
-            ->where('prescriptions.consultation_id', $id)
+            ->where('prescriptions.consultation_id', $consultation->id)
             ->select(
                 'medicines_lookup.name as medicine_name',
                 'prescriptions.dosage',
@@ -617,125 +515,83 @@ class ConsultationController extends Controller
         ];
     }
 
-    public function retakeVitals(Request $request, $id)
+    public function retakeVitals(VitalsRequest $request, $consultation)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
-        $validated = $request->validate([
-            'bp_systolic' => ['nullable', 'numeric', 'min:0', 'max:300'],
-            'bp_diastolic' => ['nullable', 'numeric', 'min:0', 'max:200'],
-            'temperature' => ['nullable', 'numeric', 'min:30', 'max:45'],
-            'weight' => ['nullable', 'numeric', 'min:0', 'max:500'],
-            'height' => ['nullable', 'numeric', 'min:0', 'max:300'],
-            'notes' => ['nullable', 'string', 'max:500']
-        ]);
-
-        $consultation = DB::table('consultations')->where('id', $id)->first();
-        if (! $consultation) {
-            abort(404, 'Consultation not found');
-        }
+        $validated = $request->validated();
+        $worker = $this->currentWorker();
 
         if ($redirect = $this->guardClinicalReviewStage($consultation)) {
             return $redirect;
         }
 
-        $workerId = DB::table('health_workers')
-            ->where('user_id', Auth::id())
-            ->value('id');
-
-        if ($workerId === null) {
-            abort(403, 'No health worker profile is linked to this user.');
-        }
-
-        $vitalsPayload = [
-            'consultation_id' => $id,
-            'bp_systolic' => $validated['bp_systolic'] ?? null,
-            'bp_diastolic' => $validated['bp_diastolic'] ?? null,
-            'weight_kg' => $validated['weight'] ?? null,
-            'height_cm' => $validated['height'] ?? null,
-            'temperature_c' => $validated['temperature'] ?? null,
+        $vitalsPayload = VitalsService::fromInput($validated) + [
+            'consultation_id' => $consultation->id,
+            'phase' => 'clinical',
+            'captured_by' => $worker->id,
+            'notes' => $validated['notes'] ?? null,
             'created_at' => now(),
             'updated_at' => now(),
         ];
 
-        if ($this->vitalsSupportVersioning()) {
-            $vitalsPayload['phase'] = 'clinical';
-            $vitalsPayload['captured_by'] = $workerId;
-            $vitalsPayload['notes'] = $validated['notes'] ?? null;
-        }
-
         DB::table('vitals')->insert($vitalsPayload);
 
         DB::table('consultations')
-            ->where('id', $id)
-            ->update(['status' => 'in_progress', 'updated_at' => now()]);
+            ->where('id', $consultation->id)
+            ->update(['status' => ConsultationStatus::InProgress->value, 'updated_at' => now()]);
 
-        return redirect()->route('consultations.show', $id)
+        return redirect()->route('consultations.show', $consultation->id)
             ->with('success', 'Clinical vitals saved as a new version.');
     }
 
-    public function updateVitalVersion(Request $request, $consultationId, $vitalId)
+    public function updateVitalVersion(VitalsRequest $request, $consultation, $vitalId)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
-        $validated = $request->validate([
-            'bp_systolic' => ['nullable', 'numeric', 'min:0', 'max:300'],
-            'bp_diastolic' => ['nullable', 'numeric', 'min:0', 'max:200'],
-            'temperature' => ['nullable', 'numeric', 'min:30', 'max:45'],
-            'weight' => ['nullable', 'numeric', 'min:0', 'max:500'],
-            'height' => ['nullable', 'numeric', 'min:0', 'max:300'],
-            'notes' => ['nullable', 'string', 'max:500'],
-        ]);
+        $validated = $request->validated();
 
         $vital = DB::table('vitals')
             ->where('id', $vitalId)
-            ->where('consultation_id', $consultationId)
+            ->where('consultation_id', $consultation->id)
             ->first();
 
         if (! $vital) {
             abort(404, 'Vitals version not found for this consultation.');
         }
 
-        $updatePayload = [
-            'bp_systolic' => $validated['bp_systolic'] ?? null,
-            'bp_diastolic' => $validated['bp_diastolic'] ?? null,
-            'weight_kg' => $validated['weight'] ?? null,
-            'height_cm' => $validated['height'] ?? null,
-            'temperature_c' => $validated['temperature'] ?? null,
+        $updatePayload = VitalsService::fromInput($validated) + [
+            'notes' => $validated['notes'] ?? null,
             'updated_at' => now(),
         ];
 
-        if (Schema::hasColumn('vitals', 'notes')) {
-            $updatePayload['notes'] = $validated['notes'] ?? null;
-        }
-
         DB::table('vitals')
             ->where('id', $vitalId)
-            ->where('consultation_id', $consultationId)
+            ->where('consultation_id', $consultation->id)
             ->update($updatePayload);
 
-        return redirect()->route('consultations.show', $consultationId)
+        return redirect()->route('consultations.show', $consultation->id)
             ->with('success', 'Vitals version updated successfully.');
     }
 
-    public function deleteVitalVersion($consultationId, $vitalId)
+    public function deleteVitalVersion($consultation, $vitalId)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
         $versions = DB::table('vitals')
-            ->where('consultation_id', $consultationId)
+            ->where('consultation_id', $consultation->id)
             ->orderBy('created_at')
             ->orderBy('id')
             ->get();
 
         if ($versions->count() <= 1) {
-            return redirect()->route('consultations.show', $consultationId)
+            return redirect()->route('consultations.show', $consultation->id)
                 ->withErrors(['vitals' => 'Cannot delete the only vitals version.']);
         }
 
@@ -744,87 +600,63 @@ class ConsultationController extends Controller
             abort(404, 'Vitals version not found for this consultation.');
         }
 
-        if ($this->vitalsSupportVersioning() && ($vital->phase ?? null) === 'triage') {
-            return redirect()->route('consultations.show', $consultationId)
+        if (($vital->phase ?? null) === 'triage') {
+            return redirect()->route('consultations.show', $consultation->id)
                 ->withErrors(['vitals' => 'Triage baseline vitals cannot be deleted.']);
         }
 
         DB::table('vitals')
             ->where('id', $vitalId)
-            ->where('consultation_id', $consultationId)
+            ->where('consultation_id', $consultation->id)
             ->delete();
 
-        return redirect()->route('consultations.show', $consultationId)
+        return redirect()->route('consultations.show', $consultation->id)
             ->with('success', 'Vitals version deleted successfully.');
     }
 
     // 4. Save a Diagnosis (Doctor's Action)
-    public function addDiagnosis(Request $request, $id)
+    public function addDiagnosis(AddDiagnosisRequest $request, $consultation)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
-        $currentUserRole = DB::table('health_workers')
-            ->where('user_id', Auth::id())
-            ->value('role');
-
-        if (strtolower((string) $currentUserRole) !== 'doctor') {
+        $worker = $this->currentWorker();
+        if (strtolower((string) $worker->role) !== 'doctor') {
             abort(403, 'Only doctors can add diagnoses.');
         }
 
-        $validated = $request->validate([
-            'diagnosis_id' => ['required', 'integer', 'exists:diagnosis_lookup,id'],
-            'remarks' => ['nullable', 'string'],
-        ]);
-
-        $workerId = DB::table('health_workers')
-            ->where('user_id', Auth::id())
-            ->value('id');
-
-        if ($workerId === null) {
-            abort(403, 'No health worker profile is linked to this user.');
-        }
-
-        $consultation = DB::table('consultations')->where('id', $id)->first();
-        if (! $consultation) {
-            abort(404, 'Consultation not found');
-        }
+        $validated = $request->validated();
 
         if ($redirect = $this->guardClinicalReviewStage($consultation)) {
             return $redirect;
         }
 
         DB::table('diagnosis_records')->insert([
-            'consultation_id' => $id,
+            'consultation_id' => $consultation->id,
             'diagnosis_id' => $validated['diagnosis_id'],
             'remarks' => $validated['remarks'] ?? null,
-            'diagnosed_by' => $workerId,
+            'diagnosed_by' => $worker->id,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        if ($this->maybeAutoCompleteConsultation((int) $id)) {
+        if ($this->maybeAutoCompleteConsultation((int) $consultation->id)) {
             return redirect()->back()->with('success', 'Diagnosis added. Consultation marked as completed.');
         }
 
-        DB::table('consultations')->where('id', $id)->update([
-            'status' => 'in_progress',
+        DB::table('consultations')->where('id', $consultation->id)->update([
+            'status' => ConsultationStatus::InProgress->value,
             'updated_at' => now(),
         ]);
 
         return redirect()->back()->with('success', 'Diagnosis added successfully!');
     }
 
-    public function referralContext($id)
+    public function referralContext($consultation)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
-        }
-
-        $consultation = DB::table('consultations')->where('id', $id)->first();
-        if (! $consultation) {
-            abort(404, 'Consultation not found');
         }
 
         $patient = DB::table('patients')->find($consultation->patient_id);
@@ -832,38 +664,23 @@ class ConsultationController extends Controller
             abort(404, 'Patient not found');
         }
 
-        $latestVitals = DB::table('vitals')
-            ->where('consultation_id', $id)
+        $latestVitals = Vitals::query()
+            ->where('consultation_id', $consultation->id)
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->first();
 
-        $patientName = trim((string) (($patient->last_name ?? '') . ', ' . ($patient->first_name ?? '')));
+        $patientName = trim((string) (($patient->last_name ?? '').', '.($patient->first_name ?? '')));
         $patientMetaParts = [];
         if (! empty($patient->date_of_birth)) {
-            $patientMetaParts[] = Carbon::parse($patient->date_of_birth)->age . ' y/o';
+            $patientMetaParts[] = Carbon::parse($patient->date_of_birth)->age.' y/o';
         }
-        if (! empty($patient->gender)) {
-            $patientMetaParts[] = ucfirst($patient->gender);
+        if (! empty($patient->sex)) {
+            $patientMetaParts[] = ucfirst($patient->sex);
         }
         $patientMeta = implode(' · ', $patientMetaParts);
 
-        $vitalsSummaryParts = [];
-        if ($latestVitals) {
-            if ($latestVitals->bp_systolic !== null || $latestVitals->bp_diastolic !== null) {
-                $vitalsSummaryParts[] = 'BP ' . ($latestVitals->bp_systolic ?? '—') . '/' . ($latestVitals->bp_diastolic ?? '—') . ' mmHg';
-            }
-            if ($latestVitals->temperature_c !== null) {
-                $vitalsSummaryParts[] = 'Temp ' . $latestVitals->temperature_c . '°C';
-            }
-            if ($latestVitals->weight_kg !== null) {
-                $vitalsSummaryParts[] = 'Weight ' . $latestVitals->weight_kg . ' kg';
-            }
-            if ($latestVitals->height_cm !== null) {
-                $vitalsSummaryParts[] = 'Height ' . $latestVitals->height_cm . ' cm';
-            }
-        }
-        $vitalsSummary = implode(' · ', $vitalsSummaryParts);
+        $vitalsSummary = $latestVitals?->summary ?? '';
 
         return response()->json([
             'patient_name' => $patientName ?: '—',
@@ -872,64 +689,34 @@ class ConsultationController extends Controller
         ]);
     }
 
-    public function refer(Request $request, $id)
+    public function refer(ReferralRequest $request, $consultation)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
-        $currentUserRole = DB::table('health_workers')
-            ->where('user_id', Auth::id())
-            ->value('role');
-
-        if (! in_array(strtolower((string) $currentUserRole), ['doctor', 'nurse'], true)) {
+        $worker = $this->currentWorker();
+        if (! in_array(strtolower((string) $worker->role), ['doctor', 'nurse'], true)) {
             abort(403, 'Only Nurse and Doctor roles can refer patients.');
         }
 
-        $validated = $request->validate([
-            'referred_to' => ['required', 'string', 'max:255'],
-            'referral_reasons' => ['nullable', 'array'],
-            'referral_reasons.*' => ['string'],
-            'referral_reason_details' => ['nullable', 'string', 'max:1000'],
-            'pertinent_history' => ['required', 'nullable', 'string'],
-            'actions_taken' => ['nullable', 'string'],
-        ]);
+        $validated = $request->validated();
 
-        $consultation = DB::table('consultations')->where('id', $id)->first();
-        if (! $consultation) {
-            abort(404, 'Consultation not found');
-        }
-
-        if (! in_array($consultation->status, ['nurse_review', 'doctor_review', 'in_progress'], true)) {
+        if (! in_array($consultation->status, [ConsultationStatus::NurseReview->value, ConsultationStatus::DoctorReview->value, ConsultationStatus::InProgress->value], true)) {
             return redirect()->back()->withErrors(['referral' => 'Referral can only be submitted while the consultation is active or pending validation.']);
         }
 
-        DB::transaction(function () use ($validated, $id) {
+        DB::transaction(function () use ($validated, $consultation) {
             $existingReferral = DB::table('outward_referrals')
-                ->where('consultation_id', $id)
+                ->where('consultation_id', $consultation->id)
                 ->first();
 
-            $reasonLabels = [
-                'specialized_evaluation' => 'Need for specialized medical evaluation / physician',
-                'lack_diagnostics' => 'Lack of diagnostic equipment / laboratory tests',
-                'lack_medicines' => 'Lack of available medicines / vaccines',
-                'emergency_trauma' => 'Emergency / trauma stabilization required',
-            ];
-
-            $reasons = array_filter(array_map(function ($reason) use ($reasonLabels) {
-                return $reasonLabels[$reason] ?? $reason;
-            }, $validated['referral_reasons'] ?? []));
-
-            $details = trim($validated['referral_reason_details'] ?? '');
-            $reasonText = $reasons ? 'Reasons: '.implode(', ', $reasons) : '';
-            $specificDetails = trim($reasonText.($details ? "\n\n".$details : '')) ?: null;
-
             $referralPayload = [
-                'consultation_id' => $id,
+                'consultation_id' => $consultation->id,
                 'destination_facility' => $validated['referred_to'],
                 'pertinent_history' => $validated['pertinent_history'],
                 'actions_taken' => $validated['actions_taken'] ?? null,
-                'specific_details' => $specificDetails,
+                'specific_details' => ReferralService::specificDetails($validated['referral_reasons'] ?? [], $validated['referral_reason_details'] ?? null),
                 'status' => 'pending',
                 'updated_at' => now(),
             ];
@@ -944,69 +731,48 @@ class ConsultationController extends Controller
             }
 
             DB::table('consultations')
-                ->where('id', $id)
+                ->where('id', $consultation->id)
                 ->update([
-                    'status' => 'referred',
+                    'status' => ConsultationStatus::Referred->value,
                     'updated_at' => now(),
                 ]);
         });
 
-        return redirect()->route('consultations.show', $id)
+        return redirect()->route('consultations.show', $consultation->id)
             ->with('success', 'Referral request submitted and consultation marked as referred.');
     }
 
-    public function finalizeConsultation(Request $request, $id)
+    public function finalizeConsultation(FinalizeConsultationRequest $request, $consultation)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
-        $validated = $request->validate([
-            'refer_to_higher_facility' => ['nullable', 'boolean'],
-            'referred_to' => ['required_if:refer_to_higher_facility,1', 'nullable', 'string', 'max:255'],
-            'referral_reasons' => ['nullable', 'array'],
-            'referral_reasons.*' => ['string'],
-            'referral_reason_details' => ['nullable', 'string', 'max:1000'],
-            'pertinent_history' => ['required_if:refer_to_higher_facility,1', 'nullable', 'string'],
-            'actions_taken' => ['nullable', 'string'],
-        ]);
-
-        $consultation = DB::table('consultations')->where('id', $id)->first();
-        if (! $consultation) {
-            abort(404, 'Consultation not found');
-        }
+        $validated = $request->validated();
 
         if ($redirect = $this->guardClinicalReviewStage($consultation)) {
             return $redirect;
         }
 
         $diagnosisCount = DB::table('diagnosis_records')
-            ->where('consultation_id', $id)
+            ->where('consultation_id', $consultation->id)
             ->count();
 
         if ($diagnosisCount < 1) {
-            return redirect()->route('consultations.show', $id)
+            return redirect()->route('consultations.show', $consultation->id)
                 ->withErrors(['diagnosis' => 'Add at least one diagnosis before finalizing consultation.']);
         }
 
-        $workerId = DB::table('health_workers')
-            ->where('user_id', Auth::id())
-            ->value('id');
-
-        if ($workerId === null) {
-            abort(403, 'No health worker profile is linked to this user.');
-        }
+        $worker = $this->currentWorker();
 
         $updates = [
-            'status' => 'completed',
+            'status' => ConsultationStatus::Completed->value,
             'updated_at' => now(),
         ];
 
         $requestedReferral = (bool) ($validated['refer_to_higher_facility'] ?? false);
         if ($requestedReferral) {
-            $currentWorkerRole = strtolower((string) DB::table('health_workers')
-                ->where('id', $workerId)
-                ->value('role'));
+            $currentWorkerRole = strtolower((string) $worker->role);
 
             if (! in_array($currentWorkerRole, ['doctor', 'nurse'], true)) {
                 return redirect()->back()->withErrors([
@@ -1014,33 +780,18 @@ class ConsultationController extends Controller
                 ])->withInput();
             }
 
-            $updates['status'] = 'referred';
+            $updates['status'] = ConsultationStatus::Referred->value;
 
             $existingReferral = DB::table('outward_referrals')
-                ->where('consultation_id', $id)
+                ->where('consultation_id', $consultation->id)
                 ->first();
 
-            $reasonLabels = [
-                'specialized_evaluation' => 'Need for specialized medical evaluation / physician',
-                'lack_diagnostics' => 'Lack of diagnostic equipment / laboratory tests',
-                'lack_medicines' => 'Lack of available medicines / vaccines',
-                'emergency_trauma' => 'Emergency / trauma stabilization required',
-            ];
-
-            $reasons = array_filter(array_map(function ($reason) use ($reasonLabels) {
-                return $reasonLabels[$reason] ?? $reason;
-            }, $validated['referral_reasons'] ?? []));
-
-            $details = trim($validated['referral_reason_details'] ?? '');
-            $reasonText = $reasons ? 'Reasons: '.implode(', ', $reasons) : '';
-            $specificDetails = trim($reasonText.($details ? "\n\n".$details : '')) ?: null;
-
             $referralPayload = [
-                'consultation_id' => $id,
+                'consultation_id' => $consultation->id,
                 'destination_facility' => $validated['referred_to'] ?? null,
                 'pertinent_history' => $validated['pertinent_history'] ?? $existingReferral->pertinent_history ?? null,
                 'actions_taken' => $validated['actions_taken'] ?? $existingReferral->actions_taken ?? null,
-                'specific_details' => $specificDetails ?? $existingReferral->specific_details ?? null,
+                'specific_details' => ReferralService::specificDetails($validated['referral_reasons'] ?? [], $validated['referral_reason_details'] ?? null) ?? $existingReferral->specific_details ?? null,
                 'updated_at' => now(),
             ];
 
@@ -1056,49 +807,35 @@ class ConsultationController extends Controller
         }
 
         DB::table('consultations')
-            ->where('id', $id)
+            ->where('id', $consultation->id)
             ->update($updates);
 
-        return redirect()->route('consultations.show', $id)
+        return redirect()->route('consultations.show', $consultation->id)
             ->with('success', $requestedReferral
                 ? 'Consultation finalized and marked as referred.'
                 : 'Consultation finalized successfully.');
     }
 
     // 5. Save a Prescription
-    public function addPrescription(Request $request, $id)
+    public function addPrescription(AddPrescriptionRequest $request, $consultation)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
-        $currentUserRole = DB::table('health_workers')
-            ->where('user_id', Auth::id())
-            ->value('role');
-
-        if (strtolower((string) $currentUserRole) !== 'doctor') {
+        $worker = $this->currentWorker();
+        if (strtolower((string) $worker->role) !== 'doctor') {
             abort(403, 'Only doctors can add prescriptions.');
         }
 
-        $validated = $request->validate([
-            'medicine_id' => ['required', 'integer', 'exists:medicines_lookup,id'],
-            'dosage' => ['required', 'string', 'max:255'],
-            'frequency' => ['nullable', 'string', 'max:255'],
-            'duration' => ['nullable', 'string', 'max:255'],
-            'quantity' => ['nullable', 'integer', 'min:1'],
-        ]);
-
-        $consultation = DB::table('consultations')->where('id', $id)->first();
-        if (! $consultation) {
-            abort(404, 'Consultation not found');
-        }
+        $validated = $request->validated();
 
         if ($redirect = $this->guardClinicalReviewStage($consultation)) {
             return $redirect;
         }
 
         DB::table('prescriptions')->insert([
-            'consultation_id' => $id,
+            'consultation_id' => $consultation->id,
             'medicine_id' => $validated['medicine_id'],
             'dosage' => $validated['dosage'],
             'frequency' => $validated['frequency'] ?? null,
@@ -1108,12 +845,12 @@ class ConsultationController extends Controller
             'updated_at' => now(),
         ]);
 
-        if ($this->maybeAutoCompleteConsultation((int) $id)) {
+        if ($this->maybeAutoCompleteConsultation((int) $consultation->id)) {
             return redirect()->back()->with('success', 'Prescription added. Consultation marked as completed.');
         }
 
-        DB::table('consultations')->where('id', $id)->update([
-            'status' => 'in_progress',
+        DB::table('consultations')->where('id', $consultation->id)->update([
+            'status' => ConsultationStatus::InProgress->value,
             'updated_at' => now(),
         ]);
 
@@ -1121,24 +858,10 @@ class ConsultationController extends Controller
     }
 
     // Edit Consultation (Quick edit for notes/treatments)
-    public function edit($id)
+    public function edit($consultation)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
-        }
-
-        $consultation = DB::table('consultations')
-            ->leftJoin('health_workers', 'consultations.worker_id', '=', 'health_workers.id')
-            ->where('consultations.id', $id)
-            ->select(
-                'consultations.*',
-                'health_workers.first_name as worker_first_name',
-                'health_workers.last_name as worker_last_name'
-            )
-            ->first();
-
-        if (! $consultation) {
-            abort(404, 'Consultation not found');
         }
 
         // Get patient info
@@ -1146,7 +869,7 @@ class ConsultationController extends Controller
 
         // Get diagnoses
         $diagnoses = $this->diagnosisRecordsQuery()
-            ->where('diagnosis_records.consultation_id', $id)
+            ->where('diagnosis_records.consultation_id', $consultation->id)
             ->select(
                 'diagnosis_records.id',
                 'diagnosis_lookup.diagnosis_name as diagnosis_name',
@@ -1156,7 +879,7 @@ class ConsultationController extends Controller
 
         // Get prescriptions
         $prescriptions = $this->prescriptionsQuery()
-            ->where('prescriptions.consultation_id', $id)
+            ->where('prescriptions.consultation_id', $consultation->id)
             ->select(
                 'prescriptions.id',
                 'medicines_lookup.name as medicine_name',
@@ -1175,28 +898,23 @@ class ConsultationController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateConsultationRequest $request, $consultation)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
         }
 
-        $consultation = DB::table('consultations')->find($id);
-        if (! $consultation) {
-            abort(404, 'Consultation not found');
-        }
-
         // Update notes if provided
         if ($request->has('notes')) {
             DB::table('consultations')
-                ->where('id', $id)
+                ->where('id', $consultation->id)
                 ->update(['notes' => $request->input('notes'), 'updated_at' => now()]);
         }
 
-        return redirect()->route('consultations.show', $id)->with('success', 'Consultation updated successfully.');
+        return redirect()->route('consultations.show', $consultation->id)->with('success', 'Consultation updated successfully.');
     }
 
-    public function deleteDiagnosis(Request $request, $consultationId, $diagnosisId)
+    public function deleteDiagnosis(Request $request, $consultation, $diagnosisId)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
@@ -1204,7 +922,7 @@ class ConsultationController extends Controller
 
         $diagnosis = DB::table('diagnosis_records')
             ->where('id', $diagnosisId)
-            ->where('consultation_id', $consultationId)
+            ->where('consultation_id', $consultation->id)
             ->first();
 
         if (! $diagnosis) {
@@ -1220,10 +938,10 @@ class ConsultationController extends Controller
             return response()->json(['success' => true, 'message' => 'Diagnosis deleted successfully']);
         }
 
-        return redirect()->route('consultations.edit', $consultationId)->with('success', 'Diagnosis deleted successfully.');
+        return redirect()->route('consultations.edit', $consultation->id)->with('success', 'Diagnosis deleted successfully.');
     }
 
-    public function deletePrescription(Request $request, $consultationId, $prescriptionId)
+    public function deletePrescription(Request $request, $consultation, $prescriptionId)
     {
         if (! auth()->user()->hasPermission('consultations')) {
             abort(403, 'Unauthorized');
@@ -1231,7 +949,7 @@ class ConsultationController extends Controller
 
         $prescription = DB::table('prescriptions')
             ->where('id', $prescriptionId)
-            ->where('consultation_id', $consultationId)
+            ->where('consultation_id', $consultation->id)
             ->first();
 
         if (! $prescription) {
@@ -1247,18 +965,29 @@ class ConsultationController extends Controller
             return response()->json(['success' => true, 'message' => 'Prescription deleted successfully']);
         }
 
-        return redirect()->route('consultations.edit', $consultationId)->with('success', 'Prescription deleted successfully.');
+        return redirect()->route('consultations.edit', $consultation->id)->with('success', 'Prescription deleted successfully.');
+    }
+
+    private function currentWorker(): HealthWorker
+    {
+        $worker = auth()->user()->healthWorker;
+
+        if ($worker === null) {
+            abort(403, 'No health worker profile is linked to this user.');
+        }
+
+        return $worker;
     }
 
     private function guardClinicalReviewStage(object $consultation): ?RedirectResponse
     {
-        if (in_array($consultation->status, ['doctor_review', 'in_progress'], true)) {
+        if (in_array($consultation->status, [ConsultationStatus::DoctorReview->value, ConsultationStatus::InProgress->value], true)) {
             return null;
         }
 
         $message = match ($consultation->status) {
-            'nurse_review' => 'Nurse intake validation must be completed before clinical review.',
-            'triage' => 'Triage intake must be completed before clinical review.',
+            ConsultationStatus::NurseReview->value => 'Nurse intake validation must be completed before clinical review.',
+            ConsultationStatus::Triage->value => 'Triage intake must be completed before clinical review.',
             default => 'This consultation is not open for clinical review.',
         };
 
@@ -1268,7 +997,7 @@ class ConsultationController extends Controller
     private function maybeAutoCompleteConsultation(int $consultationId): bool
     {
         $consultation = DB::table('consultations')->where('id', $consultationId)->first();
-        if (! $consultation || in_array($consultation->status, ['completed', 'referred'], true)) {
+        if (! $consultation || in_array($consultation->status, ConsultationStatus::terminalValues(), true)) {
             return false;
         }
 
@@ -1280,7 +1009,7 @@ class ConsultationController extends Controller
         }
 
         DB::table('consultations')->where('id', $consultationId)->update([
-            'status' => 'completed',
+            'status' => ConsultationStatus::Completed->value,
             'updated_at' => now(),
         ]);
 
@@ -1297,17 +1026,5 @@ class ConsultationController extends Controller
     {
         return DB::table('prescriptions')
             ->leftJoin('medicines_lookup', 'prescriptions.medicine_id', '=', 'medicines_lookup.id');
-    }
-
-    private function vitalsSupportVersioning(): bool
-    {
-        if ($this->supportsVersionedVitals !== null) {
-            return $this->supportsVersionedVitals;
-        }
-
-        $this->supportsVersionedVitals = Schema::hasColumn('vitals', 'phase')
-            && Schema::hasColumn('vitals', 'captured_by');
-
-        return $this->supportsVersionedVitals;
     }
 }

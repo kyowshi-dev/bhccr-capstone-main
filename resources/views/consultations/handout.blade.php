@@ -29,7 +29,7 @@
                     <input type="checkbox" x-model="showItr">
                     Form 2 — Individual Treatment Record
                 </label>
-                <a href="{{ route('consultations.handout.pdf', ['id' => $consultation->id]) }}"
+                <a href="{{ route('consultations.handout.pdf', ['consultation' => $consultation->id]) }}"
                    target="_blank" rel="noopener"
                    style="border-radius:8px;background:#064e3b;color:#fff;padding:6px 12px;font-size:12px;font-weight:600;text-decoration:none;">
                     Open PDF

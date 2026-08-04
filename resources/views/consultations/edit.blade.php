@@ -14,7 +14,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">Edit Consultation</h1>
-                <p class="text-sm mt-1" style="color: var(--ink-muted);">PT{{ str_pad($consultation->patient_id, 3, '0', STR_PAD_LEFT) }} - {{ $patient->last_name }}, {{ $patient->first_name }}</p>
+                <p class="text-sm mt-1" style="color: var(--ink-muted);">{{ \App\Helpers\PatientCode::format((int) $consultation->patient_id) }} - {{ $patient->last_name }}, {{ $patient->first_name }}</p>
             </div>
         </div>
 
@@ -22,18 +22,11 @@
         <div class="rounded-lg border px-4 py-3 flex flex-wrap gap-4 lg:gap-6 text-sm" style="background: var(--bg-surface); border-color: var(--border);">
             <div>
                 <p style="color: var(--ink-muted);" class="text-xs font-medium">DATE</p>
-                <p style="color: var(--ink);" class="font-medium">{{ \Carbon\Carbon::parse($consultation->created_at)->format('Y-m-d H:i A') }}</p>
+                <p style="color: var(--ink);" class="font-medium">{{ \Carbon\Carbon::parse($consultation->created_at)->format(\App\Helpers\DateFormat::DATE_SQL.' H:i A') }}</p>
             </div>
-            @php
-                $statusLabel = match ($consultation->status) {
-                    'nurse_review' => 'Nurse Review',
-                    'doctor_review' => 'Doctor Review',
-                    default => ucfirst(str_replace('_', ' ', $consultation->status)),
-                };
-            @endphp
             <div>
                 <p style="color: var(--ink-muted);" class="text-xs font-medium">STATUS</p>
-                <p style="color: var(--ink);" class="font-medium">{{ $statusLabel }}</p>
+                <p style="color: var(--ink);" class="font-medium">{{ $consultation->status_label }}</p>
             </div>
             <div>
                 <p style="color: var(--ink-muted);" class="text-xs font-medium">HEALTH WORKER</p>
@@ -348,7 +341,7 @@ function checkIfEmpty(listId) {
 function deleteDiagnosis(id) {
     if (confirm('Are you sure you want to delete this diagnosis?')) {
         // Make a DELETE request
-        fetch(`/consultations/{{ $consultation->id }}/diagnoses/${id}`, {
+        fetch(`{{ route('consultations.diagnosis.delete', ['consultation' => $consultation->id, 'diagnosisId' => '__DID__']) }}`.replace('__DID__', id), {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
@@ -370,7 +363,7 @@ function deleteDiagnosis(id) {
 function deletePrescription(id) {
     if (confirm('Are you sure you want to delete this prescription?')) {
         // Make a DELETE request
-        fetch(`/consultations/{{ $consultation->id }}/prescriptions/${id}`, {
+        fetch(`{{ route('consultations.prescription.delete', ['consultation' => $consultation->id, 'prescriptionId' => '__PID__']) }}`.replace('__PID__', id), {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,

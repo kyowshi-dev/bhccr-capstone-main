@@ -98,45 +98,45 @@ Route::middleware('auth')->group(function () {
     Route::patch('/referrals/{id}/status', [ReferralController::class, 'updateStatus'])->name('referrals.update-status');
 
     // Triage / New Admission
-    Route::get('/patients/{id}/consultations/create', [ConsultationController::class, 'create'])->name('consultations.create');
-    Route::post('/patients/{id}/consultations', [ConsultationController::class, 'store'])->name('consultations.store');
+    Route::get('/patients/{patient}/consultations/create', [ConsultationController::class, 'create'])->name('consultations.create');
+    Route::post('/patients/{patient}/consultations', [ConsultationController::class, 'store'])->name('consultations.store');
 
     // Quick Edit for Consultations
-    Route::get('/consultations/{id}/edit', [ConsultationController::class, 'edit'])->name('consultations.edit');
-    Route::put('/consultations/{id}', [ConsultationController::class, 'update'])->name('consultations.update');
+    Route::get('/consultations/{consultation}/edit', [ConsultationController::class, 'edit'])->name('consultations.edit');
+    Route::put('/consultations/{consultation}', [ConsultationController::class, 'update'])->name('consultations.update');
 
     // Doctor's Workspace (View specific consultation)
-    Route::get('/consultations/{id}', [ConsultationController::class, 'show'])
+    Route::get('/consultations/{consultation}', [ConsultationController::class, 'show'])
         ->name('consultations.show');
 
     // Doctor Actions (Diagnosis & Rx)
-    Route::post('/consultations/{id}/diagnosis', [ConsultationController::class, 'addDiagnosis'])
+    Route::post('/consultations/{consultation}/diagnosis', [ConsultationController::class, 'addDiagnosis'])
         ->name('consultations.diagnosis');
-    Route::post('/consultations/{id}/finalize', [ConsultationController::class, 'finalizeConsultation'])
+    Route::post('/consultations/{consultation}/finalize', [ConsultationController::class, 'finalizeConsultation'])
         ->name('consultations.finalize');
-    Route::post('/consultations/{id}/refer', [ConsultationController::class, 'refer'])
+    Route::post('/consultations/{consultation}/refer', [ConsultationController::class, 'refer'])
         ->name('consultations.refer');
-    Route::get('/consultations/{id}/referral-context', [ConsultationController::class, 'referralContext'])
+    Route::get('/consultations/{consultation}/referral-context', [ConsultationController::class, 'referralContext'])
         ->name('consultations.referral-context');
-    Route::post('/consultations/{id}/acknowledge-intake', [ConsultationController::class, 'acknowledgeIntake'])
+    Route::post('/consultations/{consultation}/acknowledge-intake', [ConsultationController::class, 'acknowledgeIntake'])
         ->name('consultations.acknowledge-intake');
-    Route::delete('/consultations/{id}', [ConsultationController::class, 'cancelIntake'])
+    Route::delete('/consultations/{consultation}', [ConsultationController::class, 'cancelIntake'])
         ->name('consultations.cancel');
-    Route::get('/consultations/{id}/handout', [ConsultationController::class, 'printHandout'])
+    Route::get('/consultations/{consultation}/handout', [ConsultationController::class, 'printHandout'])
         ->name('consultations.handout');
-    Route::get('/consultations/{id}/handout/pdf', [ConsultationController::class, 'downloadHandoutPdf'])
+    Route::get('/consultations/{consultation}/handout/pdf', [ConsultationController::class, 'downloadHandoutPdf'])
         ->name('consultations.handout.pdf');
-    Route::post('/consultations/{id}/vitals/retake', [ConsultationController::class, 'retakeVitals'])
+    Route::post('/consultations/{consultation}/vitals/retake', [ConsultationController::class, 'retakeVitals'])
         ->name('consultations.vitals.retake');
-    Route::put('/consultations/{consultationId}/vitals/{vitalId}', [ConsultationController::class, 'updateVitalVersion'])
+    Route::put('/consultations/{consultation}/vitals/{vitalId}', [ConsultationController::class, 'updateVitalVersion'])
         ->name('consultations.vitals.update');
-    Route::delete('/consultations/{consultationId}/vitals/{vitalId}', [ConsultationController::class, 'deleteVitalVersion'])
+    Route::delete('/consultations/{consultation}/vitals/{vitalId}', [ConsultationController::class, 'deleteVitalVersion'])
         ->name('consultations.vitals.delete');
-    Route::post('/consultations/{id}/prescription', [ConsultationController::class, 'addPrescription'])
+    Route::post('/consultations/{consultation}/prescription', [ConsultationController::class, 'addPrescription'])
         ->name('consultations.prescription');
-    Route::delete('/consultations/{consultationId}/diagnoses/{diagnosisId}', [ConsultationController::class, 'deleteDiagnosis'])
+    Route::delete('/consultations/{consultation}/diagnoses/{diagnosisId}', [ConsultationController::class, 'deleteDiagnosis'])
         ->name('consultations.diagnosis.delete');
-    Route::delete('/consultations/{consultationId}/prescriptions/{prescriptionId}', [ConsultationController::class, 'deletePrescription'])
+    Route::delete('/consultations/{consultation}/prescriptions/{prescriptionId}', [ConsultationController::class, 'deletePrescription'])
         ->name('consultations.prescription.delete');
 
     // 5. IMMUNIZATION

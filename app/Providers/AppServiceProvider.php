@@ -14,6 +14,7 @@ use App\Policies\PatientPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -42,6 +43,20 @@ class AppServiceProvider extends ServiceProvider
 
         // Register authorization policies
         $this->registerPolicies();
+
+        // Route-model binding: consultations resolve with their worker joined in,
+        // matching the shape views expect (worker_first_name / worker_last_name).
+        Route::bind('consultation', function (string $value) {
+            return Consultation::query()
+                ->leftJoin('health_workers', 'consultations.worker_id', '=', 'health_workers.id')
+                ->where('consultations.id', $value)
+                ->select(
+                    'consultations.*',
+                    'health_workers.first_name as worker_first_name',
+                    'health_workers.last_name as worker_last_name'
+                )
+                ->firstOrFail();
+        });
     }
 
     /**
