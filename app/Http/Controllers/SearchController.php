@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\PatientCode;
+use App\Services\IcdApiService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Services\IcdApiService;
 
 class SearchController extends Controller
 {
@@ -36,7 +37,7 @@ class SearchController extends Controller
 
         // Format the results for the frontend
         $results = $patients->map(function ($patient) {
-            $ptCode = 'PT'.str_pad((string) $patient->id, 3, '0', STR_PAD_LEFT);
+            $ptCode = PatientCode::format((int) $patient->id);
             $age = null;
             if (! empty($patient->date_of_birth)) {
                 $age = Carbon::parse($patient->date_of_birth)->age;

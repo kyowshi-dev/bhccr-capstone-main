@@ -196,7 +196,7 @@
                 if (this.query.length < 2) { this.results = []; return; }
                 this.loading = true;
                 try {
-                    const response = await fetch(`/search/patients?query=${this.query}`);
+                    const response = await fetch(`{{ route('search.patients') }}?query=${this.query}`);
                     this.results = await response.json();
                 } catch (e) { console.error('Search failed:', e); }
                 this.loading = false;

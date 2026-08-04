@@ -124,9 +124,9 @@
                                     @endif
 
                                     @if ($dueDate && $dueDate->lt($today))
-                                        <span class="ml-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-soft); color: var(--accent);">Overdue</span>
+                                        <span class="ml-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">Overdue</span>
                                     @elseif ($dueDate && $dueDate->isSameDay($today))
-                                        <span class="ml-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">Due today</span>
+                                        <span class="ml-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">Due today</span>
                                     @endif
                                 </td>
                                 <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink-muted);">{{ $p->dose_number }}</td>
@@ -179,9 +179,9 @@
                                     @if (! $nextDue)
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">Up to date</span>
                                     @elseif ($nextDue->lt($today))
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-soft); color: var(--accent);">Overdue</span>
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">Overdue</span>
                                     @elseif ($nextDue->isSameDay($today))
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">Due today</span>
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">Due today</span>
                                     @else
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">In progress</span>
                                     @endif
@@ -281,7 +281,7 @@
                 if (this.query.length < 2) { this.results = []; return; }
                 this.loading = true;
                 try {
-                    const response = await fetch(`/search/patients?query=${this.query}`);
+                    const response = await fetch(`{{ route('search.patients') }}?query=${this.query}`);
                     this.results = await response.json();
                 } catch (e) { console.error('Search failed:', e); }
                 this.loading = false;

@@ -86,7 +86,7 @@
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
-                            <h2 class="font-semibold text-lg" style="color: var(--ink);">{{ $referral->patient_last_name }}, {{ ucwords($referral->patient_first_name) }} <span class="text-sm font-medium" style="color: var(--ink-subtle);">(PT{{ str_pad($referral->patient_id, 3, '0', STR_PAD_LEFT) }})</span></h2>
+                            <h2 class="font-semibold text-lg" style="color: var(--ink);">{{ $referral->patient_last_name }}, {{ ucwords($referral->patient_first_name) }} <span class="text-sm font-medium" style="color: var(--ink-subtle);">({{ \App\Helpers\PatientCode::format((int) $referral->patient_id) }})</span></h2>
                             <span class="px-2.5 py-1 rounded-full text-xs font-semibold" style="{{ $badgeStyle }}">{{ $statusLabels[$status] ?? ucfirst($status) }}</span>
                         </div>
                         <p class="text-sm mt-1" style="color: var(--ink-muted);">Referred to <strong>{{ $referral->destination_facility }}</strong></p>

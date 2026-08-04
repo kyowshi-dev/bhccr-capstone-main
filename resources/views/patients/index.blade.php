@@ -100,7 +100,7 @@
                 <tbody class="divide-y divide-[var(--border)]">
                     @forelse ($patients as $patient)
                         <tr class="transition-colors hover:bg-black/[0.02]">
-                            <td class="px-4 py-2.5 font-medium whitespace-nowrap" style="color: var(--ink);">PT{{ str_pad($patient->id, 3, '0', STR_PAD_LEFT) }}</td>
+                            <td class="px-4 py-2.5 font-medium whitespace-nowrap" style="color: var(--ink);">{{ \App\Helpers\PatientCode::format((int) $patient->id) }}</td>
                             <td class="px-4 py-2.5" style="color: var(--ink);">
                                 <div class="font-medium">{{ ucfirst($patient->last_name) }}, {{ ucwords($patient->first_name) }}</div>
                                 <div class="text-xs mt-0.5 line-clamp-2 text-slate-500" style="color: var(--ink-muted);">
@@ -168,7 +168,7 @@
                 if (this.query.length < 2) { this.results = []; return; }
                 this.loading = true;
                 try {
-                    const response = await fetch(`/search/patients?query=${this.query}`);
+                    const response = await fetch(`{{ route('search.patients') }}?query=${this.query}`);
                     this.results = await response.json();
                 } catch (e) { console.error('Search failed:', e); }
                 this.loading = false;

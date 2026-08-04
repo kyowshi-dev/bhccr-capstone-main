@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Helpers\PatientCode;
 use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Patient extends Model
 {
     use LogsActivity;
+
     protected $fillable = [
         'household_id',
         'last_name',
@@ -36,12 +40,60 @@ class Patient extends Model
     ];
 
     public const FAMILY_RELATIONSHIP_OPTIONS = ['Father', 'Son', 'Mother', 'Daughter', 'Others'];
+
     public const PHILHEALTH_MEMBERSHIP_CATEGORIES = ['FE - Private', 'FE - Government', 'IE', 'Others'];
+
     public const PHILHEALTH_STATUS_TYPES = ['Member', 'Dependent'];
 
-    protected $casts = [
-        'date_of_birth' => 'date',
-        'has_4ps' => 'boolean',
-        'has_nhts' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'date_of_birth' => 'date',
+            'has_4ps' => 'boolean',
+            'has_nhts' => 'boolean',
+        ];
+    }
+
+    public function household(): BelongsTo
+    {
+        return $this->belongsTo(Household::class);
+    }
+
+    public function consultations(): HasMany
+    {
+        return $this->hasMany(Consultation::class, 'patient_id');
+    }
+
+    public function immunizationRecords(): HasMany
+    {
+        return $this->hasMany(Immunization::class, 'patient_id');
+    }
+
+    public function patientCode(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => PatientCode::format($this->id),
+        );
+    }
+
+    public function age(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->date_of_birth ? $this->date_of_birth->age : null,
+        );
+    }
+
+    public function zoneId(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->household?->zone_id,
+        );
+    }
+
+    public function contactNumber(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->household?->contact_number,
+        );
+    }
 }

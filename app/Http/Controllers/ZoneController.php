@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HealthWorker;
+use App\Models\Zone;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ZoneController extends Controller
 {
@@ -13,17 +14,8 @@ class ZoneController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $zones = DB::table('zones')
-            ->leftJoin('health_workers', 'zones.assigned_worker_id', '=', 'health_workers.id')
-            ->select(
-                'zones.id',
-                'zones.zone_number',
-                'zones.assigned_worker_id',
-                'zones.created_at',
-                'zones.updated_at',
-                DB::raw("CONCAT(health_workers.first_name, ' ', health_workers.last_name) as worker_name")
-            )
-            ->orderBy('zones.zone_number')
+        $zones = Zone::with('assignedWorker')
+            ->orderBy('zone_number')
             ->paginate(10)
             ->withQueryString();
 
@@ -38,8 +30,7 @@ class ZoneController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $healthWorkers = DB::table('health_workers')
-            ->select('id', DB::raw("CONCAT(first_name, ' ', last_name) as name"))
+        $healthWorkers = HealthWorker::query()
             ->orderBy('first_name')
             ->get();
 
@@ -59,11 +50,9 @@ class ZoneController extends Controller
             'assigned_worker_id' => ['nullable', 'exists:health_workers,id'],
         ]);
 
-        DB::table('zones')->insert([
+        Zone::create([
             'zone_number' => $validated['zone_number'],
             'assigned_worker_id' => $validated['assigned_worker_id'] ?? null,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         return redirect()
@@ -77,35 +66,7 @@ class ZoneController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $zone = DB::table('zones')
-            ->leftJoin('health_workers', 'zones.assigned_worker_id', '=', 'health_workers.id')
-            ->select(
-                'zones.id',
-                'zones.zone_number',
-                'zones.assigned_worker_id',
-                'zones.created_at',
-                'zones.updated_at',
-                DB::raw("CONCAT(health_workers.first_name, ' ', health_workers.last_name) as worker_name"),
-                'health_workers.role as worker_role'
-            )
-            ->where('zones.id', $id)
-            ->first();
-
-        if (! $zone) {
-            abort(404, 'Zone not found');
-        }
-
-        // Get household count
-        $householdCount = DB::table('households')->where('zone_id', $id)->count();
-
-        // Get patient count
-        $patientCount = DB::table('households')
-            ->where('zone_id', $id)
-            ->join('patients', 'households.id', '=', 'patients.household_id')
-            ->count();
-
-        $zone->household_count = $householdCount;
-        $zone->patient_count = $patientCount;
+        $zone = Zone::with('assignedWorker')->findOrFail($id);
 
         return view('zones.show', [
             'zone' => $zone,
@@ -118,14 +79,9 @@ class ZoneController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $zone = DB::table('zones')->where('id', $id)->first();
+        $zone = Zone::findOrFail($id);
 
-        if (! $zone) {
-            abort(404, 'Zone not found');
-        }
-
-        $healthWorkers = DB::table('health_workers')
-            ->select('id', DB::raw("CONCAT(first_name, ' ', last_name) as name"))
+        $healthWorkers = HealthWorker::query()
             ->orderBy('first_name')
             ->get();
 
@@ -141,24 +97,17 @@ class ZoneController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $zone = DB::table('zones')->where('id', $id)->first();
-
-        if (! $zone) {
-            abort(404, 'Zone not found');
-        }
+        $zone = Zone::findOrFail($id);
 
         $validated = $request->validate([
             'zone_number' => ['required', 'string', 'max:255', 'unique:zones,zone_number,'.$id],
             'assigned_worker_id' => ['nullable', 'exists:health_workers,id'],
         ]);
 
-        DB::table('zones')
-            ->where('id', $id)
-            ->update([
-                'zone_number' => $validated['zone_number'],
-                'assigned_worker_id' => $validated['assigned_worker_id'] ?? null,
-                'updated_at' => now(),
-            ]);
+        $zone->update([
+            'zone_number' => $validated['zone_number'],
+            'assigned_worker_id' => $validated['assigned_worker_id'] ?? null,
+        ]);
 
         return redirect()
             ->route('zones.show', $id)
@@ -172,22 +121,16 @@ class ZoneController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $zone = DB::table('zones')->where('id', $id)->first();
-
-        if (! $zone) {
-            abort(404, 'Zone not found');
-        }
+        $zone = Zone::findOrFail($id);
 
         // Check if zone has households
-        $householdCount = DB::table('households')->where('zone_id', $id)->count();
-
-        if ($householdCount > 0) {
+        if ($zone->households()->count() > 0) {
             return redirect()
                 ->route('zones.index')
                 ->with('error', 'Cannot delete zone that has households. Please reassign or delete households first.');
         }
 
-        DB::table('zones')->where('id', $id)->delete();
+        $zone->delete();
 
         return redirect()
             ->route('zones.index')

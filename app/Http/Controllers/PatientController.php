@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePatientWithHouseholdRequest;
+use App\Models\Household;
 use App\Models\Patient;
-use Carbon\Carbon;
+use App\Models\Zone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -30,7 +31,7 @@ class PatientController extends Controller
             };
         }
 
-        $query = DB::table('patients')
+        $query = Patient::query()
             ->join('households', 'patients.household_id', '=', 'households.id')
             ->leftJoinSub(
                 DB::table('consultations')
@@ -78,7 +79,7 @@ class PatientController extends Controller
 
         $selectedHouseholdId = $request->old('household_id') ?? $request->input('household_id');
 
-        $transientHousehold = DB::table('households')
+        $transientHousehold = Household::query()
             ->where(function ($qb) {
                 $qb->whereRaw('LOWER(family_name_head) LIKE ?', ['%transient%'])
                     ->orWhereRaw('LOWER(family_name_head) LIKE ?', ['%unmapped%']);
@@ -88,28 +89,19 @@ class PatientController extends Controller
 
         // Ensure transient household exists
         if (! $transientHousehold) {
-            $transientId = DB::table('households')->insertGetId([
+            $transientHousehold = Household::create([
                 'zone_id' => 1,
                 'family_name_head' => 'Transient/Unmapped',
-                'contact_number' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
             ]);
-            $transientHousehold = (object) ['id' => $transientId, 'family_name_head' => 'Transient/Unmapped'];
         }
 
         $selectedHousehold = null;
         if (! empty($selectedHouseholdId)) {
-            $selectedHousehold = DB::table('households')
-                ->join('zones', 'households.zone_id', '=', 'zones.id')
-                ->select('households.id', 'households.family_name_head', 'zones.zone_number', 'households.contact_number')
-                ->where('households.id', $selectedHouseholdId)
-                ->first();
+            $selectedHousehold = Household::find($selectedHouseholdId);
         }
 
         // Fetch zones for new household creation
-        $zones = DB::table('zones')
-            ->select('id', 'zone_number')
+        $zones = Zone::query()
             ->orderBy('zone_number')
             ->get();
 
@@ -131,28 +123,25 @@ class PatientController extends Controller
 
         // --- 1. HANDLE HOUSEHOLD CREATION OR SELECTION ---
         $householdId = $validated['household_id'];
+        $createdHousehold = null;
 
         if ((int) $validated['create_new_household'] === 1) {
             // Create the household atomically with the patient
-            $householdId = DB::table('households')->insertGetId([
+            $createdHousehold = Household::create([
                 'zone_id' => $validated['new_household_zone_id'],
                 'family_name_head' => trim($validated['new_household_family_name_head']),
                 'contact_number' => $validated['new_household_contact_number'] !== null ? trim($validated['new_household_contact_number']) : null,
-                'created_at' => now(),
-                'updated_at' => now(),
             ]);
+            $householdId = $createdHousehold->id;
         }
 
-        $zoneNumber = DB::table('households')
-            ->join('zones', 'households.zone_id', '=', 'zones.id')
-            ->where('households.id', $householdId)
-            ->value('zones.zone_number');
+        $zoneNumber = Household::with('zone')->find($householdId)?->zone?->zone_number ?? '';
 
         $residentialAddress = trim($zoneNumber).' Sta. Ana, Tagoloan';
 
         // --- 2. DUPLICATE CHECK ---
         // Prevents double-entry of the same person
-        $exists = DB::table('patients')
+        $exists = Patient::query()
             ->where('first_name', $validated['first_name'])
             ->where('last_name', $validated['last_name'])
             ->where('date_of_birth', $validated['date_of_birth'])
@@ -160,15 +149,15 @@ class PatientController extends Controller
 
         if ($exists) {
             // In case of duplicate, rollback household creation if we just created it
-            if ((int) $validated['create_new_household'] === 1) {
-                DB::table('households')->where('id', $householdId)->delete();
+            if ($createdHousehold) {
+                $createdHousehold->delete();
             }
 
             return back()->withInput()->withErrors(['first_name' => 'This patient is already registered in the system!']);
         }
 
         // --- 3. INSERT PATIENT DATA (Sanitized) ---
-        $patientId = DB::table('patients')->insertGetId([
+        $patient = Patient::create([
             'household_id' => $householdId,
             // Auto-Capitalize Names
             'first_name' => ucwords(strtolower($validated['first_name'])),
@@ -196,43 +185,25 @@ class PatientController extends Controller
 
             'has_4ps' => $validated['has_4ps'],
             'has_nhts' => $validated['has_nhts'],
-
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
-        return redirect()->route('patients.index')->with('success', 'Patient registered successfully!')->with('new_patient_id', $patientId);
+        return redirect()->route('patients.index')->with('success', 'Patient registered successfully!')->with('new_patient_id', $patient->id);
     }
 
     // 4. View Single Patient Profile
     public function show($id)
     {
-        $patient = Patient::findOrFail($id);
+        $patient = Patient::with('household')->findOrFail($id);
 
         $this->authorize('view', $patient);
 
-        $patient = DB::table('patients')
-            ->join('households', 'patients.household_id', '=', 'households.id')
-            ->where('patients.id', $id)
-            ->select('patients.*', 'households.family_name_head', 'households.zone_id')
-            ->first();
-
-        // 2. Calculate Age
-        $patient->age = Carbon::parse($patient->date_of_birth)->age;
-
-        // 3. Load Consultations (History) – worker_id is health_workers.id
-        $history = DB::table('consultations')
-            ->leftJoin('health_workers', 'consultations.worker_id', '=', 'health_workers.id')
-            ->where('patient_id', $id)
-            ->select(
-                'consultations.*',
-                DB::raw($this->dbConcat(['health_workers.first_name', 'health_workers.last_name']).' as worker_name'),
-                'consultations.nature_of_visit as complaint_name'
-            )
-            ->orderByDesc('consultations.created_at')
+        // Load Consultations (History) – worker_id is health_workers.id
+        $history = $patient->consultations()
+            ->with('worker')
+            ->orderByDesc('created_at')
             ->get();
 
-        $immunizationCount = DB::table('immunization_records')->where('patient_id', $id)->count();
+        $immunizationCount = $patient->immunizationRecords()->count();
 
         return view('patients.show', compact('patient', 'history', 'immunizationCount'));
     }

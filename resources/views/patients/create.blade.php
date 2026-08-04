@@ -17,7 +17,7 @@
         @csrf
 
         <div class="pb-3 lg:pb-4 border-b border-gray-100">
-            <h3 class="text-sm lg:text-base font-extrabold text-sky-700 mb-2 lg:mb-3 flex items-center">
+            <h3 class="text-sm lg:text-base font-extrabold mb-2 lg:mb-3 flex items-center" style="color: var(--ink);">
                 <span class="mr-2"><i class="fas fa-user"></i></span>
                 Personal Information
             </h3>
@@ -107,7 +107,7 @@
         </div>
 
         <div class="pb-3 lg:pb-4 border-b border-gray-100">
-            <h3 class="text-sm lg:text-base font-extrabold text-sky-700 mb-2 lg:mb-3 flex items-center">
+            <h3 class="text-sm lg:text-base font-extrabold mb-2 lg:mb-3 flex items-center" style="color: var(--ink);">
                 <span class="mr-2"><i class="fas fa-peso-sign"></i></span>
                 Socio-Economic Status
             </h3>
@@ -233,7 +233,7 @@
         </div>
 
         <div class="pb-2 lg:pb-3 border-b border-gray-100">
-            <h3 class="text-sm lg:text-base font-extrabold text-sky-700 mb-2 lg:mb-3 flex items-center">
+            <h3 class="text-sm lg:text-base font-extrabold mb-2 lg:mb-3 flex items-center" style="color: var(--ink);">
                 <span class="mr-2"><i class="fas fa-home"></i></span>
                 Household Information
             </h3>
@@ -244,27 +244,27 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <button type="button"
                             @click="creating = false"
-                            :class="creating ? 'border-gray-200 bg-slate-50 text-slate-700' : 'border-sky-600 bg-white text-sky-700 shadow-sm'"
-                            class="rounded-2xl border p-4 text-left transition-all duration-200 hover:border-sky-600">
+                            :class="creating ? 'border-gray-200 bg-slate-50 text-slate-700' : 'border-primary bg-white shadow-sm'"
+                            class="rounded-2xl border p-4 text-left transition-all duration-200 hover:border-primary">
                         <div class="flex items-center justify-between gap-3">
                             <div>
                                 <p class="text-sm font-semibold">Select Existing Household</p>
                                 <p class="text-xs text-gray-500 mt-1">Search by family name, zone, or contact.</p>
                             </div>
-                            <span x-show="!creating" x-cloak class="inline-flex items-center rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-700">Active</span>
+                            <span x-show="!creating" x-cloak class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold" style="background: var(--teal-soft); color: var(--primary);">Active</span>
                         </div>
                     </button>
 
                     <button type="button"
                             @click="creating = true"
-                            :class="creating ? 'border-sky-600 bg-white text-sky-700 shadow-sm' : 'border-gray-200 bg-slate-50 text-slate-700'"
-                            class="rounded-2xl border p-4 text-left transition-all duration-200 hover:border-sky-600">
+                            :class="creating ? 'border-primary bg-white shadow-sm' : 'border-gray-200 bg-slate-50 text-slate-700'"
+                            class="rounded-2xl border p-4 text-left transition-all duration-200 hover:border-primary">
                         <div class="flex items-center justify-between gap-3">
                             <div>
                                 <p class="text-sm font-semibold">Create New Household</p>
                                 <p class="text-xs text-gray-500 mt-1">Add a new household record and attach this patient.</p>
                             </div>
-                            <span x-show="creating" x-cloak class="inline-flex items-center rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-700">Active</span>
+                            <span x-show="creating" x-cloak class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold" style="background: var(--teal-soft); color: var(--primary);">Active</span>
                         </div>
                     </button>
                 </div>
@@ -442,7 +442,7 @@
 
                     this.loading = true;
                     try {
-                        const response = await fetch(`/search/households?query=${encodeURIComponent(q)}`);
+                        const response = await fetch(`{{ route('search.households') }}?query=${encodeURIComponent(q)}`);
                         this.results = await response.json();
                         this.dropdownOpen = this.results.length > 0;
                     } catch (e) {

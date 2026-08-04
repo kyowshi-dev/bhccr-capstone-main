@@ -5,7 +5,7 @@
     <div class="md:col-span-1 space-y-4 lg:space-y-6">
         <div class="bg-white p-4 lg:p-6 rounded-xl lg:rounded-lg shadow-sm border border-gray-200">
             <div class="text-center mb-3 lg:mb-4">
-                <div class="w-16 h-16 lg:w-20 lg:h-20 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center text-2xl lg:text-3xl font-bold mx-auto">
+                <div class="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center text-2xl lg:text-3xl font-bold mx-auto" style="background: var(--teal-soft); color: var(--primary);">
                     {{ substr($patient->first_name, 0, 1) }}{{ substr($patient->last_name, 0, 1) }}
                 </div>
                 <h2 class="text-lg lg:text-xl font-bold mt-2">{{ ucwords($patient->last_name) }}, {{ ucwords($patient->first_name) }}</h2>
@@ -141,7 +141,7 @@
                                 <td class="px-2 lg:px-4 py-2 lg:py-3 hidden sm:table-cell">{{ $record->worker_name ?? 'Staff' }}</td>
                                 <td class="px-2 lg:px-4 py-2 lg:py-3">
                                     <span class="px-2 py-0.5 lg:py-1 rounded-full text-xs 
-                                        {{ $record->status == 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                        {{ $record->status == \App\Enums\ConsultationStatus::Completed->value ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
                                         {{ ucfirst($record->status) }}
                                     </span>
                                 </td>
