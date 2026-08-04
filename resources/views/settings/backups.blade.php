@@ -18,7 +18,7 @@
         </div>
     @endif
     @if (session('error'))
-        <div class="rounded-xl border px-4 py-3" style="background: var(--accent-soft); border-color: var(--accent); color: var(--accent);">
+        <div class="rounded-xl border px-4 py-3" style="background: var(--danger-soft); border-color: var(--danger-soft); color: var(--danger);">
             {{ session('error') }}
         </div>
     @endif
@@ -45,7 +45,7 @@
                     <div>
                         <label for="backup_file" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Backup File</label>
                         <input type="file" id="backup_file" name="backup_file" accept=".sql,.sqlite,.db" required class="w-full rounded-lg border py-2 px-3 text-sm focus:outline-none focus:ring-2 transition file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">
-                        @error('backup_file')<p class="mt-1 text-xs" style="color: var(--accent);">{{ $message }}</p>@enderror
+                        @error('backup_file')<p class="mt-1 text-xs" style="color: var(--danger);">{{ $message }}</p>@enderror
                     </div>
                     
                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">

@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditLog;
+use App\Enums\ConsultationStatus;
+use App\Helpers\PatientCode;
 use Asantibanez\LivewireCharts\Models\LineChartModel;
 use Asantibanez\LivewireCharts\Models\PieChartModel;
 use Carbon\Carbon;
@@ -15,87 +16,209 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $healthWorker = DB::table('health_workers')->where('user_id', $user->id)->first();
         $today = Carbon::today();
 
-        if ($healthWorker && strtolower($healthWorker->role) === 'bhw') {
-            $totalPatients = DB::table('patients')->count();
+        $roleName = strtolower(trim((string) ($user->role?->role_name ?? $this->healthWorkerRole($user->id) ?? '')));
 
-            $consultationsToday = DB::table('consultations')
-                ->whereDate('created_at', $today)
-                ->count();
+        return match ($roleName) {
+            'bhw' => $this->bhwDashboard($request, $user, $today),
+            'midwife' => $this->midwifeDashboard($request, $user, $today),
+            'nurse' => $this->nurseDashboard($request, $user, $today),
+            'doctor' => $this->doctorDashboard($request, $user, $today),
+            default => $this->adminDashboard($request, $user, $today),
+        };
+    }
 
-            $pendingConsultations = DB::table('consultations')
-                ->whereIn('status', ['triage', 'nurse_review', 'doctor_review', 'in_progress'])
-                ->count();
+    private function healthWorkerRole(int $userId): ?string
+    {
+        return DB::table('health_workers')->where('user_id', $userId)->value('role');
+    }
 
-            $pendingQueue = DB::table('consultations')
-                ->join('patients', 'consultations.patient_id', '=', 'patients.id')
-                ->whereIn('consultations.status', ['triage', 'nurse_review', 'doctor_review', 'in_progress'])
-                ->orderBy('consultations.created_at')
-                ->limit(5)
-                ->select(
-                    'patients.first_name',
-                    'patients.last_name',
-                    'patients.id as patient_id',
-                    'consultations.status'
-                )
-                ->get()
-                ->map(function ($row) {
-                    return (object) [
-                        'name' => trim($row->first_name.' '.$row->last_name),
-                        'identifier' => 'PT'.str_pad((string) $row->patient_id, 3, '0', STR_PAD_LEFT).' · '.str_replace('_', ' ', (string) $row->status),
-                    ];
-                });
+    private function bhwDashboard(Request $request, $user, Carbon $today)
+    {
+        $totalPatients = DB::table('patients')->count();
 
-            $recentActivity = DB::table('audit_logs')
-                ->leftJoin('users', 'audit_logs.user_id', '=', 'users.id')
-                ->select('audit_logs.*', 'users.username')
-                ->orderByDesc('audit_logs.created_at')
-                ->limit(5)
-                ->get();
+        $consultationsToday = DB::table('consultations')
+            ->whereDate('created_at', $today)
+            ->count();
 
-            $recentPatients = DB::table('patients')
-                ->select('id', 'first_name', 'last_name')
-                ->orderByDesc('created_at')
-                ->limit(3)
-                ->get()
-                ->map(function ($row) {
-                    return (object) [
-                        'id' => $row->id,
-                        'name' => trim($row->first_name.' '.$row->last_name),
-                        'identifier' => 'PT'.str_pad((string) $row->id, 3, '0', STR_PAD_LEFT),
-                    ];
-                });
+        $pendingConsultations = DB::table('consultations')
+            ->whereIn('status', ConsultationStatus::activeValues())
+            ->count();
 
-            $handoutData = $user->canViewDashboardHandouts('bhw')
-                ? $this->loadResultsReady($request)
-                : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
+        $pendingQueue = DB::table('consultations')
+            ->join('patients', 'consultations.patient_id', '=', 'patients.id')
+            ->whereIn('consultations.status', ConsultationStatus::activeValues())
+            ->orderBy('consultations.created_at')
+            ->limit(5)
+            ->select(
+                'patients.first_name',
+                'patients.last_name',
+                'patients.id as patient_id',
+                'consultations.status'
+            )
+            ->get()
+            ->map(function ($row) {
+                return (object) [
+                    'name' => trim($row->first_name.' '.$row->last_name),
+                    'identifier' => PatientCode::format((int) $row->patient_id).' · '.ConsultationStatus::labelOf($row->status),
+                ];
+            });
 
-            return view('dashboard_bhw', [
-                'totalPatients' => $totalPatients,
-                'consultationsToday' => $consultationsToday,
-                'pendingConsultations' => $pendingConsultations,
-                'pendingQueue' => $pendingQueue,
-                'recentPatients' => $recentPatients,
-                'queueUpdatedAt' => now()->format('M j, Y g:i A'),
-                'showResultsReady' => $user->canViewDashboardHandouts('bhw'),
-                ...$handoutData,
-            ]);
-        }
+        $recentActivity = DB::table('audit_logs')
+            ->leftJoin('users', 'audit_logs.user_id', '=', 'users.id')
+            ->select('audit_logs.*', 'users.username')
+            ->orderByDesc('audit_logs.created_at')
+            ->limit(5)
+            ->get();
 
-        if ($healthWorker && strtolower($healthWorker->role) === 'nurse') {
-            return $this->nurseDashboard($request, $user, $today);
-        }
+        $recentPatients = DB::table('patients')
+            ->select('id', 'first_name', 'last_name')
+            ->orderByDesc('created_at')
+            ->limit(3)
+            ->get()
+            ->map(function ($row) {
+                return (object) [
+                    'id' => $row->id,
+                    'name' => trim($row->first_name.' '.$row->last_name),
+                    'identifier' => PatientCode::format((int) $row->id),
+                ];
+            });
 
-        if ($healthWorker && strtolower($healthWorker->role) === 'doctor') {
-            return $this->doctorDashboard($request, $user, $today);
-        }
+        $handoutData = $user->canViewDashboardHandouts('bhw')
+            ? $this->loadResultsReady($request)
+            : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
 
+        return view('dashboard_bhw', [
+            'totalPatients' => $totalPatients,
+            'consultationsToday' => $consultationsToday,
+            'pendingConsultations' => $pendingConsultations,
+            'pendingQueue' => $pendingQueue,
+            'recentPatients' => $recentPatients,
+            'queueUpdatedAt' => now()->format('M j, Y g:i A'),
+            'showResultsReady' => $user->canViewDashboardHandouts('bhw'),
+            ...$handoutData,
+        ]);
+    }
+
+    private function midwifeDashboard(Request $request, $user, Carbon $today)
+    {
+        $handoutData = $user->canViewDashboardHandouts('midwife')
+            ? $this->loadResultsReady($request, limit: 8, defaultToToday: true)
+            : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
+
+        return view('dashboard_midwife', [
+            'showResultsReady' => $user->canViewDashboardHandouts('midwife'),
+            ...$handoutData,
+        ]);
+    }
+
+    private function nurseDashboard(Request $request, $user, Carbon $today)
+    {
+        $consultationsToday = DB::table('consultations')
+            ->whereDate('created_at', $today)
+            ->count();
+
+        $pendingValidationCount = DB::table('consultations')
+            ->where('status', ConsultationStatus::NurseReview->value)
+            ->count();
+
+        $intakePipelineCount = DB::table('consultations')
+            ->whereIn('status', [ConsultationStatus::Triage->value, ConsultationStatus::NurseReview->value])
+            ->count();
+
+        $validationQueue = DB::table('consultations')
+            ->join('patients', 'consultations.patient_id', '=', 'patients.id')
+            ->where('consultations.status', ConsultationStatus::NurseReview->value)
+            ->orderBy('consultations.created_at')
+            ->limit(8)
+            ->select(
+                'consultations.id',
+                'consultations.created_at',
+                'consultations.complaint_text',
+                'patients.first_name',
+                'patients.last_name'
+            )
+            ->get();
+
+        $handoutData = $user->canViewDashboardHandouts('clinical')
+            ? $this->loadResultsReady($request, limit: 8, defaultToToday: true)
+            : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
+
+        return view('dashboard_nurse', [
+            'consultationsToday' => $consultationsToday,
+            'pendingValidationCount' => $pendingValidationCount,
+            'intakePipelineCount' => $intakePipelineCount,
+            'validationQueue' => $validationQueue,
+            'showResultsReady' => $user->canViewDashboardHandouts('clinical'),
+            ...$handoutData,
+        ]);
+    }
+
+    private function doctorDashboard(Request $request, $user, Carbon $today)
+    {
+        $pendingDoctorCount = DB::table('consultations')
+            ->whereIn('status', [ConsultationStatus::DoctorReview->value, ConsultationStatus::InProgress->value])
+            ->count();
+
+        $completedConsultationsToday = DB::table('consultations')
+            ->whereDate('updated_at', $today)
+            ->where('status', ConsultationStatus::Completed->value)
+            ->count();
+
+        $consultationsToday = $pendingDoctorCount + $completedConsultationsToday;
+
+        $followUpConsultationsToday = DB::table('consultations')
+            ->whereDate('created_at', $today)
+            ->where('nature_of_visit', 'Follow-up')
+            ->count();
+
+        $doctorQueue = DB::table('consultations')
+            ->join('patients', 'consultations.patient_id', '=', 'patients.id')
+            ->whereIn('consultations.status', [ConsultationStatus::DoctorReview->value, ConsultationStatus::InProgress->value])
+            ->orderBy('consultations.created_at')
+            ->limit(8)
+            ->select(
+                'consultations.id',
+                'consultations.status',
+                'consultations.created_at',
+                'consultations.complaint_text',
+                'patients.first_name',
+                'patients.last_name'
+            )
+            ->get()
+            ->map(function ($row) {
+                return [
+                    'id' => $row->id,
+                    'patient_name' => trim("{$row->first_name} {$row->last_name}"),
+                    'status' => ConsultationStatus::labelOf($row->status, ucfirst(str_replace('_', ' ', (string) $row->status))),
+                    'time' => Carbon::parse($row->created_at)->diffForHumans(),
+                    'complaint_text' => $row->complaint_text,
+                ];
+            })
+            ->all();
+
+        $handoutData = $user->canViewDashboardHandouts('clinical')
+            ? $this->loadResultsReady($request, limit: 8, defaultToToday: true)
+            : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
+
+        return view('dashboard_doctor', [
+            'consultationsToday' => $consultationsToday,
+            'pendingDoctorCount' => $pendingDoctorCount,
+            'completedConsultationsToday' => $completedConsultationsToday,
+            'followUpConsultationsToday' => $followUpConsultationsToday,
+            'doctorQueue' => $doctorQueue,
+            'showResultsReady' => $user->canViewDashboardHandouts('clinical'),
+            ...$handoutData,
+        ]);
+    }
+
+    private function adminDashboard(Request $request, $user, Carbon $today)
+    {
         $totalPatients = DB::table('patients')->count();
 
         $pendingAppointments = DB::table('consultations')
-            ->whereIn('status', ['triage', 'nurse_review', 'doctor_review', 'in_progress'])
+            ->whereIn('status', ConsultationStatus::activeValues())
             ->count();
 
         $overdueImmunizations = DB::table('immunization_records')
@@ -216,110 +339,6 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function nurseDashboard(Request $request, $user, Carbon $today)
-    {
-        $consultationsToday = DB::table('consultations')
-            ->whereDate('created_at', $today)
-            ->count();
-
-        $pendingValidationCount = DB::table('consultations')
-            ->where('status', 'nurse_review')
-            ->count();
-
-        $intakePipelineCount = DB::table('consultations')
-            ->whereIn('status', ['triage', 'nurse_review'])
-            ->count();
-
-        $validationQueue = DB::table('consultations')
-            ->join('patients', 'consultations.patient_id', '=', 'patients.id')
-            ->where('consultations.status', 'nurse_review')
-            ->orderBy('consultations.created_at')
-            ->limit(8)
-            ->select(
-                'consultations.id',
-                'consultations.created_at',
-                'consultations.complaint_text',
-                'patients.first_name',
-                'patients.last_name'
-            )
-            ->get();
-
-        $handoutData = $user->canViewDashboardHandouts('clinical')
-            ? $this->loadResultsReady($request, limit: 8, defaultToToday: true)
-            : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
-
-        return view('dashboard_nurse', [
-            'consultationsToday' => $consultationsToday,
-            'pendingValidationCount' => $pendingValidationCount,
-            'intakePipelineCount' => $intakePipelineCount,
-            'validationQueue' => $validationQueue,
-            'showResultsReady' => $user->canViewDashboardHandouts('clinical'),
-            ...$handoutData,
-        ]);
-    }
-
-    private function doctorDashboard(Request $request, $user, Carbon $today)
-    {
-        $pendingDoctorCount = DB::table('consultations')
-            ->whereIn('status', ['doctor_review', 'in_progress'])
-            ->count();
-
-        $completedConsultationsToday = DB::table('consultations')
-            ->whereDate('updated_at', $today)
-            ->where('status', 'completed')
-            ->count();
-
-        $consultationsToday = $pendingDoctorCount + $completedConsultationsToday;
-
-        $followUpConsultationsToday = DB::table('consultations')
-            ->whereDate('created_at', $today)
-            ->where('nature_of_visit', 'Follow-up')
-            ->count();
-
-        $doctorQueue = DB::table('consultations')
-            ->join('patients', 'consultations.patient_id', '=', 'patients.id')
-            ->whereIn('consultations.status', ['doctor_review', 'in_progress'])
-            ->orderBy('consultations.created_at')
-            ->limit(8)
-            ->select(
-                'consultations.id',
-                'consultations.status',
-                'consultations.created_at',
-                'consultations.complaint_text',
-                'patients.first_name',
-                'patients.last_name'
-            )
-            ->get()
-            ->map(function ($row) {
-                return [
-                    'id' => $row->id,
-                    'patient_name' => trim("{$row->first_name} {$row->last_name}"),
-                    'status' => match ($row->status) {
-                        'doctor_review' => 'Doctor Review',
-                        'in_progress' => 'In progress',
-                        default => ucfirst(str_replace('_', ' ', (string) $row->status)),
-                    },
-                    'time' => Carbon::parse($row->created_at)->diffForHumans(),
-                    'complaint_text' => $row->complaint_text,
-                ];
-            })
-            ->all();
-
-        $handoutData = $user->canViewDashboardHandouts('clinical')
-            ? $this->loadResultsReady($request, limit: 8, defaultToToday: true)
-            : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
-
-        return view('dashboard_doctor', [
-            'consultationsToday' => $consultationsToday,
-            'pendingDoctorCount' => $pendingDoctorCount,
-            'completedConsultationsToday' => $completedConsultationsToday,
-            'followUpConsultationsToday' => $followUpConsultationsToday,
-            'doctorQueue' => $doctorQueue,
-            'showResultsReady' => $user->canViewDashboardHandouts('clinical'),
-            ...$handoutData,
-        ]);
-    }
-
     /**
      * @return array{resultsReady: Collection, resultsReadyCount: int, resultsFilters: array{query: string, from: string, to: string}}
      */
@@ -327,7 +346,7 @@ class DashboardController extends Controller
     {
         $resultsQuery = DB::table('consultations')
             ->join('patients', 'consultations.patient_id', '=', 'patients.id')
-            ->whereIn('consultations.status', ['completed', 'referred'])
+            ->whereIn('consultations.status', ConsultationStatus::terminalValues())
             ->select(
                 'consultations.id',
                 'consultations.updated_at',

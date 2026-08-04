@@ -51,7 +51,7 @@
                 <div class="min-w-0">
                     <p class="text-sm font-semibold" style="color: var(--ink);">
                         {{ $result->last_name }}, {{ ucwords($result->first_name) }}
-                        <span class="font-medium" style="color: var(--primary);">PT{{ str_pad($result->patient_id, 3, '0', STR_PAD_LEFT) }}</span>
+                        <span class="font-medium" style="color: var(--primary);">{{ \App\Helpers\PatientCode::format((int) $result->patient_id) }}</span>
                     </p>
                     <p class="text-xs mt-0.5" style="color: var(--ink-muted);">
                         Completed {{ \Carbon\Carbon::parse($result->updated_at)->format('M j, Y g:i A') }}
