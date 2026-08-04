@@ -5,29 +5,28 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Concerns\AssignsRolesAndPermissions;
 use Tests\TestCase;
 
 class HouseholdCreateTest extends TestCase
 {
-    use RefreshDatabase;
+    use AssignsRolesAndPermissions, RefreshDatabase;
 
-    private function authorizedUser(): User
+    protected function setUp(): void
     {
-        $user = User::factory()->create();
+        parent::setUp();
 
-        $permissionId = DB::table('permissions')->insertGetId([
+        DB::table('permissions')->insertOrIgnore([
             'name' => 'household',
             'description' => 'Access to Households module',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
 
-        DB::table('users_permissions')->insert([
-            'user_id' => $user->id,
-            'permission_id' => $permissionId,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+    private function authorizedUser(): User
+    {
+        $user = $this->createUserWithPermissions(['household']);
 
         DB::table('zones')->insert(['id' => 1, 'zone_number' => '1']);
         DB::table('zones')->insert(['id' => 2, 'zone_number' => '2']);

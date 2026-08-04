@@ -5,11 +5,12 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Concerns\AssignsRolesAndPermissions;
 use Tests\TestCase;
 
 class ConsultationLifecycleTest extends TestCase
 {
-    use RefreshDatabase;
+    use AssignsRolesAndPermissions, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -143,10 +144,7 @@ class ConsultationLifecycleTest extends TestCase
 
     private function createWorkerUser(string $role): User
     {
-        $user = User::factory()->create();
-        $user->permissions()->sync(
-            DB::table('permissions')->whereIn('name', ['patients', 'consultations'])->pluck('id')
-        );
+        $user = $this->createUserWithPermissions(['patients', 'consultations']);
 
         DB::table('health_workers')->insert([
             'user_id' => $user->id,

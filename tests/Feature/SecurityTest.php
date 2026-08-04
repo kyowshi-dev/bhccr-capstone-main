@@ -6,23 +6,24 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\AssignsRolesAndPermissions;
 use Tests\TestCase;
 
 class SecurityTest extends TestCase
 {
-    use RefreshDatabase;
+    use AssignsRolesAndPermissions, RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        DB::table('user_roles')->insert([
+        DB::table('user_roles')->insertOrIgnore([
             ['id' => 1, 'role_name' => 'Admin'],
             ['id' => 2, 'role_name' => 'Nurse'],
             ['id' => 3, 'role_name' => 'BHW'],
         ]);
 
-        DB::table('permissions')->insert([
+        DB::table('permissions')->insertOrIgnore([
             ['name' => 'household', 'description' => 'Access to Household module', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'patients', 'description' => 'Access to Patients module', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'consultations', 'description' => 'Access to Consultations module', 'created_at' => now(), 'updated_at' => now()],
@@ -31,18 +32,6 @@ class SecurityTest extends TestCase
             ['name' => 'reports', 'description' => 'Access to Reports module', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'users', 'description' => 'Access to User Management', 'created_at' => now(), 'updated_at' => now()],
         ]);
-    }
-
-    private function createUserWithPermissions(array $permissions = [], array $attributes = []): User
-    {
-        $user = User::factory()->create($attributes);
-
-        if (! empty($permissions)) {
-            $permissionIds = DB::table('permissions')->whereIn('name', $permissions)->pluck('id');
-            $user->permissions()->sync($permissionIds);
-        }
-
-        return $user;
     }
 
     // ============================================================
@@ -54,6 +43,8 @@ class SecurityTest extends TestCase
         $admin = $this->createUserWithPermissions(['users']);
         $this->actingAs($admin);
 
+        $roleId = DB::table('user_roles')->insertGetId(['role_name' => 'TestRole']);
+
         $this->post('/users', [
             'first_name' => 'Test',
             'last_name' => 'User',
@@ -61,6 +52,7 @@ class SecurityTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'Password123!@#',
             'password_confirmation' => 'Password123!@#',
+            'role_id' => $roleId,
         ]);
 
         $user = User::where('username', 'testuser')->first();
@@ -72,7 +64,8 @@ class SecurityTest extends TestCase
     public function test_password_is_hashed_when_updating_user(): void
     {
         $admin = $this->createUserWithPermissions(['users']);
-        $userToUpdate = User::factory()->create();
+        $userToUpdate = $this->createUserWithPermissions([]);
+        $roleId = DB::table('user_roles')->insertGetId(['role_name' => 'TestRole']);
         $this->actingAs($admin);
 
         $this->put("/users/{$userToUpdate->id}", [
@@ -82,6 +75,7 @@ class SecurityTest extends TestCase
             'email' => $userToUpdate->email,
             'password' => 'NewPassword123!@#',
             'password_confirmation' => 'NewPassword123!@#',
+            'role_id' => $roleId,
         ]);
 
         $updated = $userToUpdate->fresh();
@@ -141,11 +135,7 @@ class SecurityTest extends TestCase
 
     public function test_bhw_cannot_view_patient_without_auth(): void
     {
-        $bhw = User::factory()->create();
-        // Assign BHW permissions (household, patients, consultations, reports)
-        $permissions = ['household', 'patients', 'consultations', 'reports'];
-        $permissionIds = DB::table('permissions')->whereIn('name', $permissions)->pluck('id');
-        $bhw->permissions()->sync($permissionIds);
+        $bhw = $this->createUserWithPermissions(['household', 'patients', 'consultations', 'reports']);
 
         DB::table('zones')->insert(['id' => 1, 'zone_number' => '1']);
         $household = DB::table('households')->insertGetId([
@@ -163,11 +153,7 @@ class SecurityTest extends TestCase
 
     public function test_nurse_can_view_patient(): void
     {
-        $nurse = User::factory()->create();
-        // Assign Nurse permissions (patients, consultations, medicines)
-        $permissions = ['patients', 'consultations', 'medicines'];
-        $permissionIds = DB::table('permissions')->whereIn('name', $permissions)->pluck('id');
-        $nurse->permissions()->sync($permissionIds);
+        $nurse = $this->createUserWithPermissions(['patients', 'consultations', 'medicines']);
 
         DB::table('zones')->insert(['id' => 1, 'zone_number' => '1']);
         $household = DB::table('households')->insertGetId([
@@ -185,11 +171,7 @@ class SecurityTest extends TestCase
 
     public function test_unauthorized_cannot_view_consultation(): void
     {
-        $bhw = User::factory()->create();
-        // Assign BHW permissions (household, patients, consultations, reports)
-        $permissions = ['household', 'patients', 'consultations', 'reports'];
-        $permissionIds = DB::table('permissions')->whereIn('name', $permissions)->pluck('id');
-        $bhw->permissions()->sync($permissionIds);
+        $bhw = $this->createUserWithPermissions(['household', 'patients', 'consultations', 'reports']);
 
         // Create health worker record
         DB::table('health_workers')->insert([
@@ -226,11 +208,7 @@ class SecurityTest extends TestCase
 
     public function test_nurse_can_view_consultation(): void
     {
-        $nurse = User::factory()->create();
-        // Assign Nurse permissions (patients, consultations, medicines)
-        $permissions = ['patients', 'consultations', 'medicines'];
-        $permissionIds = DB::table('permissions')->whereIn('name', $permissions)->pluck('id');
-        $nurse->permissions()->sync($permissionIds);
+        $nurse = $this->createUserWithPermissions(['patients', 'consultations', 'medicines']);
 
         DB::table('health_workers')->insert([
             'id' => 1,
@@ -327,6 +305,7 @@ class SecurityTest extends TestCase
     public function test_admin_can_create_user(): void
     {
         $admin = $this->createUserWithPermissions(['users']);
+        $roleId = DB::table('user_roles')->insertGetId(['role_name' => 'TestRole']);
         $this->actingAs($admin);
 
         $response = $this->post('/users', [
@@ -336,6 +315,7 @@ class SecurityTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
+            'role_id' => $roleId,
         ]);
 
         $response->assertStatus(302);
@@ -400,6 +380,66 @@ class SecurityTest extends TestCase
 
         $response = $this->get('/users');
         $response->assertStatus(200);
+    }
+
+    // ============================================================
+    // SEARCH ENDPOINT PERMISSION TESTS (PII)
+    // ============================================================
+
+    public function test_user_without_patients_permission_cannot_search_patients(): void
+    {
+        $bhw = $this->createUserWithPermissions(['household']);
+        $this->actingAs($bhw);
+
+        $response = $this->get('/search/patients?query=Doe');
+        $response->assertStatus(403);
+    }
+
+    public function test_user_with_patients_permission_can_search_patients(): void
+    {
+        $nurse = $this->createUserWithPermissions(['patients']);
+        $this->actingAs($nurse);
+
+        DB::table('zones')->insert(['id' => 1, 'zone_number' => '1']);
+        DB::table('households')->insert([
+            'zone_id' => 1,
+            'family_name_head' => 'Test Family',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $patient = $this->createTestPatient(1);
+
+        $response = $this->get('/search/patients?query=Doe');
+        $response->assertStatus(200);
+        $response->assertJsonPath('0.id', $patient);
+        $response->assertJsonPath('0.text', 'Doe, John');
+    }
+
+    public function test_user_without_households_permission_cannot_search_households(): void
+    {
+        $nurse = $this->createUserWithPermissions(['patients']);
+        $this->actingAs($nurse);
+
+        $response = $this->get('/search/households?query=Test');
+        $response->assertStatus(403);
+    }
+
+    public function test_user_with_households_permission_can_search_households(): void
+    {
+        $bhw = $this->createUserWithPermissions(['household']);
+        $this->actingAs($bhw);
+
+        DB::table('zones')->insert(['id' => 1, 'zone_number' => '1']);
+        DB::table('households')->insert([
+            'zone_id' => 1,
+            'family_name_head' => 'Test Family',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->get('/search/households?query=Test');
+        $response->assertStatus(200);
+        $response->assertJsonPath('0.text', 'Test Family');
     }
 
     // ============================================================

@@ -3,16 +3,16 @@
 namespace Tests\Feature;
 
 use App\Models\ApplicationSetting;
-use App\Models\Permission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\AssignsRolesAndPermissions;
 use Tests\TestCase;
 
 class SessionTimeoutTest extends TestCase
 {
-    use DatabaseMigrations;
+    use AssignsRolesAndPermissions, DatabaseMigrations;
 
     protected function setUp(): void
     {
@@ -24,19 +24,7 @@ class SessionTimeoutTest extends TestCase
 
     public function test_session_timeout_setting_can_be_updated(): void
     {
-        $user = User::query()->create([
-            'username' => 'admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'is_active' => true,
-        ]);
-
-        $permission = Permission::query()->create([
-            'name' => 'users',
-            'description' => 'User management',
-        ]);
-
-        $user->permissions()->attach($permission);
+        $user = $this->createUserWithPermissions(['users']);
 
         $response = $this->actingAs($user)->put(route('profile.settings.update'), [
             'session_timeout' => 30,
