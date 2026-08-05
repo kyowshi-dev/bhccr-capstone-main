@@ -21,11 +21,15 @@ Laravel 12 app: **BHCIS System Sta. Ana** — Barangay Health Center Information
 
 ## Frontend conventions
 
-- Read `.opencode/skills/bhccr-ui-style/SKILL.md` (mirrored in `.cursor/skills/bhccr-ui-style/SKILL.md`) before touching any view — it is the authoritative style guide
+- Read `.opencode/skills/bhccr-ui-style/SKILL.md` before touching any view — it is the authoritative style guide
 - Use CSS variables from `resources/views/layouts/app.blade.php` (`var(--primary)` DOH green `#0d4a3c`, `--ink`, etc.); never hardcode brand colors
 - Poppins font; never Inter/Roboto/Arial
 - SweetAlert2 (`Swal.fire`) for confirmations/errors, not native dialogs
 - Two distinct UI modes: interactive screens (`@extends('layouts.app')`) vs. DOH print/PDF forms (black 1px borders, fixed grids — never app-shell tokens)
+
+## On-demand skills
+
+- Load `security-review` skill before auth/input/API/payment/sensitive-feature changes; `coding-standards` and `tdd-workflow` for new code. These are invoked on demand, not always-loaded.
 
 ## Docs
 

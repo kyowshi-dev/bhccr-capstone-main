@@ -1,22 +1,28 @@
 {
   "version": 1,
   "skills": {
+    "git-guardrails-claude-code": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/misc/git-guardrails-claude-code/SKILL.md",
+      "computedHash": "8c29552c621da0121427306afd92f8e02f47f446cdb0b55ceae01de6879fcb3a"
+    },
     "laravel-quality": {
       "source": "leeovery/agentic-skills",
       "sourceType": "github",
       "skillPath": "laravel/skills/laravel-quality/SKILL.md",
       "computedHash": "76fbd2b85885ffbf50bf07ec39d0e2ecef071e35c783faca16a0bcaafacec430"
     },
-    "refactor-laravel": {
-      "source": "snakeo/claude-debug-and-refactor-skills-plugin",
-      "sourceType": "github",
-      "skillPath": "plugins/debug-and-refactor/skills/refactor-laravel/SKILL.md",
-      "computedHash": "installed-local"
-    },
     "laravel-simplifier": {
       "source": "tmeister/skills",
       "sourceType": "github",
       "skillPath": "skills/laravel-simplifier/SKILL.md",
+      "computedHash": "installed-local"
+    },
+    "refactor-laravel": {
+      "source": "snakeo/claude-debug-and-refactor-skills-plugin",
+      "sourceType": "github",
+      "skillPath": "plugins/debug-and-refactor/skills/refactor-laravel/SKILL.md",
       "computedHash": "installed-local"
     }
   }
