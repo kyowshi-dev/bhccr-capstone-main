@@ -15,17 +15,27 @@ class Vaccine extends Model
         'description',
         'category',
         'sort_order',
+        'group_key',
+        'start_after_days',
+        'complete_before_days',
     ];
 
     protected function casts(): array
     {
         return [
             'sort_order' => 'integer',
+            'start_after_days' => 'integer',
+            'complete_before_days' => 'integer',
         ];
     }
 
     public function immunizationRecords(): HasMany
     {
         return $this->hasMany(Immunization::class, 'vaccine_id');
+    }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(VaccineSchedule::class, 'vaccine_id')->orderBy('dose_number');
     }
 }

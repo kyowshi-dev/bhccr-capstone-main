@@ -29,4 +29,28 @@ class ImmunizationPolicy
     {
         return $user->hasPermission('immunizations');
     }
+
+    /**
+     * Determine whether the user can enroll infants.
+     */
+    public function enrollInfant(User $user): bool
+    {
+        return $user->hasPermission('immunizations');
+    }
+
+    /**
+     * Determine whether the user can mark or clear no-shows.
+     */
+    public function markNoShow(User $user): bool
+    {
+        return $user->hasPermission('immunizations');
+    }
+
+    /**
+     * Determine whether the user can match households for infant enrollment.
+     */
+    public function householdMatch(User $user): bool
+    {
+        return $user->hasPermission('immunizations');
+    }
 }

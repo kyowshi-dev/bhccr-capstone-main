@@ -17,9 +17,12 @@ class Immunization extends Model
         'vaccine_id',
         'dose_number',
         'date_given',
+        'temp_recorded',
         'administered_by',
         'next_due_date',
         'notes',
+        'no_show',
+        'no_show_at',
     ];
 
     protected function casts(): array
@@ -27,7 +30,10 @@ class Immunization extends Model
         return [
             'dose_number' => 'integer',
             'date_given' => 'date',
+            'temp_recorded' => 'decimal:2',
             'next_due_date' => 'date',
+            'no_show' => 'boolean',
+            'no_show_at' => 'datetime',
         ];
     }
 

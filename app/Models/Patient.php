@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Helpers\PatientCode;
+use App\Services\ChildImmunizationService;
 use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +31,8 @@ class Patient extends Model
         'spouse_name',
         'family_relationship',
         'residential_address',
+        'birth_weight',
+        'guardian_name',
         'is_philhealth_member',
         'status_type',
         'philhealth_no',
@@ -49,6 +52,7 @@ class Patient extends Model
     {
         return [
             'date_of_birth' => 'date',
+            'birth_weight' => 'decimal:2',
             'has_4ps' => 'boolean',
             'has_nhts' => 'boolean',
         ];
@@ -80,6 +84,13 @@ class Patient extends Model
     {
         return Attribute::make(
             get: fn () => $this->date_of_birth ? $this->date_of_birth->age : null,
+        );
+    }
+
+    public function ageDetail(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->date_of_birth ? array_values(ChildImmunizationService::ageParts($this)) : null,
         );
     }
 

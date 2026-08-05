@@ -145,6 +145,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/immunizations', [ImmunizationController::class, 'store'])->name('immunizations.store');
     Route::post('/patients/{id}/immunizations/administer', [ImmunizationController::class, 'administer'])
         ->name('immunizations.administer');
+    Route::post('/immunizations/infants', [ImmunizationController::class, 'enrollInfant'])
+        ->name('immunizations.enroll-infant');
+    Route::post('/immunizations/records/{record}/no-show', [ImmunizationController::class, 'toggleNoShow'])
+        ->name('immunizations.no-show');
+    Route::get('/immunizations/household-match', [ImmunizationController::class, 'householdMatch'])
+        ->middleware('throttle:60,1')
+        ->name('immunizations.household-match');
 
     // 6. REPORTS (FHSIS)
     Route::get('/reports', [ReportController::class, 'index'])
