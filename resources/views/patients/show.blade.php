@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Patient Profile')
+
 @section('content')
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
     <div class="md:col-span-1 space-y-4 lg:space-y-6">

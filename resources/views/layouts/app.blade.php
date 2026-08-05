@@ -7,420 +7,10 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/layout.js'])
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @livewireStyles
-    
-    <style>
-        :root {
-            /* Base Palette */
-            --bg-page: #ffffff;
-            --bg-surface: #ffffff;
-            --bg-surface-elevated: #ffffff;
-            --bg-sidebar: #0d4a3c;
-            --bg-header: #0a3d32;
-            
-            /* Text / Ink Colors */
-            --ink: #0f172a; 
-            --ink-muted: #475569; 
-            --ink-subtle: #94a3b8;
-            --border: rgba(15, 23, 42, 0.08); 
 
-            /* Primary Colors */
-            --primary: #0d4a3c;
-            --primary-hover: #0a3d32;
-            --teal-soft: rgba(13, 74, 60, 0.08);
-
-            /* Accent Colors */
-            --accent: #0d4a3c;
-            --accent-hover: #0a3d32;
-            --accent-soft: rgba(196, 92, 65, 0.12);
-            --accent-blue: #0284c7;
-            --accent-blue-soft: rgba(2, 132, 199, 0.12);
-            --danger: #dc2626;
-            --danger-soft: rgba(220, 38, 38, 0.12);
-
-            /* Shadows */
-            --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-            --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
-            --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
-        }
-
-        /* === AUTOSCALING FOUNDATION === */
-        html {
-            font-size: clamp(13px, 1.1vw, 16px);
-        }
-
-        body {
-            font-size: clamp(13px, 1.1vw, 16px);
-        }
-
-        .grain::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* === AUTOSCALING TYPOGRAPHY === */
-        h1 { font-size: clamp(1.5rem, 5vw, 2.25rem); line-height: clamp(1.3, 1.5, 1.8); }
-        h2 { font-size: clamp(1.25rem, 3.5vw, 1.875rem); line-height: clamp(1.3, 1.5, 1.8); }
-        h3 { font-size: clamp(1.125rem, 2.5vw, 1.5rem); line-height: clamp(1.4, 1.6, 1.9); }
-        h4 { font-size: clamp(1rem, 2vw, 1.25rem); }
-        h5 { font-size: clamp(0.95rem, 1.8vw, 1.125rem); }
-        
-        .text-xs { font-size: clamp(0.7rem, 0.85vw, 0.875rem); }
-        .text-sm { font-size: clamp(0.8rem, 0.95vw, 0.9375rem); }
-        .text-base { font-size: clamp(0.9rem, 1.1vw, 1rem); }
-        .text-lg { font-size: clamp(1rem, 1.2vw, 1.125rem); }
-        .text-xl { font-size: clamp(1.1rem, 1.4vw, 1.25rem); }
-
-        /* === AUTOSCALING SPACING === */
-        .px-2 { padding-left: clamp(0.4rem, 1vw, 0.5rem); padding-right: clamp(0.4rem, 1vw, 0.5rem); }
-        .px-3 { padding-left: clamp(0.6rem, 1.5vw, 0.75rem); padding-right: clamp(0.6rem, 1.5vw, 0.75rem); }
-        .px-4 { padding-left: clamp(0.8rem, 2vw, 1rem); padding-right: clamp(0.8rem, 2vw, 1rem); }
-        .px-5 { padding-left: clamp(1rem, 2.5vw, 1.25rem); padding-right: clamp(1rem, 2.5vw, 1.25rem); }
-        .px-6 { padding-left: clamp(1.2rem, 3vw, 1.5rem); padding-right: clamp(1.2rem, 3vw, 1.5rem); }
-        
-        .py-1 { padding-top: clamp(0.2rem, 0.5vw, 0.25rem); padding-bottom: clamp(0.2rem, 0.5vw, 0.25rem); }
-        .py-2 { padding-top: clamp(0.4rem, 1vw, 0.5rem); padding-bottom: clamp(0.4rem, 1vw, 0.5rem); }
-        .py-3 { padding-top: clamp(0.6rem, 1.5vw, 0.75rem); padding-bottom: clamp(0.6rem, 1.5vw, 0.75rem); }
-        .py-4 { padding-top: clamp(0.8rem, 2vw, 1rem); padding-bottom: clamp(0.8rem, 2vw, 1rem); }
-        .py-5 { padding-top: clamp(1rem, 2.5vw, 1.25rem); padding-bottom: clamp(1rem, 2.5vw, 1.25rem); }
-        
-        .gap-2 { gap: clamp(0.4rem, 1vw, 0.5rem); }
-        .gap-3 { gap: clamp(0.6rem, 1.5vw, 0.75rem); }
-        .gap-4 { gap: clamp(0.8rem, 2vw, 1rem); }
-        .gap-5 { gap: clamp(1rem, 2.5vw, 1.25rem); }
-
-        .mb-2 { margin-bottom: clamp(0.4rem, 1vw, 0.5rem); }
-        .mb-4 { margin-bottom: clamp(0.8rem, 2vw, 1rem); }
-        .mb-6 { margin-bottom: clamp(1.2rem, 3vw, 1.5rem); }
-        .mb-8 { margin-bottom: clamp(1.6rem, 4vw, 2rem); }
-
-        /* === AUTOSCALING COMPONENTS === */
-        .logo-mark { 
-            width: clamp(36px, 8vw, 48px); 
-            height: clamp(36px, 8vw, 48px); 
-            border-radius: clamp(8px, 1.5vw, 12px); 
-            overflow: hidden; 
-            display: inline-flex; 
-            align-items: center; 
-            justify-content: center; 
-            background: var(--bg-surface); 
-        }
-        .logo-mark img { width: 100%; height: 100%; object-fit: cover; }
-
-        /* === AUTOSCALING SIDEBAR === */
-        aside {
-            width: clamp(240px, 30vw, 300px) !important;
-        }
-
-        aside.lg\:w-0 {
-            width: 0 !important;
-        }
-        
-        .disabled {
-            opacity: 0.5;
-            filter: grayscale(100%);
-            cursor: not-allowed;
-        }
-
-        /* === AUTOSCALING BUTTONS & FORMS === */
-        button, a[role="button"] {
-            padding-top: clamp(0.5rem, 1.2vw, 0.75rem);
-            padding-bottom: clamp(0.5rem, 1.2vw, 0.75rem);
-            padding-left: clamp(0.8rem, 2vw, 1.25rem);
-            padding-right: clamp(0.8rem, 2vw, 1.25rem);
-            border-radius: clamp(0.375rem, 1vw, 0.625rem);
-            font-size: clamp(0.8rem, 0.95vw, 1rem);
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="password"],
-        input[type="number"],
-        input[type="date"],
-        select,
-        textarea {
-            padding: clamp(0.5rem, 1vw, 0.75rem);
-            border-radius: clamp(0.375rem, 0.8vw, 0.625rem);
-            font-size: clamp(0.85rem, 1vw, 1rem);
-            border: 1px solid var(--border);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        input[type="password"]:focus,
-        input[type="number"]:focus,
-        input[type="date"]:focus,
-        select:focus,
-        textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 0.2rem rgba(13, 74, 60, 0.15);
-        }
-
-        /* === AUTOSCALING CARDS & MODALS === */
-        .rounded-2xl {
-            border-radius: clamp(0.75rem, 2vw, 1.5rem);
-        }
-
-        .rounded-xl {
-            border-radius: clamp(0.5rem, 1.5vw, 0.75rem);
-        }
-
-        .rounded-lg {
-            border-radius: clamp(0.375rem, 1vw, 0.5rem);
-        }
-
-        /* === AUTOSCALING TABLE === */
-        table {
-            font-size: clamp(0.8rem, 0.95vw, 0.95rem);
-        }
-
-        th {
-            padding: clamp(0.6rem, 1.2vw, 0.75rem);
-            font-size: clamp(0.8rem, 0.9vw, 0.9375rem);
-        }
-
-        td {
-            padding: clamp(0.5rem, 1vw, 0.875rem);
-            font-size: clamp(0.8rem, 0.95vw, 0.95rem);
-        }
-
-        /* === AUTOSCALING MODALS === */
-        #pageModalPanel,
-        #consultationCreateModalPanel,
-        #printReferralConfirmPanel {
-            max-width: min(95vw, 900px);
-            border-radius: clamp(0.75rem, 2vw, 1.25rem);
-            padding: clamp(1rem, 3vw, 2rem);
-        }
-
-        /* === AUTOSCALING KPI CARDS === */
-        .kpi-card {
-            min-height: clamp(3rem, 10vw, 5rem);
-            padding: clamp(0.75rem, 1.5vw, 1.25rem);
-            border-radius: clamp(0.625rem, 1.5vw, 0.875rem);
-        }
-
-        .kpi-card__icon {
-            width: clamp(2rem, 4vw, 2.5rem);
-            height: clamp(2rem, 4vw, 2.5rem);
-            flex-shrink: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: clamp(0.4rem, 1vw, 0.625rem);
-        }
-
-        .kpi-card__icon svg {
-            width: clamp(1rem, 2vw, 1.25rem);
-            height: clamp(1rem, 2vw, 1.25rem);
-        }
-
-        .kpi-card__value {
-            font-family: 'Poppins', system-ui, sans-serif;
-            font-weight: 600;
-            font-size: clamp(1rem, 2vw, 1.5rem);
-            line-height: 1.2;
-            color: var(--ink);
-        }
-
-        .dashboard-chart__plot {
-            height: clamp(10rem, 40vw, 16rem);
-        }
-
-        /* === AUTOSCALING NAVIGATION === */
-        .nav-link {
-            padding: clamp(0.5rem, 1vw, 0.75rem) clamp(0.75rem, 1.5vw, 1rem);
-            border-radius: clamp(0.375rem, 0.8vw, 0.625rem);
-            font-size: clamp(0.8rem, 0.95vw, 0.95rem);
-            gap: clamp(0.5rem, 1vw, 0.75rem);
-        }
-
-        .nav-link i {
-            font-size: clamp(0.875rem, 1.2vw, 1.1rem);
-        }
-
-        /* === AUTOSCALING ANIMATIONS === */
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(clamp(8px, 2vw, 16px)); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-in { animation: fadeSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-        .delay-1 { animation-delay: 0.05s; }
-        .delay-2 { animation-delay: 0.1s; }
-
-        /* Normalize checkbox appearance & size across the app */
-        input[type="checkbox"],
-        input[type="checkbox"].checkbox,
-        input[type="checkbox"].household-checkbox,
-        input[type="checkbox"]#selectAllCheckbox,
-        input[type="checkbox"].rounded {
-            width: clamp(0.9rem, 2vw, 1.125rem) !important; 
-            height: clamp(0.9rem, 2vw, 1.125rem) !important; 
-            min-width: clamp(0.9rem, 2vw, 1.125rem) !important;
-            min-height: clamp(0.9rem, 2vw, 1.125rem) !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-            vertical-align: middle !important;
-            -webkit-appearance: checkbox !important;
-            appearance: checkbox !important;
-            transform: scale(1) !important;
-        }
-
-        /* Reduce visual differences from border-radius utilities */
-        input[type="checkbox"].rounded { border-radius: clamp(3px, 0.5vw, 5px) !important; }
-
-        /* Ensure accent color consistent */
-        input[type="checkbox"] { accent-color: var(--primary); }
-
-        .app-sidebar,
-        .app-header {
-            color: #ffffff;
-        }
-
-        .app-sidebar .text-ink,
-        .app-sidebar .text-ink-muted,
-        .app-sidebar .text-primary,
-        .app-sidebar .nav-link,
-        .app-sidebar button {
-            color: rgba(255, 255, 255, 0.92) !important;
-        }
-
-        .app-sidebar .border-border {
-            border-color: rgba(255, 255, 255, 0.18) !important;
-        }
-
-        .app-sidebar .nav-link:hover,
-        .app-sidebar button:hover {
-            background: rgba(255, 255, 255, 0.14) !important;
-            color: #ffffff !important;
-        }
-
-        /* === RESPONSIVE PADDING FOR MAIN CONTENT === */
-        main {
-            padding-left: clamp(0.5rem, 2vw, 1rem);
-            padding-right: clamp(0.5rem, 2vw, 1rem);
-            padding-top: clamp(0.75rem, 1.5vw, 1.5rem);
-            padding-bottom: clamp(0.5rem, 1.5vw, 1rem);
-        }
-
-        .max-w-7xl, .max-w-5xl {
-            margin-left: auto;
-            margin-right: auto;
-            width: 100%;
-            padding-left: clamp(0.5rem, 1.5vw, 1rem);
-            padding-right: clamp(0.5rem, 1.5vw, 1rem);
-        }
-
-        /* === BREADCRUMB AUTOSCALING === */
-        nav[aria-label="Breadcrumb"] {
-            font-size: clamp(0.75rem, 0.9vw, 0.9375rem);
-            margin-left: clamp(0.5rem, 2vw, 1.25rem);
-            margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
-            gap: clamp(0.4rem, 0.8vw, 0.625rem);
-        }
-
-        /* === NOTIFICATION TOAST AUTOSCALING === */
-        #liveConsultationToast {
-            width: clamp(300px, 90vw, 420px);
-            border-radius: clamp(1rem, 2vw, 1.5rem);
-            bottom: clamp(1rem, 3vw, 2rem);
-            right: clamp(1rem, 3vw, 2rem);
-        }
-
-        #liveConsultationToast .p-5 {
-            padding: clamp(1rem, 1.5vw, 1.25rem);
-        }
-
-        #liveConsultationToast .p-4 {
-            padding: clamp(0.75rem, 1.2vw, 1rem);
-        }
-
-        @media (max-width: 640px) {
-            #liveConsultationToast {
-                width: clamp(280px, 95vw, 350px);
-                border-radius: clamp(0.75rem, 1.5vw, 1rem);
-            }
-        }
-    </style>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        display: ['Poppins', 'system-ui', 'sans-serif'],
-                        sans: ['Poppins', 'system-ui', 'sans-serif'],
-                    },
-                    colors: {
-                        page: 'var(--bg-page)',
-                        surface: 'var(--bg-surface)',
-                        'surface-elevated': 'var(--bg-surface-elevated)',
-                        ink: 'var(--ink)',
-                        'ink-muted': 'var(--ink-muted)',
-                        'ink-subtle': 'var(--ink-subtle)',
-                        border: 'var(--border)',
-                        primary: 'var(--primary)',
-                        'teal-soft': 'var(--teal-soft)',
-                        accent: 'var(--accent)',
-                        'accent-blue': 'var(--accent-blue)',
-                        'accent-blue-soft': 'var(--accent-blue-soft)',
-                        danger: 'var(--danger)',
-                        'danger-soft': 'var(--danger-soft)',
-                        sky: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            200: '#bae6fd',
-                            300: '#7dd3fc',
-                            400: '#38bdf8',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            800: '#075985',
-                        },
-                    },
-                    boxShadow: {
-                        sm: 'var(--shadow-sm)',
-                        md: 'var(--shadow-md)',
-                        lg: 'var(--shadow-lg)',
-                    },
-                    /* === AUTOSCALING UTILITIES === */
-                    fontSize: {
-                        'xs': ['clamp(0.7rem, 0.85vw, 0.875rem)', 'clamp(1rem, 1.2vw, 1.25rem)'],
-                        'sm': ['clamp(0.8rem, 0.95vw, 0.9375rem)', 'clamp(1.1rem, 1.3vw, 1.375rem)'],
-                        'base': ['clamp(0.9rem, 1.1vw, 1rem)', 'clamp(1.3rem, 1.5vw, 1.5rem)'],
-                        'lg': ['clamp(1rem, 1.2vw, 1.125rem)', 'clamp(1.4rem, 1.6vw, 1.625rem)'],
-                        'xl': ['clamp(1.1rem, 1.4vw, 1.25rem)', 'clamp(1.5rem, 1.8vw, 1.75rem)'],
-                    },
-                    spacing: {
-                        'autoscale-xs': 'clamp(0.25rem, 0.5vw, 0.375rem)',
-                        'autoscale-sm': 'clamp(0.5rem, 1vw, 0.75rem)',
-                        'autoscale-md': 'clamp(0.75rem, 1.5vw, 1rem)',
-                        'autoscale-lg': 'clamp(1rem, 2vw, 1.5rem)',
-                        'autoscale-xl': 'clamp(1.5rem, 3vw, 2rem)',
-                    },
-                    borderRadius: {
-                        'autoscale': 'clamp(0.375rem, 1vw, 0.625rem)',
-                        'autoscale-lg': 'clamp(0.75rem, 2vw, 1.5rem)',
-                    }
-                },
-            },
-        };
-    </script>
 </head>
 
 <body x-data="{ sidebarOpen: false, desktopSidebarOpen: localStorage.getItem('desktop-sidebar-open') !== '0', showVitalsModal: false }" 
@@ -480,11 +70,12 @@
                 @php
                     /** @var \App\Models\User|null $authUser */
                     $authUser = auth()->user();
+                    $currentUrl = request()->url();
                     $swalError = "Swal.fire({title: 'Unauthorized', text: 'Please contact the administrator if you believe this is a mistake.', icon: 'error'}); return false;";
                 @endphp
 
-                <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
-                    <i class="fa-solid fa-house texhovert-base opacity-70" aria-hidden="true"></i>
+                <a href="{{ route('dashboard') }}" aria-current="{{ $currentUrl === route('dashboard') ? 'page' : 'false' }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
+                    <i class="fa-solid fa-house text-base opacity-70" aria-hidden="true"></i>
                     <span>Dashboard</span>
                 </a>
 
@@ -500,6 +91,7 @@
                          class="mt-1 ml-2 pl-3 border-l border-border space-y-0.5">
                         
                         <a href="{{ route('households.index') }}" 
+                           aria-current="{{ $currentUrl === route('households.index') ? 'page' : 'false' }}"
                            class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5 {{ !$authUser->hasPermission('household') ? 'disabled' : '' }}" 
                            {!! !$authUser->hasPermission('household') ? 'onclick="'.$swalError.'"' : '' !!}>
                             <i class="fa-solid fa-house-chimney text-sm opacity-70" aria-hidden="true"></i>
@@ -507,6 +99,7 @@
                         </a>
 
                         <a href="{{ url('/patients') }}" 
+                           aria-current="{{ $currentUrl === url('/patients') ? 'page' : 'false' }}"
                            class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5 {{ !$authUser->hasPermission('patients') ? 'disabled' : '' }}" 
                            {!! !$authUser->hasPermission('patients') ? 'onclick="'.$swalError.'"' : '' !!}>
                             <i class="fa-solid fa-user-injured text-sm opacity-70" aria-hidden="true"></i>
@@ -514,6 +107,7 @@
                         </a>
 
                         <a href="{{ route('consultations.index') }}" 
+                           aria-current="{{ $currentUrl === route('consultations.index') ? 'page' : 'false' }}"
                            class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5 {{ !$authUser->hasPermission('consultations') ? 'disabled' : '' }}" 
                            {!! !$authUser->hasPermission('consultations') ? 'onclick="'.$swalError.'"' : '' !!}>
                             <i class="fa-solid fa-stethoscope text-sm opacity-70" aria-hidden="true"></i>
@@ -521,6 +115,7 @@
                         </a>
 
                         <a href="{{ route('immunizations.index') }}" 
+                           aria-current="{{ $currentUrl === route('immunizations.index') ? 'page' : 'false' }}"
                            class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5 {{ !$authUser->hasPermission('immunizations') ? 'disabled' : '' }}" 
                            {!! !$authUser->hasPermission('immunizations') ? 'onclick="'.$swalError.'"' : '' !!}>
                             <i class="fa-solid fa-syringe text-sm opacity-70" aria-hidden="true"></i>
@@ -528,6 +123,7 @@
                         </a>
 
                         <a href="{{ route('referrals.index') }}" 
+                           aria-current="{{ $currentUrl === route('referrals.index') ? 'page' : 'false' }}"
                            class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5 {{ !$authUser->hasPermission('consultations') ? 'disabled' : '' }}" 
                            {!! !$authUser->hasPermission('consultations') ? 'onclick="'.$swalError.'"' : '' !!}>
                             <i class="fa-solid fa-arrow-up-right-from-square text-sm opacity-70" aria-hidden="true"></i>
@@ -551,6 +147,7 @@
                             
                             @if ($authUser->hasPermission('medicines'))
                                 <a href="{{ route('medicines.index') }}" 
+                                   aria-current="{{ $currentUrl === route('medicines.index') ? 'page' : 'false' }}"
                                    class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
                                     <i class="fa-solid fa-pills text-sm opacity-70" aria-hidden="true"></i>
                                     <span>Medicines Lists</span>
@@ -559,6 +156,7 @@
 
                             @if ($authUser->hasPermission('reports'))
                                 <a href="{{ route('reports.index') }}" 
+                                   aria-current="{{ $currentUrl === route('reports.index') ? 'page' : 'false' }}"
                                    class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
                                     <i class="fa-solid fa-file-lines text-sm opacity-70" aria-hidden="true"></i>
                                     <span>Reports</span>
@@ -580,16 +178,19 @@
                              x-collapse
                              class="mt-1 ml-2 pl-3 border-l border-border space-y-0.5">
                             <a href="{{ route('users.index') }}" 
+                               aria-current="{{ $currentUrl === route('users.index') ? 'page' : 'false' }}"
                                class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
                                 <i class="fa-solid fa-users text-sm opacity-70" aria-hidden="true"></i>
                                 <span>User Management</span>
                             </a>
                             <a href="{{ route('roles.index') }}" 
+                               aria-current="{{ $currentUrl === route('roles.index') ? 'page' : 'false' }}"
                                class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
                                 <i class="fa-solid fa-user-shield text-sm opacity-70" aria-hidden="true"></i>
                                 <span>Role Manager</span>
                             </a>
                             <a href="{{ route('zones.index') }}" 
+                           aria-current="{{ $currentUrl === route('zones.index') ? 'page' : 'false' }}"
                            class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5 {{ !$authUser->hasPermission('zones') ? 'disabled' : '' }}" 
                            {!! !$authUser->hasPermission('zones') ? 'onclick="'.$swalError.'"' : '' !!}>
                             <i class="fa-solid fa-map-marker-alt text-sm opacity-70" aria-hidden="true"></i>
@@ -599,7 +200,7 @@
                     </div>
                 @endif
 
-                <a href="{{ route('settings.index') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
+                <a href="{{ route('settings.index') }}" aria-current="{{ $currentUrl === route('settings.index') ? 'page' : 'false' }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
                     <i class="fa-solid fa-gear text-base opacity-70" aria-hidden="true"></i>
                     <span>Settings</span>
                 </a>
@@ -803,46 +404,43 @@
         </div>
     </div>
 
-    <div id="liveConsultationToast" class="fixed bottom-5 right-5 z-[60] hidden max-w-[380px] rounded-3xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(14,30,37,0.15)] ring-1 ring-slate-900/5 overflow-hidden" aria-live="assertive" aria-atomic="true">
+    <div id="liveConsultationToast" class="fixed bottom-5 right-5 z-[60] hidden max-w-[380px] rounded-3xl border border-border bg-surface-elevated shadow-lg overflow-hidden" aria-live="assertive" aria-atomic="true">
         <div class="p-5">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 text-lg">!</span>
+                <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-soft text-primary">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                </span>
                 <div class="min-w-0">
-                    <p id="liveToastTitle" class="text-sm font-semibold text-slate-900">New Consultation Request</p>
-                    <p id="liveToastSubtitle" class="text-xs text-slate-500 mt-1">Santa Ana Health Center • BHW</p>
+                    <p id="liveToastTitle" class="text-sm font-semibold text-ink">New Consultation Request</p>
+                    <p id="liveToastSubtitle" class="text-xs text-ink-muted mt-1">Santa Ana Health Center • BHW</p>
                 </div>
             </div>
 
-            <div class="mt-4 rounded-3xl bg-slate-50 p-4 text-slate-700">
+            <div class="mt-4 rounded-3xl bg-teal-soft/50 p-4 text-ink">
                 <p id="liveToastPatient" class="text-sm font-semibold"></p>
-                <p id="liveToastDetails" class="text-xs text-slate-500 mt-1"></p>
-                <p id="liveToastReason" class="mt-3 text-sm text-slate-700"></p>
+                <p id="liveToastDetails" class="text-xs text-ink-muted mt-1"></p>
+                <p id="liveToastReason" class="mt-3 text-sm text-ink"></p>
             </div>
 
             <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <button id="liveToastDecline" type="button" class="w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 sm:w-auto">Cancel</button>
-                <button id="liveToastAccept" type="button" class="w-full rounded-2xl bg-emerald-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 sm:w-auto">Accept & Open Case</button>
+                <button id="liveToastDecline" type="button" class="w-full rounded-2xl border border-border px-4 py-2 text-sm font-semibold text-ink-muted transition hover:bg-black/5 sm:w-auto">Cancel</button>
+                <button id="liveToastAccept" type="button" class="w-full rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover sm:w-auto">Accept & Open Case</button>
             </div>
         </div>
     </div>
 
-    <div id="pageModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closePageDrawer()"></div>
-        <div id="pageModalPanel" class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl transform scale-95 opacity-0 transition-all duration-300 ease-out">
-            @stack('modal-content')
-        </div>
-    </div>
-
-    <div id="consultationCreateModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" aria-modal="true" role="dialog" aria-labelledby="consultationCreateModalTitle">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeConsultationCreateModal()"></div>
-        <div id="consultationCreateModalPanel" class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 ease-out" style="background: var(--bg-surface-elevated);">
+    <div id="consultationCreateModal" x-show="$store.modals.consultation" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" aria-labelledby="consultationCreateModalTitle" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeConsultationCreateModal()"></div>
+        <div id="consultationCreateModalPanel" x-show="$store.modals.consultation" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl focus:outline-none" style="background: var(--bg-surface-elevated);" tabindex="-1">
             <div id="consultationCreateModalContent"></div>
         </div>
     </div>
 
-    <div id="printReferralConfirmModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4" aria-modal="true" role="dialog" aria-labelledby="printReferralConfirmTitle">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closePrintReferralConfirmModal()"></div>
-        <div id="printReferralConfirmPanel" class="relative w-full max-w-md rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 ease-out p-6" style="background: var(--bg-surface-elevated);">
+    <div id="printReferralConfirmModal" x-show="$store.modals.printReferral" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" aria-labelledby="printReferralConfirmTitle" class="fixed inset-0 z-[60] flex items-center justify-center p-4" style="display: none;">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closePrintReferralConfirmModal()"></div>
+        <div id="printReferralConfirmPanel" x-show="$store.modals.printReferral" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="relative w-full max-w-md rounded-2xl shadow-2xl p-6 focus:outline-none" style="background: var(--bg-surface-elevated);" tabindex="-1">
             <div class="flex items-start gap-3 mb-4">
                 <div class="shrink-0 w-11 h-11 rounded-full flex items-center justify-center" style="background: var(--teal-soft); color: var(--primary);">
                     <i class="fa-solid fa-print text-lg" aria-hidden="true"></i>
@@ -861,40 +459,6 @@
         </div>
     </div>
 
-    <style>
-        .nav-link:hover { background: var(--teal-soft); color: var(--primary) !important; }
-        .nav-submenu:hover { background: var(--teal-soft); color: var(--primary) !important; }
-        a[href="{{ request()->url() }}"].nav-link,
-        .nav-link.router-link-active { background: var(--teal-soft); color: var(--primary) !important; }
-        a[href="{{ request()->url() }}"].nav-submenu,
-        .nav-submenu.router-link-active { background: var(--teal-soft); color: var(--primary) !important; }
-
-        .app-sidebar .nav-link:hover,
-        .app-sidebar .nav-submenu:hover {
-            background: rgba(255, 255, 255, 0.16) !important;
-            color: #ffffff !important;
-        }
-
-        .app-sidebar a[href="{{ request()->url() }}"].nav-link,
-        .app-sidebar .nav-link.router-link-active,
-        .app-sidebar a[href="{{ request()->url() }}"].nav-submenu,
-        .app-sidebar .nav-submenu.router-link-active {
-            background: rgba(255, 255, 255, 0.24) !important;
-            color: #ffffff !important;
-            font-weight: 600;
-        }
-
-        #liveConsultationToast {
-            transform: translateX(16px);
-            opacity: 0;
-            transition: opacity 0.25s ease, transform 0.25s ease;
-        }
-        #liveConsultationToast.active {
-            display: block;
-            transform: translateX(0);
-            opacity: 1;
-        }
-    </style>
     <script>
         window.BHCIS = {!! json_encode([
             'routes' => [

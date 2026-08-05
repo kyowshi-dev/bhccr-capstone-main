@@ -86,9 +86,9 @@ class Consultation extends Model
         return Attribute::make(
             get: fn () => match ($this->status) {
                 ConsultationStatus::Completed->value => 'background: var(--teal-soft); color: var(--primary);',
-                ConsultationStatus::NurseReview->value => 'background: var(--accent-soft); color: var(--accent);',
-                ConsultationStatus::Referred->value => 'background: #fef3c7; color: #78350f;',
-                default => 'background: rgba(0,0,0,0.06); color: var(--ink-muted);',
+                ConsultationStatus::NurseReview->value => 'background: var(--accent-blue-soft); color: var(--accent-blue);',
+                ConsultationStatus::Referred->value => 'background: var(--amber-soft); color: var(--amber);',
+                default => 'background: var(--border); color: var(--ink-muted);',
             },
         );
     }

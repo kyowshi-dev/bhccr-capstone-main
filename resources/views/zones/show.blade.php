@@ -17,7 +17,7 @@
             <form action="{{ route('zones.destroy', $zone->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this zone? Make sure there are no households in this zone.')">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md" style="background: var(--red);">
+                <button type="submit" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md" style="background: var(--danger);">
                     Delete
                 </button>
             </form>

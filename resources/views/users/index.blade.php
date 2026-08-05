@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'User Management')
+
 @section('content')
 <div class="space-y-4 lg:space-y-6">
     @if (session('success'))

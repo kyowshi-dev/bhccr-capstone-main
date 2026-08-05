@@ -5,6 +5,14 @@
             if (path === current) link.classList.add('router-link-active');
         });
 
+        var modalStoreKeys = {
+            consultationCreateModal: 'consultation',
+            printReferralConfirmModal: 'printReferral',
+            outwardReferralShowModal: 'outward',
+            diagnosisModal: 'diagnosis',
+            prescriptionModal: 'prescription',
+        };
+
         function getModalElements(modalId, panelId) {
             return {
                 modal: document.getElementById(modalId),
@@ -13,12 +21,15 @@
         }
 
         function showModal(modalId, panelId, callback) {
+            var key = modalStoreKeys[modalId];
             var elements = getModalElements(modalId, panelId);
-            if (!elements.modal || !elements.panel) return false;
-            elements.modal.classList.remove('hidden');
+            if (!key || !elements.modal || !elements.panel) return false;
+            window.Alpine.store('modals')[key] = true;
+            document.body.classList.add('modal-open');
             requestAnimationFrame(function() {
-                elements.panel.classList.remove('scale-95', 'opacity-0');
-                elements.panel.classList.add('scale-100', 'opacity-100');
+                var focusable = elements.panel.querySelector('input, select, textarea, button, [tabindex]:not([tabindex="-1"])');
+                var target = focusable || elements.panel;
+                target.focus();
                 if (typeof callback === 'function') {
                     callback();
                 }
@@ -27,26 +38,15 @@
         }
 
         function hideModal(modalId, panelId, onHidden) {
+            var key = modalStoreKeys[modalId];
             var elements = getModalElements(modalId, panelId);
-            if (!elements.modal || !elements.panel) return false;
-            elements.panel.classList.remove('scale-100', 'opacity-100');
-            elements.panel.classList.add('scale-95', 'opacity-0');
-            elements.panel.addEventListener('transitionend', function handleTransitionEnd() {
-                elements.modal.classList.add('hidden');
-                if (typeof onHidden === 'function') {
-                    onHidden();
-                }
-                elements.panel.removeEventListener('transitionend', handleTransitionEnd);
-            }, { once: true });
+            if (!key || !elements.modal || !elements.panel) return false;
+            window.Alpine.store('modals')[key] = false;
+            document.body.classList.remove('modal-open');
+            if (typeof onHidden === 'function') {
+                onHidden();
+            }
             return true;
-        }
-
-        function openPageDrawer() {
-            showModal('pageModal', 'pageModalPanel');
-        }
-
-        function closePageDrawer() {
-            hideModal('pageModal', 'pageModalPanel');
         }
 
         function initConsultationCreateModalForm() {
@@ -602,15 +602,22 @@
         }
 
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                var consultationModal = document.getElementById('consultationCreateModal');
-                if (consultationModal && !consultationModal.classList.contains('hidden')) {
-                    if (consultationCreateModalView === 'wizard') {
-                        closeOutwardReferralWizard();
-                        return;
-                    }
-                    closeConsultationCreateModal();
+            if (e.key !== 'Escape') return;
+            var modals = window.Alpine.store('modals');
+            if (modals.outward) {
+                closeConsultationOutwardReferralWizard();
+            } else if (modals.consultation) {
+                if (consultationCreateModalView === 'wizard') {
+                    closeOutwardReferralWizard();
+                    return;
                 }
+                closeConsultationCreateModal();
+            } else if (modals.printReferral) {
+                closePrintReferralConfirmModal();
+            } else if (modals.diagnosis && typeof window.closeDiagnosisModal === 'function') {
+                window.closeDiagnosisModal();
+            } else if (modals.prescription && typeof window.closePrescriptionModal === 'function') {
+                window.closePrescriptionModal();
             }
         });
 
@@ -825,5 +832,3 @@ window.openConsultationOutwardReferralWizard = openConsultationOutwardReferralWi
 window.closeConsultationOutwardReferralWizard = closeConsultationOutwardReferralWizard;
 window.outwardReferralWizardGoNext = outwardReferralWizardGoNext;
 window.outwardReferralWizardGoBack = outwardReferralWizardGoBack;
-window.openPageDrawer = openPageDrawer;
-window.closePageDrawer = closePageDrawer;

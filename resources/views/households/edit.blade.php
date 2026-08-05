@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Edit Household')
+
 @section('content')
 <div class="space-y-5 lg:space-y-6">
     <!-- Header -->
@@ -22,7 +24,7 @@
 
     @if ($errors->any())
         <div class="rounded-xl border px-4 py-3 text-sm"
-             style="background: var(--red-soft); border-color: var(--border); color: var(--red);">
+             style="background: var(--danger-soft); border-color: var(--border); color: var(--danger);">
             <p class="font-semibold mb-2">Validation errors:</p>
             <ul class="list-disc list-inside space-y-1 text-xs">
                 @foreach ($errors->all() as $error)
@@ -42,7 +44,7 @@
             <!-- Zone Dropdown -->
             <div>
                 <label for="zone_id" class="block text-sm font-semibold mb-2" style="color: var(--ink-muted);">
-                    Zone <span style="color: var(--red);">*</span>
+                    Zone <span style="color: var(--danger);">*</span>
                 </label>
                 <select id="zone_id" name="zone_id" required
                         class="w-full px-3 py-2 rounded-lg border text-sm"
@@ -50,14 +52,14 @@
                     <option value="">Select a zone</option>
                 </select>
                 @error('zone_id')
-                    <p class="text-xs mt-1" style="color: var(--red);">{{ $message }}</p>
+                    <p class="text-xs mt-1" style="color: var(--danger);">{{ $message }}</p>
                 @enderror
             </div>
 
             <!-- Family Name -->
             <div>
                 <label for="family_name_head" class="block text-sm font-semibold mb-2" style="color: var(--ink-muted);">
-                    Family Name (Head) <span style="color: var(--red);">*</span>
+                    Family Name (Head) <span style="color: var(--danger);">*</span>
                 </label>
                 <input type="text" id="family_name_head" name="family_name_head"
                        value="{{ old('family_name_head', $household->family_name_head) }}"
@@ -65,7 +67,7 @@
                        class="w-full px-3 py-2 rounded-lg border text-sm"
                        style="border-color: var(--border); background: var(--bg-surface);">
                 @error('family_name_head')
-                    <p class="text-xs mt-1" style="color: var(--red);">{{ $message }}</p>
+                    <p class="text-xs mt-1" style="color: var(--danger);">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -81,7 +83,7 @@
                        style="border-color: var(--border); background: var(--bg-surface);">
                 <p class="text-xs mt-1" style="color: var(--ink-muted);">Allowed: digits, spaces, +, - and ()</p>
                 @error('contact_number')
-                    <p class="text-xs mt-1" style="color: var(--red);">{{ $message }}</p>
+                    <p class="text-xs mt-1" style="color: var(--danger);">{{ $message }}</p>
                 @enderror
             </div>
 

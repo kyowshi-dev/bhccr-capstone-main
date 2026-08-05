@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Nurse Dashboard')
+
 @section('content')
 <div class="space-y-5 lg:space-y-6">
     <div class="animate-in opacity-0 delay-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -52,7 +54,7 @@
                 <li class="rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                     style="border-color: var(--border); background: var(--bg-surface-elevated);">
                     <div>
-                        <p class="text-sm font-semibold" style="color: var(--ink);">{{ $item->last_name }}, {{ ucwords ($item->first_name) }}</p>
+                        <p class="text-sm font-semibold" style="color: var(--ink);">{{ $item->last_name }}, {{ ucwords($item->first_name) }}</p>
                         <p class="text-xs mt-0.5" style="color: var(--ink-muted);">{{ \Carbon\Carbon::parse($item->created_at)->diffForHumans() }}@if ($item->complaint_text) · {{ Str::limit($item->complaint_text, 60) }}@endif</p>
                     </div>
                     <div class="flex items-center gap-2">
@@ -63,7 +65,7 @@
                                 Send to Doctor
                             </button>
                         </form>
-                        <form action="{{ route('consultations.cancel', $item->id) }}" method="POST" onsubmit="return confirm('Cancel this intake?');">
+                        <form action="{{ route('consultations.cancel', $item->id) }}" method="POST" onsubmit="return confirmCancelIntake(this);">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="px-3 py-2 rounded-lg text-xs font-semibold border transition hover:bg-black/[0.02]" style="border-color: var(--border); color: var(--ink-muted);">
@@ -90,3 +92,25 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function confirmCancelIntake(form) {
+        Swal.fire({
+            title: 'Cancel this intake?',
+            text: 'The patient will be removed from the validation queue. This cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: 'var(--danger)',
+            cancelButtonColor: 'var(--ink-muted)',
+            confirmButtonText: 'Yes, cancel intake',
+            cancelButtonText: 'No, keep it',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+        return false;
+    }
+</script>
+@endpush

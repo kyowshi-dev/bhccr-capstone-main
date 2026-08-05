@@ -6,6 +6,308 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-display: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+
+    /* Surfaces */
+    --color-page: #ffffff;
+    --color-surface: #ffffff;
+    --color-surface-elevated: #ffffff;
+    --color-sidebar: #0d4a3c;
+    --color-header: #0a3d32;
+
+    /* Ink / text */
+    --color-ink: #0f172a;
+    --color-ink-muted: #475569;
+    --color-ink-subtle: #94a3b8;
+    --color-border: rgba(15, 23, 42, 0.08);
+
+    /* Primary (DOH green) */
+    --color-primary: #0d4a3c;
+    --color-primary-hover: #0a3d32;
+    --color-primary-soft: rgba(13, 74, 60, 0.12);
+    --color-teal-soft: rgba(13, 74, 60, 0.08);
+
+    /* Accents */
+    --color-accent: #0d4a3c;
+    --color-accent-hover: #0a3d32;
+    --color-accent-soft: rgba(196, 92, 65, 0.12);
+    --color-accent-blue: #0284c7;
+    --color-accent-blue-soft: rgba(2, 132, 199, 0.12);
+    --color-amber: #d97706;
+    --color-amber-soft: rgba(217, 119, 6, 0.14);
+
+    /* Danger / clinical alert */
+    --color-danger: #dc2626;
+    --color-danger-soft: rgba(220, 38, 38, 0.12);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+    --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+/* === Legacy variable aliases ===
+   Views reference these names in inline styles (style="color: var(--ink)")
+   and arbitrary-value utilities (bg-[var(--primary)]). Keep them resolvable
+   at runtime; Tailwind utilities use the --color-* tokens above. */
+:root {
+    --bg-page: var(--color-page);
+    --bg-surface: var(--color-surface);
+    --bg-surface-elevated: var(--color-surface-elevated);
+    --bg-sidebar: var(--color-sidebar);
+    --bg-header: var(--color-header);
+
+    --ink: var(--color-ink);
+    --ink-muted: var(--color-ink-muted);
+    --ink-subtle: var(--color-ink-subtle);
+    --border: var(--color-border);
+
+    --primary: var(--color-primary);
+    --primary-hover: var(--color-primary-hover);
+    --primary-soft: var(--color-primary-soft);
+    --primary-light: #13604f;
+    --teal-soft: var(--color-teal-soft);
+
+    --accent: var(--color-accent);
+    --accent-hover: var(--color-accent-hover);
+    --accent-soft: var(--color-accent-soft);
+    --accent-blue: var(--color-accent-blue);
+    --accent-blue-soft: var(--color-accent-blue-soft);
+
+    --amber: var(--color-amber);
+    --amber-soft: var(--color-amber-soft);
+
+    --danger: var(--color-danger);
+    --danger-soft: var(--color-danger-soft);
+
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+    --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+/* === Component styles (kept from the layout's hand-rolled CSS) === */
+
+/* Subtle grain texture overlay used on app-shell backgrounds */
+.grain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Brand mark in the sidebar / auth cards */
+.logo-mark {
+    width: clamp(36px, 8vw, 48px);
+    height: clamp(36px, 8vw, 48px);
+    border-radius: clamp(8px, 1.5vw, 12px);
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-surface);
+}
+
+.logo-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Entry animation: fade + slide, staggered with delay-1..delay-7 */
+@keyframes fadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-in {
+    animation: fadeSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.delay-1 {
+    animation-delay: 0.05s;
+}
+
+.delay-2 {
+    animation-delay: 0.1s;
+}
+
+.delay-3 {
+    animation-delay: 0.15s;
+}
+
+.delay-4 {
+    animation-delay: 0.2s;
+}
+
+.delay-5 {
+    animation-delay: 0.25s;
+}
+
+.delay-6 {
+    animation-delay: 0.3s;
+}
+
+.delay-7 {
+    animation-delay: 0.35s;
+}
+
+/* Checkbox normalization: consistent size + brand accent across the app */
+input[type='checkbox'],
+input[type='checkbox'].checkbox,
+input[type='checkbox'].household-checkbox,
+input[type='checkbox']#selectAllCheckbox,
+input[type='checkbox'].rounded {
+    width: 1rem;
+    height: 1rem;
+    min-width: 1rem;
+    min-height: 1rem;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    vertical-align: middle !important;
+    -webkit-appearance: checkbox !important;
+    appearance: checkbox !important;
+    transform: scale(1) !important;
+}
+
+input[type='checkbox'].rounded {
+    border-radius: 4px !important;
+}
+
+input[type='checkbox'] {
+    accent-color: var(--color-primary);
+}
+
+/* App chrome stays white-on-dark regardless of ink utilities */
+.app-sidebar,
+.app-header {
+    color: #ffffff;
+}
+
+.app-sidebar .text-ink,
+.app-sidebar .text-ink-muted,
+.app-sidebar .text-primary,
+.app-sidebar .nav-link,
+.app-sidebar button {
+    color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.app-sidebar .border-border {
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.app-sidebar .nav-link:hover,
+.app-sidebar button:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: #ffffff !important;
+}
+
+/* Nav links: hover + active states */
+.nav-link:hover,
+.nav-submenu:hover,
+.nav-link[aria-current='page'],
+.nav-submenu[aria-current='page'] {
+    background: var(--color-teal-soft);
+    color: var(--color-primary) !important;
+}
+
+.nav-link.router-link-active,
+.nav-submenu.router-link-active {
+    background: var(--color-teal-soft);
+    color: var(--color-primary) !important;
+}
+
+.app-sidebar .nav-link:hover,
+.app-sidebar .nav-submenu:hover,
+.app-sidebar .nav-link[aria-current='page'],
+.app-sidebar .nav-submenu[aria-current='page'] {
+    background: rgba(255, 255, 255, 0.16) !important;
+    color: #ffffff !important;
+}
+
+.app-sidebar .nav-link.router-link-active,
+.app-sidebar .nav-submenu.router-link-active {
+    background: rgba(255, 255, 255, 0.24) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+/* Disabled controls — visible as inert, never silently dead */
+.disabled {
+    opacity: 0.5;
+    filter: grayscale(100%);
+    cursor: not-allowed;
+}
+
+/* Live consultation toast entrance (toggled by layout.js) */
+#liveConsultationToast {
+    transform: translateX(16px);
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+#liveConsultationToast.active {
+    display: block;
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* KPI cards (dashboard + role dashboards) */
+.kpi-card {
+    min-height: 4rem;
+    border-radius: 0.75rem;
+}
+
+.kpi-card__icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+}
+
+.kpi-card__icon svg {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
+.kpi-card__value {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.25rem;
+    line-height: 1.2;
+    color: var(--color-ink);
+}
+
+.dashboard-chart__plot {
+    height: 16rem;
+}
+
+/* Reduced motion: content must never depend on animation */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Shared modal shell: body scroll lock while any modal is open */
+body.modal-open {
+    overflow: hidden;
 }

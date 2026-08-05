@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Enroll Patient')
+
 @section('content')
 <div class="max-w-4xl mx-auto space-y-2 lg:space-y-3">
     @if ($errors->any())

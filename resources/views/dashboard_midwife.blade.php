@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Midwife Dashboard')
+
 @section('content')
 <div class="space-y-5 lg:space-y-6">
     <div>

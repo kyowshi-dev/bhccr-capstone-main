@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Morbidity Report')
+
 @section('content')
         <div class="space-y-4 lg:space-y-6">
             <div>

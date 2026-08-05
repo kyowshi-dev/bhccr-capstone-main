@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Households')
+
 @section('content')
 <div class="space-y-5 lg:space-y-6">
     <!-- Header -->
@@ -29,7 +31,7 @@
     
     @if (session('error'))
         <div class="rounded-xl border px-3 lg:px-4 py-2 text-xs lg:text-sm"
-             style="background: var(--red-soft); border-color: var(--border); color: var(--red);">
+             style="background: var(--danger-soft); border-color: var(--border); color: var(--danger);">
             {{ session('error') }}
         </div>
     @endif

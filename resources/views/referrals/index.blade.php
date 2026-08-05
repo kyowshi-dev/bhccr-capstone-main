@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Referrals')
+
 @section('content')
 @php
     $statusBadgeStyles = [

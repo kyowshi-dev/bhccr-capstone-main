@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Edit Role')
+
 @section('content')
 <div class="space-y-4 lg:space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

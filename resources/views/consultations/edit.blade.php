@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Edit Consultation')
+
 @php
     $age = \Carbon\Carbon::parse($patient->date_of_birth)->age;
 @endphp
@@ -47,20 +49,20 @@
             <div class="rounded-xl border p-5 lg:p-6 space-y-4" style="background: var(--bg-surface); border-color: var(--border);">
                 <div class="flex items-center justify-between">
                     <h2 class="font-semibold text-lg" style="color: var(--ink);">Diagnoses</h2>
-                    <button type="button" class="px-3 py-1 rounded-lg text-xs font-medium transition" style="background: #d1fae5; color: #064e3b;" onclick="openDiagnosisModal()">+ Add Diagnosis</button>
+                    <button type="button" class="px-3 py-1 rounded-lg text-xs font-medium transition" style="background: var(--teal-soft); color: var(--primary);" onclick="openDiagnosisModal()">+ Add Diagnosis</button>
                 </div>
                 
                 <div id="diagnosesList" class="space-y-3">
                     @if ($diagnoses->count() > 0)
                         @foreach ($diagnoses as $diagnosis)
-                            <div class="p-3 rounded-lg border flex items-start justify-between group" style="background: rgba(0,0,0,0.02); border-color: var(--border);">
+                            <div class="p-3 rounded-lg border flex items-start justify-between group" style="background: var(--border); border-color: var(--border);">
                                 <div class="flex-1">
                                     <p class="text-sm font-medium" style="color: var(--ink);">{{ $diagnosis->diagnosis_name }}</p>
                                     @if ($diagnosis->remarks)
                                         <p class="text-xs mt-1" style="color: var(--ink-muted);">{{ $diagnosis->remarks }}</p>
                                     @endif
                                 </div>
-                                <button type="button" class="ml-3 p-1 rounded text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100" onclick="deleteDiagnosis({{ $diagnosis->id }})">
+                                <button type="button" class="ml-3 p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--danger)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="deleteDiagnosis({{ $diagnosis->id }})">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                             </div>
@@ -75,13 +77,13 @@
             <div class="rounded-xl border p-5 lg:p-6 space-y-4" style="background: var(--bg-surface); border-color: var(--border);">
                 <div class="flex items-center justify-between">
                     <h2 class="font-semibold text-lg" style="color: var(--ink);">Prescriptions</h2>
-                    <button type="button" class="px-3 py-1 rounded-lg text-xs font-medium transition" style="background: #d1fae5; color: #064e3b;" onclick="openPrescriptionModal()">+ Add Prescription</button>
+                    <button type="button" class="px-3 py-1 rounded-lg text-xs font-medium transition" style="background: var(--teal-soft); color: var(--primary);" onclick="openPrescriptionModal()">+ Add Prescription</button>
                 </div>
                 
                 <div id="prescriptionsList" class="space-y-3">
                     @if ($prescriptions->count() > 0)
                         @foreach ($prescriptions as $prescription)
-                            <div class="p-3 rounded-lg border group" style="background: rgba(0,0,0,0.02); border-color: var(--border);">
+                            <div class="p-3 rounded-lg border group" style="background: var(--border); border-color: var(--border);">
                                 <div class="flex items-start justify-between">
                                     <div class="flex-1">
                                         <p class="text-sm font-medium" style="color: var(--ink);">{{ $prescription->medicine_name }}</p>
@@ -100,7 +102,7 @@
                                             @endif
                                         </div>
                                     </div>
-                                    <button type="button" class="ml-3 p-1 rounded text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100" onclick="deletePrescription({{ $prescription->id }})">
+                                    <button type="button" class="ml-3 p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--danger)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="deletePrescription({{ $prescription->id }})">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     </button>
                                 </div>
@@ -153,8 +155,9 @@
 </form>
 
 <!-- Diagnosis Modal -->
-<div id="diagnosisModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl max-w-md w-full p-6 space-y-4" style="color: var(--ink);">
+<div id="diagnosisModal" x-show="$store.modals.diagnosis" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeDiagnosisModal()"></div>
+    <div id="diagnosisPanel" x-show="$store.modals.diagnosis" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="bg-white rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
         <h3 class="font-semibold text-lg">Add Diagnosis</h3>
         <div class="space-y-4">
             <div>
@@ -174,8 +177,9 @@
 </div>
 
 <!-- Prescription Modal -->
-<div id="prescriptionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl max-w-md w-full p-6 space-y-4" style="color: var(--ink);">
+<div id="prescriptionModal" x-show="$store.modals.prescription" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closePrescriptionModal()"></div>
+    <div id="prescriptionPanel" x-show="$store.modals.prescription" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="bg-white rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
         <h3 class="font-semibold text-lg">Add Prescription</h3>
         <div class="space-y-4">
             <div>
@@ -251,14 +255,14 @@ function addDiagnosis() {
     // In a real implementation, you'd POST to an endpoint that adds to the DB
     const diagnosisList = document.getElementById('diagnosesList');
     const diagnosisHtml = `
-        <div class="p-3 rounded-lg border flex items-start justify-between group" style="background: rgba(0,0,0,0.02); border-color: var(--border);">
+        <div class="p-3 rounded-lg border flex items-start justify-between group" style="background: var(--border); border-color: var(--border);">
             <div class="flex-1">
                 <p class="text-sm font-medium" style="color: var(--ink);">${name}</p>
                 ${remarks ? `<p class="text-xs mt-1" style="color: var(--ink-muted);">${remarks}</p>` : ''}
                 <input type="hidden" class="diagnosis-name" value="${name}">
                 <input type="hidden" class="diagnosis-remarks" value="${remarks}">
             </div>
-            <button type="button" class="ml-3 p-1 rounded text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100" onclick="this.closest('[style*=background]').remove(); checkIfEmpty('diagnosesList')">
+            <button type="button" class="ml-3 p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--danger)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="this.closest('[style*=background]').remove(); checkIfEmpty('diagnosesList')">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             </button>
         </div>
@@ -295,7 +299,7 @@ function addPrescription() {
     if (quantity) details += `<p><span class="font-medium">Quantity:</span> ${quantity}</p>`;
     
     const prescriptionHtml = `
-        <div class="p-3 rounded-lg border group" style="background: rgba(0,0,0,0.02); border-color: var(--border);">
+        <div class="p-3 rounded-lg border group" style="background: var(--border); border-color: var(--border);">
             <div class="flex items-start justify-between">
                 <div class="flex-1">
                     <p class="text-sm font-medium" style="color: var(--ink);">${medicineName}</p>
@@ -308,7 +312,7 @@ function addPrescription() {
                     <input type="hidden" class="duration" value="${duration}">
                     <input type="hidden" class="quantity" value="${quantity}">
                 </div>
-                <button type="button" class="ml-3 p-1 rounded text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100" onclick="this.closest('[style*=background]').remove(); checkIfEmpty('prescriptionsList')">
+                <button type="button" class="ml-3 p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--danger)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="this.closest('[style*=background]').remove(); checkIfEmpty('prescriptionsList')">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                 </button>
             </div>

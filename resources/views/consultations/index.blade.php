@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Check-ups')
+
 @section('content')
 <div class="space-y-5 lg:space-y-6 animate-in opacity-0"
      x-data="{ blurSensitive: false, advancedOpen: @json(request()->filled('date_from') || request()->filled('date_to') || (request()->filled('sort') && request('sort') !== 'newest')) }">
@@ -59,6 +61,7 @@
                     <div class="flex gap-2">
                         <div class="relative flex-1 min-w-0">
                             <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none" style="color: var(--ink-subtle);">
+                                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                             </span>
                             <input type="text" id="query" name="query" value="{{ request('query') }}"
                                    placeholder="Search by patient, ID, or diagnosis..."
@@ -165,7 +168,7 @@
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style="background: var(--teal-soft); color: var(--primary);">To: {{ request('date_to') }}</span>
                     @endif
                     @if (request('urgency') === 'critical')
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Critical vitals</span>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style="background: var(--danger-soft); color: var(--danger);">Critical vitals</span>
                     @endif
                     @if (request('zone_id'))
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style="background: var(--teal-soft); color: var(--primary);">Zone filter active</span>
@@ -200,7 +203,7 @@
             <div class="overflow-x-auto rounded-xl border" style="background: var(--bg-surface); border-color: var(--border);">
                 <table class="min-w-full border-collapse">
                     <thead>
-                        <tr class="bg-surface text-left">
+                        <tr class="bg-teal-soft text-left">
                             <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wide" style="color: var(--ink-muted);">
                                 <a href="{{ route('consultations.index', array_merge($queryParams, ['sort' => 'newest'])) }}" class="flex items-center gap-1">
                                     Date &amp; Time

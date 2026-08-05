@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Patients')
+
 @section('content')
 @php
     $patientFiltersActive = request()->filled('sort') || request()->filled('dir');

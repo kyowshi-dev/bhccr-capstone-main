@@ -21,13 +21,13 @@
     @endif
 
     @if (session('error'))
-        <div class="rounded-xl border px-4 py-3" style="background: var(--red-soft); border-color: var(--red); color: var(--red);">
+        <div class="rounded-xl border px-4 py-3" style="background: var(--danger-soft); border-color: var(--danger); color: var(--danger);">
             {{ session('error') }}
         </div>
     @endif
 
     @if (session('import_errors'))
-        <div class="rounded-xl border px-4 py-3" style="background: var(--red-soft); border-color: var(--red); color: var(--red);">
+        <div class="rounded-xl border px-4 py-3" style="background: var(--danger-soft); border-color: var(--danger); color: var(--danger);">
             <strong>Import Errors:</strong>
             <ul class="mt-2 list-disc list-inside">
                 @foreach (session('import_errors') as $error)

@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Dashboard')
+
 @section('content')
 @php
     $todayLabel = now()->format('F d, Y');
@@ -39,7 +41,7 @@
         <div class="kpi-card animate-in opacity-0 delay-2 flex items-center gap-2.5 p-2.5 lg:p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
              style="background: var(--bg-surface); border-color: var(--border); box-shadow: var(--shadow-sm); border-left: 4px solid var(--primary);">
             <span class="kpi-card__icon" style="background: var(--teal-soft); color: var(--primary);">
-                <i class="fas fa-users text-lg"></i>
+                <i class="fa-solid fa-users text-lg" aria-hidden="true"></i>
             </span>
             <div class="min-w-0 flex-1">
                 <p class="text-[10px] font-semibold uppercase tracking-wider truncate" style="color: var(--ink-muted);">Total Patients</p>
@@ -71,25 +73,25 @@
         </div>
 
         <div class="kpi-card animate-in opacity-0 delay-4 flex items-center gap-2.5 p-2.5 lg:p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
-             style="background: {{ $overdueImmunizations > 0 ? '#fef2f2' : 'var(--bg-surface)' }}; border-color: var(--border); box-shadow: var(--shadow-sm); border-left: 4px solid {{ $overdueImmunizations > 0 ? '#ef4444' : 'var(--primary)' }};">
-            <span class="kpi-card__icon" style="background: {{ $overdueImmunizations > 0 ? '#fee2e2' : 'var(--teal-soft)' }}; color: {{ $overdueImmunizations > 0 ? '#b91c1c' : 'var(--primary)' }};">
+             style="background: {{ $overdueImmunizations > 0 ? 'var(--danger-soft)' : 'var(--bg-surface)' }}; border-color: var(--border); box-shadow: var(--shadow-sm); border-left: 4px solid {{ $overdueImmunizations > 0 ? 'var(--danger)' : 'var(--primary)' }};">
+            <span class="kpi-card__icon" style="background: {{ $overdueImmunizations > 0 ? 'var(--danger)' : 'var(--teal-soft)' }}; color: {{ $overdueImmunizations > 0 ? '#fff' : 'var(--primary)' }};">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </span>
             <div class="min-w-0 flex-1">
-                <p class="text-[10px] font-semibold uppercase tracking-wider truncate" style="color: {{ $overdueImmunizations > 0 ? '#991b1b' : 'var(--ink-muted)' }};">Immunization Alerts</p>
+                <p class="text-[10px] font-semibold uppercase tracking-wider truncate" style="color: {{ $overdueImmunizations > 0 ? 'var(--danger)' : 'var(--ink-muted)' }};">Immunization Alerts</p>
                 @if ($overdueImmunizations === 0)
                     <p class="kpi-card__value">0</p>
                     <p class="text-[10px] truncate mt-0.5" style="color: var(--ink-muted);">On track</p>
                 @else
-                    <p class="kpi-card__value" style="color: #b91c1c;">{{ $overdueImmunizations }}</p>
-                    <a href="{{ route('immunizations.index') }}" class="text-[10px] font-bold truncate block mt-0.5" style="color: #b91c1c;">View chart</a>
+                    <p class="kpi-card__value" style="color: var(--danger);">{{ $overdueImmunizations }}</p>
+                    <a href="{{ route('immunizations.index') }}" class="text-[10px] font-bold truncate block mt-0.5" style="color: var(--danger);">View chart</a>
                 @endif
             </div>
         </div>
 
         <div class="kpi-card animate-in opacity-0 delay-5 flex items-center gap-2.5 p-2.5 lg:p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
-             style="background: var(--bg-surface); border-color: var(--border); box-shadow: var(--shadow-sm); border-left: 4px solid #f59e0b;">
-            <span class="kpi-card__icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+             style="background: var(--bg-surface); border-color: var(--border); box-shadow: var(--shadow-sm); border-left: 4px solid var(--amber);">
+            <span class="kpi-card__icon" style="background: var(--amber-soft); color: var(--amber);">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </span>
             <div class="min-w-0 flex-1">
@@ -204,17 +206,17 @@
                             
                             // Map actions to semantic styling classes/variables
                             $badgeStyle = match($log->action) {
-                                'created' => 'background: rgba(34, 197, 94, 0.1); color: #16a34a;', // Soft Green
-                                'updated' => 'background: rgba(234, 179, 8, 0.1); color: #ca8a04;',  // Soft Amber
-                                'deleted' => 'background: rgba(239, 68, 68, 0.1); color: #dc2626;',   // Soft Red
-                                default   => 'background: rgba(107, 114, 128, 0.1); color: #4b5563;'
+                                'created' => 'background: var(--teal-soft); color: var(--primary);', // New record
+                                'updated' => 'background: var(--amber-soft); color: var(--amber);',   // Edited record
+                                'deleted' => 'background: var(--danger-soft); color: var(--danger);', // Removed record
+                                default   => 'background: var(--primary-soft); color: var(--ink-muted);'
                             };
                         @endphp
 
                         <li class="py-3.5 flex items-center justify-between text-sm transition-colors hover:bg-black/[0.01]">
                             <div class="flex items-center space-x-3">
                                 <!-- Action Status Badge -->
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider uppercase" style="{{ $badgeStyle }}">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider" style="{{ $badgeStyle }}">
                                     {{ $log->action }}
                                 </span>
                                 

@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'BHW Dashboard')
+
 @section('content')
 <div class="space-y-5 lg:space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -12,6 +14,7 @@
         <div class="flex flex-col lg:flex-row lg:items-center gap-3">
             <div class="relative flex-1 min-w-0">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none" style="color: var(--ink-subtle);" :style="loading && 'color: var(--primary)'">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                 </span>
                 <input type="text" x-model="query" @input.debounce.300ms="search()"
                        placeholder="Search patients by name..."

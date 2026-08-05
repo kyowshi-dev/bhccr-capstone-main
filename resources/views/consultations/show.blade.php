@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Consultation')
+
 @section('content')
 <div class="space-y-5 lg:space-y-6 animate-in opacity-0 pb-24" x-data="{ showRetakeVitals: false }">
     @if (session('success'))
@@ -17,7 +19,7 @@
         </div>
     @endif
 
-    <div class="rounded-xl border bg-gray-100 p-4 lg:p-5" style="border-color: var(--border); box-shadow: var(--shadow-sm);">
+    <div class="rounded-xl border bg-[var(--bg-surface)] p-4 lg:p-5" style="border-color: var(--border); box-shadow: var(--shadow-sm);">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h1 class="font-display text-2xl font-semibold lg:text-3xl" style="color: var(--ink);">Consultation Details</h1>
             <div class="text-right text-xs lg:text-sm" style="color: var(--ink-muted);">
@@ -27,8 +29,8 @@
         </div>
         <div class="mt-2 flex flex-wrap items-center gap-3">
             <span class="inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold" style="{{ $consultation->status_style }}">{{ $consultation->status_label }}</span>
-            <a href="{{ route('patients.show', $patient->id) }}" class="text-xs font-medium text-emerald-900 hover:underline lg:text-sm">Back to patient</a>
-            <a href="{{ route('consultations.index') }}" class="text-xs font-medium text-emerald-900 hover:underline lg:text-sm">History</a>
+            <a href="{{ route('patients.show', $patient->id) }}" class="text-xs font-medium text-[var(--primary)] hover:underline lg:text-sm">Back to patient</a>
+            <a href="{{ route('consultations.index') }}" class="text-xs font-medium text-[var(--primary)] hover:underline lg:text-sm">History</a>
             @if (in_array($consultation->status, \App\Enums\ConsultationStatus::terminalValues(), true) && auth()->user()->canPrintHandout())
                 <a href="{{ route('consultations.handout', $consultation->id) }}" target="_blank" rel="noopener"
                    class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
@@ -52,7 +54,7 @@
                 </form>
             </div>
         @elseif ($consultation->status === \App\Enums\ConsultationStatus::NurseReview->value)
-            <div class="mt-3 rounded-xl border px-4 py-3" style="background: rgba(0,0,0,0.03); border-color: var(--border);">
+            <div class="mt-3 rounded-xl border px-4 py-3" style="background: var(--teal-soft); border-color: var(--border);">
                 <p class="text-sm font-semibold" style="color: var(--ink);">Awaiting nurse intake validation</p>
                 <p class="text-xs mt-0.5" style="color: var(--ink-muted);">Clinical review opens after nurse acknowledgment and doctor queue routing.</p>
             </div>
@@ -96,11 +98,11 @@
                     <h3 class="font-display text-lg font-semibold" style="color: var(--ink);">Vitals history</h3>
                     <p class="text-xs" style="color: var(--ink-muted);">Latest reading and prior versions</p>
                 </div>
-                <button type="button" @click="showVitalsModal = false" class="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">Close</button>
+                <button type="button" @click="showVitalsModal = false" class="rounded-lg px-3 py-1.5 text-xs font-semibold text-[var(--ink-muted)] hover:bg-black/5">Close</button>
             </div>
 
             <div class="max-h-[75vh] overflow-auto p-4">
-                <div class="mb-3 rounded-lg bg-emerald-900/5 px-3 py-2 text-xs" style="color: var(--ink-muted);">
+                <div class="mb-3 rounded-lg bg-teal-soft px-3 py-2 text-xs" style="color: var(--ink-muted);">
                     Latest Reading: BP {{ $latestVitals?->bp_systolic ?? '—' }}/{{ $latestVitals?->bp_diastolic ?? '—' }} ·
                     Temp {{ $latestVitals?->temperature_c ?? '—' }}°C ·
                     Wt {{ $latestVitals?->weight_kg ?? '—' }}kg ·
@@ -109,7 +111,7 @@
 
                 <table class="w-full text-xs">
                     <thead>
-                        <tr class="bg-emerald-900/10" style="color: var(--ink-muted);">
+                        <tr class="bg-teal-soft" style="color: var(--ink-muted);">
                             <th class="px-2 py-2 text-left">Captured</th>
                             <th class="px-2 py-2 text-left">Phase</th>
                             <th class="px-2 py-2 text-left">BP</th>
@@ -131,27 +133,27 @@
                                 <td class="px-2 py-2">
                                     <div class="flex items-center gap-2">
                                         <details>
-                                            <summary class="cursor-pointer text-[11px] font-semibold text-emerald-900 hover:underline">Edit</summary>
+                                            <summary class="cursor-pointer text-[11px] font-semibold text-[var(--primary)] hover:underline">Edit</summary>
                                             <div class="mt-2 w-[18rem] rounded-lg border bg-white p-2" style="border-color: var(--border);">
                                                 <form action="{{ route('consultations.vitals.update', ['consultation' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" class="space-y-2">
                                                     @csrf
                                                     @method('PUT')
                                                     <div class="grid grid-cols-2 gap-2">
-                                                        <input type="number" name="bp_systolic" min="0" max="300" step="1" value="{{ $vitalVersion->bp_systolic }}" placeholder="SYS" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">
-                                                        <input type="number" name="bp_diastolic" min="0" max="200" step="1" value="{{ $vitalVersion->bp_diastolic }}" placeholder="DIA" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">
-                                                        <input type="number" name="temperature" min="30" max="45" step="0.1" value="{{ $vitalVersion->temperature_c }}" placeholder="Temp" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">
-                                                        <input type="number" name="weight" min="0" max="500" step="0.1" value="{{ $vitalVersion->weight_kg }}" placeholder="Weight" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">
-                                                        <input type="number" name="height" min="0" max="300" step="0.1" value="{{ $vitalVersion->height_cm }}" placeholder="Height" class="col-span-2 rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">
+                                                        <input type="number" name="bp_systolic" min="0" max="300" step="1" value="{{ $vitalVersion->bp_systolic }}" placeholder="SYS" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]">
+                                                        <input type="number" name="bp_diastolic" min="0" max="200" step="1" value="{{ $vitalVersion->bp_diastolic }}" placeholder="DIA" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]">
+                                                        <input type="number" name="temperature" min="30" max="45" step="0.1" value="{{ $vitalVersion->temperature_c }}" placeholder="Temp" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]">
+                                                        <input type="number" name="weight" min="0" max="500" step="0.1" value="{{ $vitalVersion->weight_kg }}" placeholder="Weight" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]">
+                                                        <input type="number" name="height" min="0" max="300" step="0.1" value="{{ $vitalVersion->height_cm }}" placeholder="Height" class="col-span-2 rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]">
                                                     </div>
-                                                    <textarea name="notes" rows="2" placeholder="Notes" class="w-full rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">{{ $vitalVersion->notes ?? '' }}</textarea>
-                                                    <button type="submit" class="w-full rounded bg-emerald-900 px-2 py-1 text-[11px] font-semibold text-white">Update</button>
+                                                    <textarea name="notes" rows="2" placeholder="Notes" class="w-full rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]">{{ $vitalVersion->notes ?? '' }}</textarea>
+                                                    <button type="submit" class="w-full rounded bg-[var(--primary)] px-2 py-1 text-[11px] font-semibold text-white">Update</button>
                                                 </form>
                                             </div>
                                         </details>
-                                        <form action="{{ route('consultations.vitals.delete', ['consultation' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" onsubmit="return confirm('Delete this vitals version? This cannot be undone.');">
+<form action="{{ route('consultations.vitals.delete', ['consultation' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" onsubmit="return confirmVitalsDelete(this);">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="text-[11px] font-semibold text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50" @if (($vitalVersion->phase ?? null) === 'triage' || $allVitals->count() <= 1) disabled @endif>Delete</button>
+                                            <button type="submit" class="text-[11px] font-semibold text-[var(--danger)] hover:underline disabled:cursor-not-allowed disabled:opacity-50" @if (($vitalVersion->phase ?? null) === 'triage' || $allVitals->count() <= 1) disabled @endif>Delete</button>
                                         </form>
                                     </div>
                                 </td>
@@ -163,7 +165,7 @@
 
             <div class="border-t px-4 py-4" style="border-color: var(--border);">
                 @if ($clinicalReviewOpen)
-                    <button type="button" @click="showRetakeVitals = !showRetakeVitals" class="rounded-lg bg-emerald-900 px-3 py-2 text-xs font-semibold text-white">
+                    <button type="button" @click="showRetakeVitals = !showRetakeVitals" class="rounded-lg bg-[var(--primary)] px-3 py-2 text-xs font-semibold text-white">
                         <span x-show="!showRetakeVitals">Re-take vitals</span>
                         <span x-show="showRetakeVitals" style="display: none;">Hide re-take form</span>
                     </button>
@@ -171,15 +173,15 @@
                     <form x-show="showRetakeVitals" x-transition style="display: none;" action="{{ route('consultations.vitals.retake', $consultation->id) }}" method="POST" class="mt-3 space-y-2">
                         @csrf
                         <div class="grid grid-cols-2 gap-2 md:grid-cols-5">
-                            <input type="number" name="bp_systolic" min="0" max="300" step="1" placeholder="SYS" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);">
-                            <input type="number" name="bp_diastolic" min="0" max="200" step="1" placeholder="DIA" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);">
-                            <input type="number" name="temperature" min="30" max="45" step="0.1" placeholder="Temp °C" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);">
-                            <input type="number" name="weight" min="0" max="500" step="0.1" placeholder="Weight kg" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);">
-                            <input type="number" name="height" min="0" max="300" step="0.1" placeholder="Height cm" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);">
+                            <input type="number" name="bp_systolic" min="0" max="300" step="1" placeholder="SYS" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]" style="border-color: var(--border);">
+                            <input type="number" name="bp_diastolic" min="0" max="200" step="1" placeholder="DIA" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]" style="border-color: var(--border);">
+                            <input type="number" name="temperature" min="30" max="45" step="0.1" placeholder="Temp °C" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]" style="border-color: var(--border);">
+                            <input type="number" name="weight" min="0" max="500" step="0.1" placeholder="Weight kg" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]" style="border-color: var(--border);">
+                            <input type="number" name="height" min="0" max="300" step="0.1" placeholder="Height cm" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]" style="border-color: var(--border);">
                         </div>
-                        <textarea name="notes" rows="2" placeholder="Optional notes" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);"></textarea>
+                        <textarea name="notes" rows="2" placeholder="Optional notes" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]" style="border-color: var(--border);"></textarea>
                         <div class="flex justify-end">
-                            <button type="submit" class="rounded-xl bg-emerald-900 px-4 py-2 text-sm font-semibold text-white">Save new vitals version</button>
+                            <button type="submit" class="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white">Save new vitals version</button>
                         </div>
                     </form>
                 @else
@@ -190,11 +192,11 @@
     </div>
 
     <main class="space-y-4">
-        <section class="rounded-xl border bg-gray-100 p-4 lg:p-5" style="border-color: var(--border);">
+        <section class="rounded-xl border bg-[var(--bg-surface)] p-4 lg:p-5" style="border-color: var(--border);">
             <div class="flex items-center justify-between gap-2">
                 <h3 class="font-display font-semibold text-lg" style="color: var(--ink);">Medical Diagnosis</h3>
                 @if(isset($diagnoses) && $diagnoses->count() > 0)
-                    <span class="text-xs px-2 py-1 rounded-full bg-emerald-900 text-white">{{ $diagnoses->count() }} saved</span>
+                    <span class="text-xs px-2 py-1 rounded-full bg-[var(--primary)] text-white">{{ $diagnoses->count() }} saved</span>
                 @endif
             </div>
 
@@ -210,7 +212,7 @@
                                     <span class="font-semibold" style="color: var(--ink);">{{ $d->diagnosis_name }}</span>
                                 @endif
                                 @if ($d->is_custom)
-                                    <span class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">Custom</span>
+                                    <span class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style="background: var(--border); color: var(--ink-muted);">Custom</span>
                                 @endif
                             </div>
                         </div>
@@ -228,12 +230,12 @@
                         <label class="block text-xs font-medium" style="color: var(--ink-muted);">Search ICD-10 / Disease name</label>
                     </div>
                     <div>
-                        <input type="text" x-model="query" @input.debounce.300ms="search()" placeholder="e.g. Dengue, Hypertension..." class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30 transition" style="border-color: var(--border); color: var(--ink);" autocomplete="off">
+                        <input type="text" x-model="query" @input.debounce.300ms="search()" placeholder="e.g. Dengue, Hypertension..." class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" autocomplete="off">
                         <input type="hidden" name="diagnosis_id" :value="selectedId">
                         <div x-show="results.length > 0" class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border bg-white" style="display:none; border-color: var(--border);">
                             <ul>
                                 <template x-for="item in results" :key="item.id">
-                                    <li @click="select(item)" class="px-3 py-2 cursor-pointer text-sm border-b hover:bg-gray-50" style="border-color: var(--border); color: var(--ink);" x-text="item.text"></li>
+                                    <li @click="select(item)" class="px-3 py-2 cursor-pointer text-sm border-b hover:bg-black/5" style="border-color: var(--border); color: var(--ink);" x-text="item.text"></li>
                                 </template>
                             </ul>
                         </div>
@@ -241,10 +243,10 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Remarks</label>
-                    <textarea name="remarks" rows="2" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30 transition" style="border-color: var(--border); color: var(--ink);"></textarea>
+                    <textarea name="remarks" rows="2" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);"></textarea>
                 </div>
                 <div class="flex justify-end">
-                    <button type="submit" :disabled="!canSubmitDiagnosis" class="rounded-xl bg-emerald-900 px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">Add diagnosis</button>
+                    <button type="submit" :disabled="!canSubmitDiagnosis" class="rounded-xl bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">Add diagnosis</button>
                 </div>
             </form>
             @else
@@ -256,11 +258,11 @@
             @endif
         </section>
 
-        <section class="rounded-xl border bg-gray-100 p-4 lg:p-5" style="border-color: var(--border);">
+        <section class="rounded-xl border bg-[var(--bg-surface)] p-4 lg:p-5" style="border-color: var(--border);">
             <div class="flex items-center justify-between gap-2">
                 <h3 class="font-display font-semibold text-lg" style="color: var(--ink);">Prescription (Rx)</h3>
                 @if(isset($prescriptions) && $prescriptions->count() > 0)
-                    <span class="text-xs px-2 py-1 rounded-full bg-emerald-900 text-white">{{ $prescriptions->count() }} saved</span>
+                    <span class="text-xs px-2 py-1 rounded-full bg-[var(--primary)] text-white">{{ $prescriptions->count() }} saved</span>
                 @endif
             </div>
 
@@ -268,7 +270,7 @@
                 <div class="mt-3 overflow-auto border rounded-lg" style="border-color: var(--border);">
                     <table class="w-full text-sm">
                         <thead>
-                            <tr class="bg-emerald-900/10" style="color: var(--ink-muted);">
+                            <tr class="bg-teal-soft" style="color: var(--ink-muted);">
                                 <th class="text-left px-3 py-2">Medicine</th>
                                 <th class="text-left px-3 py-2">Dosage/Frequency</th>
                                 <th class="text-left px-3 py-2">Duration</th>
@@ -281,7 +283,7 @@
                                     <td class="px-3 py-2">
                                         {{ $rx->medicine_name }}
                                         @if ($rx->is_custom)
-                                            <span class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">Custom</span>
+                                            <span class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style="background: var(--border); color: var(--ink-muted);">Custom</span>
                                         @endif
                                     </td>
                                     <td class="px-3 py-2">{{ $rx->dosage }}{{ $rx->frequency ? ' · '.$rx->frequency : '' }}</td>
@@ -304,60 +306,60 @@
                         <label class="block text-xs font-medium" style="color: var(--ink-muted);">Medicine search</label>
                     </div>
                     <div class="relative" @click.away="results = []">
-                        <input type="text" x-model="query" @input.debounce.300ms="search()" @keydown.escape="results = []" placeholder="e.g. Paracetamol, Amoxicillin..." class="w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30 transition" style="border-color: var(--border); color: var(--ink);" autocomplete="off" aria-autocomplete="list" aria-expanded="false" :aria-expanded="results.length > 0">
+                        <input type="text" x-model="query" @input.debounce.300ms="search()" @keydown.escape="results = []" placeholder="e.g. Paracetamol, Amoxicillin..." class="w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" autocomplete="off" aria-autocomplete="list" aria-expanded="false" :aria-expanded="results.length > 0">
                         <input type="hidden" name="medicine_id" :value="selectedId">
 
                         <div x-show="results.length > 0" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border bg-white shadow-sm max-h-56 overflow-y-auto" style="display:none; border-color: var(--border);">
                             <ul>
                                 <template x-for="item in results" :key="item.id">
-                                    <li @click="select(item)" class="px-3 py-2 text-sm cursor-pointer border-b last:border-b-0 hover:bg-gray-50" style="border-color: var(--border); color: var(--ink);" x-text="item.text"></li>
+                                    <li @click="select(item)" class="px-3 py-2 text-sm cursor-pointer border-b last:border-b-0 hover:bg-black/5" style="border-color: var(--border); color: var(--ink);" x-text="item.text"></li>
                                 </template>
                             </ul>
                         </div>
-                        <div x-show="query.length >= 2 && results.length === 0 && !searching && !selectedId" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border bg-white px-3 py-2 text-sm text-slate-500" style="display:none; border-color: var(--border);">
+                        <div x-show="query.length >= 2 && results.length === 0 && !searching && !selectedId" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border bg-white px-3 py-2 text-sm text-[var(--ink-subtle)]" style="display:none; border-color: var(--border);">
                             No medicines found. Try a different search term.
                         </div>
-                        <div x-show="searching" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border border-emerald-900/20 bg-white px-3 py-2 text-sm text-emerald-900" style="display:none; border-color: var(--border);">
+                        <div x-show="searching" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border border-[var(--primary-soft)] bg-white px-3 py-2 text-sm text-[var(--primary)]" style="display:none; border-color: var(--border);">
                             Searching medicines...
                         </div>
                     </div>
 
-                    <div x-show="selectedText" class="flex items-center justify-between gap-3 rounded-2xl border border-emerald-900/20 bg-emerald-900/5 px-3 py-2 text-sm" style="display:none;">
-                        <span class="font-medium text-emerald-900">Selected medicine: <span x-text="selectedText"></span></span>
-                        <button type="button" @click="clearSelection()" class="text-xs font-semibold text-emerald-900 hover:underline">Clear</button>
+                    <div x-show="selectedText" class="flex items-center justify-between gap-3 rounded-2xl border border-[var(--primary-soft)] bg-teal-soft px-3 py-2 text-sm" style="display:none;">
+                        <span class="font-medium text-[var(--primary)]">Selected medicine: <span x-text="selectedText"></span></span>
+                        <button type="button" @click="clearSelection()" class="text-xs font-semibold text-[var(--primary)] hover:underline">Clear</button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <div class="space-y-2">
                         <label class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Dosage</label>
-                        <input id="rx_dosage" type="text" name="dosage" value="{{ old('dosage') }}" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30 transition" style="border-color: var(--border); color: var(--ink);" required>
+                        <input id="rx_dosage" type="text" name="dosage" value="{{ old('dosage') }}" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" required>
                         <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="appendSig('rx_dosage', '1 tab')" class="px-3 py-1 rounded-full text-xs bg-emerald-900/10 text-emerald-900">1 tab</button>
-                            <button type="button" onclick="appendSig('rx_dosage', '2 tabs')" class="px-3 py-1 rounded-full text-xs bg-emerald-900/10 text-emerald-900">2 tabs</button>
+                            <button type="button" onclick="appendSig('rx_dosage', '1 tab')" class="px-3 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)]">1 tab</button>
+                            <button type="button" onclick="appendSig('rx_dosage', '2 tabs')" class="px-3 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)]">2 tabs</button>
                         </div>
                     </div>
                     <div class="space-y-2">
                         <label class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Frequency</label>
-                        <input id="rx_frequency" type="text" name="frequency" value="{{ old('frequency') }}" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30 transition" style="border-color: var(--border); color: var(--ink);">
+                        <input id="rx_frequency" type="text" name="frequency" value="{{ old('frequency') }}" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);">
                         <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="appendSig('rx_frequency', 'Before meals')" class="px-3 py-1 rounded-full text-xs bg-emerald-900/10 text-emerald-900">Before Meals</button>
-                            <button type="button" onclick="appendSig('rx_frequency', 'After meals')" class="px-3 py-1 rounded-full text-xs bg-emerald-900/10 text-emerald-900">After Meals</button>
-                            <button type="button" onclick="appendSig('rx_frequency', 'At bedtime')" class="px-3 py-1 rounded-full text-xs bg-emerald-900/10 text-emerald-900">At Bedtime</button>
+                            <button type="button" onclick="appendSig('rx_frequency', 'Before meals')" class="px-3 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)]">Before Meals</button>
+                            <button type="button" onclick="appendSig('rx_frequency', 'After meals')" class="px-3 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)]">After Meals</button>
+                            <button type="button" onclick="appendSig('rx_frequency', 'At bedtime')" class="px-3 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)]">At Bedtime</button>
                         </div>
                     </div>
                     <div class="space-y-2">
                         <label class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Duration</label>
-                        <input type="text" name="duration" value="{{ old('duration') }}" placeholder="e.g. 7 days" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30 transition" style="border-color: var(--border); color: var(--ink);">
+                        <input type="text" name="duration" value="{{ old('duration') }}" placeholder="e.g. 7 days" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);">
                     </div>
                     <div class="space-y-2">
                         <label class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Quantity</label>
-                        <input type="number" name="quantity" value="{{ old('quantity') }}" min="1" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30 transition" style="border-color: var(--border); color: var(--ink);">
+                        <input type="number" name="quantity" value="{{ old('quantity') }}" min="1" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);">
                     </div>
                 </div>
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p class="text-xs text-slate-500" x-show="!selectedId" style="display:none;">Please choose a medicine from the results before adding a prescription.</p>
-                    <button type="submit" :disabled="!canSubmitPrescription" class="rounded-xl bg-emerald-900 px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">Add prescription</button>
+                    <p class="text-xs text-[var(--ink-subtle)]" x-show="!selectedId" style="display:none;">Please choose a medicine from the results before adding a prescription.</p>
+                    <button type="submit" :disabled="!canSubmitPrescription" class="rounded-xl bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">Add prescription</button>
                 </div>
             </form>
             @else
@@ -410,12 +412,12 @@
                 </p>
                 <div class="flex flex-wrap items-center gap-2 justify-end">
                     @if ($canReferExternally)
-                        <button type="button" onclick="openConsultationOutwardReferralWizard()" class="rounded-xl border border-emerald-900 px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-900/5">
+                        <button type="button" onclick="openConsultationOutwardReferralWizard()" class="rounded-xl border border-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--primary)] transition hover:bg-teal-soft">
                             Refer to higher facility
                         </button>
                     @endif
                     @if ($clinicalReviewOpen)
-                        <button type="submit" form="finalizeForm" class="rounded-xl bg-emerald-900 px-5 py-2 text-sm font-semibold text-white">
+                        <button type="submit" form="finalizeForm" class="rounded-xl bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white">
                             Finalize &amp; Save Consultation
                         </button>
                     @endif
@@ -426,15 +428,15 @@
 </div>
 
 @push('page-modals')
-    <div id="outwardReferralShowModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" aria-modal="true" role="dialog">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeConsultationOutwardReferralWizard()"></div>
-        <div id="outwardReferralShowPanel" class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 ease-out bg-white">
+    <div id="outwardReferralShowModal" x-show="$store.modals.outward" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeConsultationOutwardReferralWizard()"></div>
+        <div id="outwardReferralShowPanel" x-show="$store.modals.outward" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl bg-white focus:outline-none" tabindex="-1">
             <div class="flex items-center justify-between gap-3 border-b px-5 py-4" style="border-color: var(--border);">
                 <div>
                     <h2 class="font-display text-lg font-semibold" style="color: var(--ink);">Outward Referral</h2>
                     <p class="text-xs" style="color: var(--ink-muted);">Refer patient to a higher-level facility</p>
                 </div>
-                <button type="button" onclick="closeConsultationOutwardReferralWizard()" class="shrink-0 rounded-full p-2 text-slate-500 transition hover:bg-slate-100" aria-label="Close referral wizard">
+                <button type="button" onclick="closeConsultationOutwardReferralWizard()" class="shrink-0 rounded-full p-2 text-ink-muted transition hover:bg-black/5" aria-label="Close referral wizard">
                     <i class="fa-solid fa-times" aria-hidden="true"></i>
                 </button>
             </div>
@@ -465,106 +467,6 @@
              </div>
         </div>
     </div>
-@endpush
-
-@push('vitals-modal-content')
-<div class="rounded-2xl bg-white">
-    <div class="flex items-center justify-between gap-3 border-b px-4 py-3" style="border-color: var(--border);">
-        <div>
-            <h3 class="font-display text-lg font-semibold" style="color: var(--ink);">Vitals history</h3>
-            <p class="text-xs" style="color: var(--ink-muted);">Latest reading and prior versions</p>
-        </div>
-        <button type="button" @click="$dispatch('close-vitals-modal')" class="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">Close</button>
-    </div>
-
-    <div class="max-h-[75vh] overflow-auto p-4">
-        <div class="mb-3 rounded-lg bg-emerald-900/5 px-3 py-2 text-xs" style="color: var(--ink-muted);">
-            Latest Reading: BP {{ $latestVitals?->bp_systolic ?? '—' }}/{{ $latestVitals?->bp_diastolic ?? '—' }} ·
-            Temp {{ $latestVitals?->temperature_c ?? '—' }}°C ·
-            Wt {{ $latestVitals?->weight_kg ?? '—' }}kg ·
-            Ht {{ $latestVitals?->height_cm ?? '—' }}cm
-        </div>
-
-        <table class="w-full text-xs">
-            <thead>
-                <tr class="bg-emerald-900/10" style="color: var(--ink-muted);">
-                    <th class="px-2 py-2 text-left">Captured</th>
-                    <th class="px-2 py-2 text-left">Phase</th>
-                    <th class="px-2 py-2 text-left">BP</th>
-                    <th class="px-2 py-2 text-left">Temp</th>
-                    <th class="px-2 py-2 text-left">By</th>
-                    <th class="px-2 py-2 text-left">Notes</th>
-                    <th class="px-2 py-2 text-left">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($allVitals as $vitalVersion)
-                    <tr class="border-b" style="border-color: var(--border); color: var(--ink);">
-                        <td class="px-2 py-2">{{ \Carbon\Carbon::parse($vitalVersion->created_at)->format('M j g:i A') }}</td>
-                        <td class="px-2 py-2 uppercase">{{ $vitalVersion->phase ?? 'triage' }}</td>
-                        <td class="px-2 py-2">{{ $vitalVersion->bp_systolic ?? '—' }}/{{ $vitalVersion->bp_diastolic ?? '—' }}</td>
-                        <td class="px-2 py-2">{{ $vitalVersion->temperature_c ?? '—' }}°C</td>
-                        <td class="px-2 py-2">{{ trim(($vitalVersion->captured_by_first_name ?? '').' '.($vitalVersion->captured_by_last_name ?? '')) ?: 'N/A' }}</td>
-                        <td class="px-2 py-2" style="color: var(--ink-muted);">{{ $vitalVersion->notes ?? '—' }}</td>
-                        <td class="px-2 py-2">
-                            <div class="flex items-center gap-2">
-                                <details>
-                                    <summary class="cursor-pointer text-[11px] font-semibold text-emerald-900 hover:underline">Edit</summary>
-                                    <div class="mt-2 w-[18rem] rounded-lg border bg-white p-2" style="border-color: var(--border);">
-                                        <form action="{{ route('consultations.vitals.update', ['consultation' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" class="space-y-2">
-                                            @csrf
-                                            @method('PUT')
-                                            <div class="grid grid-cols-2 gap-2">
-                                                <input type="number" name="bp_systolic" min="0" max="300" step="1" value="{{ $vitalVersion->bp_systolic }}" placeholder="SYS" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">
-                                                <input type="number" name="bp_diastolic" min="0" max="200" step="1" value="{{ $vitalVersion->bp_diastolic }}" placeholder="DIA" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">
-                                                <input type="number" name="temperature" min="30" max="45" step="0.1" value="{{ $vitalVersion->temperature_c }}" placeholder="Temp" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">
-                                                <input type="number" name="weight" min="0" max="500" step="0.1" value="{{ $vitalVersion->weight_kg }}" placeholder="Weight" class="rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">
-                                                <input type="number" name="height" min="0" max="300" step="0.1" value="{{ $vitalVersion->height_cm }}" placeholder="Height" class="col-span-2 rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">
-                                            </div>
-                                            <textarea name="notes" rows="2" placeholder="Notes" class="w-full rounded border px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-emerald-900/30">{{ $vitalVersion->notes ?? '' }}</textarea>
-                                            <button type="submit" class="w-full rounded bg-emerald-900 px-2 py-1 text-[11px] font-semibold text-white">Update</button>
-                                        </form>
-                                    </div>
-                                </details>
-                                <form action="{{ route('consultations.vitals.delete', ['consultation' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" onsubmit="return confirm('Delete this vitals version? This cannot be undone.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-[11px] font-semibold text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50" @if (($vitalVersion->phase ?? null) === 'triage' || $allVitals->count() <= 1) disabled @endif>Delete</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-
-    <div class="border-t px-4 py-4" style="border-color: var(--border);">
-        @if ($clinicalReviewOpen)
-            <button type="button" @click="showRetakeVitals = !showRetakeVitals" class="rounded-lg bg-emerald-900 px-3 py-2 text-xs font-semibold text-white">
-                <span x-show="!showRetakeVitals">Re-take vitals</span>
-                <span x-show="showRetakeVitals" style="display: none;">Hide re-take form</span>
-            </button>
-
-            <form x-show="showRetakeVitals" x-transition style="display: none;" action="{{ route('consultations.vitals.retake', $consultation->id) }}" method="POST" class="mt-3 space-y-2">
-                @csrf
-                <div class="grid grid-cols-2 gap-2 md:grid-cols-5">
-                    <input type="number" name="bp_systolic" min="0" max="300" step="1" placeholder="SYS" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);">
-                    <input type="number" name="bp_diastolic" min="0" max="200" step="1" placeholder="DIA" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);">
-                    <input type="number" name="temperature" min="30" max="45" step="0.1" placeholder="Temp °C" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);">
-                    <input type="number" name="weight" min="0" max="500" step="0.1" placeholder="Weight kg" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);">
-                    <input type="number" name="height" min="0" max="300" step="0.1" placeholder="Height cm" class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);">
-                </div>
-                <textarea name="notes" rows="2" placeholder="Optional notes" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-900/30" style="border-color: var(--border);"></textarea>
-                <div class="flex justify-end">
-                    <button type="submit" class="rounded-xl bg-emerald-900 px-4 py-2 text-sm font-semibold text-white">Save new vitals version</button>
-                </div>
-            </form>
-        @else
-            <p class="text-xs" style="color: var(--ink-muted);">Clinical vitals retake is available once the case is in the doctor queue.</p>
-        @endif
-    </div>
-</div>
 @endpush
 
 <script>
@@ -650,6 +552,22 @@
         const current = input.value.trim();
         input.value = current ? `${current}; ${value}` : value;
         input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    function confirmVitalsDelete(form) {
+        Swal.fire({
+            title: 'Delete this vitals version?',
+            text: 'This cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: 'var(--danger)',
+            confirmButtonText: 'Delete',
+            cancelButtonText: 'Cancel',
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+        return false;
     }
 </script>
 @endsection
