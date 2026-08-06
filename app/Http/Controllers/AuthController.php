@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\ForgotPasswordOtp;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,6 +51,9 @@ class AuthController extends Controller
             // (Prevents session fixation attacks)
             $request->session()->regenerate();
 
+            // 3b. Audit trail entry for the authenticated login (no PII stored).
+            $this->recordAuthAudit('login', $request, Auth::id());
+
             // 4. Redirect User
             // 'intended' sends them to the URL they tried to visit before being intercepted by login
             // Default fallback is 'dashboard'
@@ -80,15 +84,11 @@ class AuthController extends Controller
         // Log the logout event for audit trail
         $user = Auth::user();
         if ($user) {
-            \Log::info("User logged out [User ID: {$user->id}, Username: {$user->username}]");
+            // Never log usernames or other personal data in application logs.
+            \Log::info("User logged out [User ID: {$user->id}]");
 
-            // Optional: Record in audit log if using AuditLog model
-            // \App\Models\AuditLog::create([
-            //     'user_id' => $user->id,
-            //     'action' => 'logout',
-            //     'description' => 'User logged out',
-            //     'ip_address' => $request->ip(),
-            // ]);
+            // Audit trail entry (no PII stored).
+            $this->recordAuthAudit('logout', $request, $user->id);
         }
 
         // 1. Unauthenticate the user (Guard logout)
@@ -205,6 +205,25 @@ class AuthController extends Controller
         DB::table('password_resets')->where('user_id', $user->id)->update(['used' => true]);
         session()->forget('password_reset_username');
 
+        $this->recordAuthAudit('password_reset', $request, $user->id);
+
         return redirect()->route('login')->with('success', 'Your password has been reset. Please sign in with your new password.');
+    }
+
+    /**
+     * Write an authentication event to the audit trail (never stores usernames, OTPs, or passwords).
+     */
+    private function recordAuthAudit(string $action, Request $request, ?int $userId): void
+    {
+        AuditLog::query()->create([
+            'user_id' => $userId,
+            'action' => $action,
+            'table_name' => 'auth',
+            'record_id' => null,
+            'old_values' => null,
+            'new_values' => null,
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
+        ]);
     }
 }

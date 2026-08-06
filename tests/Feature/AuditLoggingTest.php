@@ -9,12 +9,14 @@ use App\Models\Patient;
 use App\Models\User;
 use App\Models\Zone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Tests\Concerns\AssignsRolesAndPermissions;
 use Tests\TestCase;
 
 class AuditLoggingTest extends TestCase
 {
-    use RefreshDatabase;
+    use AssignsRolesAndPermissions, RefreshDatabase;
 
     private function actingUser(): User
     {
@@ -186,5 +188,98 @@ class AuditLoggingTest extends TestCase
             ->where('record_id', $patient->id)
             ->where('action', 'updated')
             ->count());
+    }
+
+    public function test_medicine_import_logs_audit_entry_with_counts(): void
+    {
+        $user = $this->createUserWithPermissions(['medicines']);
+        $this->actingAs($user);
+
+        $csv = "name,generic_name\nParacetamol,Acetaminophen\nAmoxicillin,Amoxicillin\n";
+
+        $this->post(route('medicines.import'), [
+            'csv_file' => UploadedFile::fake()->createWithContent('medicines.csv', $csv),
+        ])->assertSessionHas('success');
+
+        $log = AuditLog::query()
+            ->where('table_name', 'medicines_lookup')
+            ->where('action', 'medicines_imported')
+            ->first();
+
+        $this->assertNotNull($log);
+        $this->assertSame($user->id, $log->user_id);
+        $this->assertSame(2, $log->new_values['success_count']);
+        $this->assertSame(0, $log->new_values['error_count']);
+    }
+
+    public function test_medicine_import_fatal_error_logs_audit_entry(): void
+    {
+        $this->actingAs($this->createUserWithPermissions(['medicines']));
+
+        $this->post(route('medicines.import'), [
+            'csv_file' => UploadedFile::fake()->createWithContent('medicines.csv', ''),
+        ]);
+
+        $this->assertSame(1, AuditLog::query()
+            ->where('table_name', 'medicines_lookup')
+            ->where('action', 'medicines_import_failed')
+            ->count());
+    }
+
+    public function test_role_update_logs_audit_entry_with_permission_changes(): void
+    {
+        $admin = $this->createUserWithPermissions(['users']);
+        $this->actingAs($admin);
+
+        $roleId = $this->createRoleWithPermissions(['patients']);
+
+        $extraPermissionId = DB::table('permissions')->insertGetId([
+            'name' => 'consultations',
+            'description' => 'Test permission: consultations',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $oldPermissionIds = DB::table('role_permissions')
+            ->where('role_id', $roleId)
+            ->pluck('permission_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $this->put(route('roles.update', $roleId), [
+            'role_name' => 'Nurse Updated',
+            'permissions' => [$extraPermissionId],
+        ])->assertRedirect(route('roles.index'));
+
+        $log = AuditLog::query()
+            ->where('table_name', 'user_roles')
+            ->where('record_id', $roleId)
+            ->where('action', 'role_updated')
+            ->first();
+
+        $this->assertNotNull($log);
+        $this->assertSame($admin->id, $log->user_id);
+        $this->assertSame($oldPermissionIds, $log->old_values['permission_ids']);
+        $this->assertSame([$extraPermissionId], $log->new_values['permission_ids']);
+    }
+
+    public function test_user_audit_entries_never_store_password_hash(): void
+    {
+        $this->actingUser();
+
+        $user = User::factory()->create(['password' => bcrypt('secret123')]);
+
+        $createdLog = AuditLog::query()
+            ->where('table_name', 'users')
+            ->where('record_id', $user->id)
+            ->where('action', 'created')
+            ->first();
+
+        $this->assertNotNull($createdLog);
+        $this->assertArrayNotHasKey('password', $createdLog->new_values);
+        $this->assertStringNotContainsString(
+            'secret123',
+            json_encode($createdLog->new_values)
+        );
     }
 }
