@@ -17,7 +17,7 @@
                 <p style="font-size:14px;font-weight:600;color:#1f2937;margin:0;">iClinicSys Consultation Handout</p>
                 <p style="font-size:12px;color:#6b7280;margin:0;">
                     C{{ str_pad($consultation->id, 4, '0', STR_PAD_LEFT) }}
-                    {{ $patient->last_name ?? '' }}, {{ucwords ($patient->first_name ?? '' )}} {{ $patient->middle_name ?? '' }}
+                    {{ fullName($patient->last_name ?? null, $patient->first_name ?? null, $patient->middle_name ?? null, $patient->suffix ?? null) }}
                 </p>
             </div>
             <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">

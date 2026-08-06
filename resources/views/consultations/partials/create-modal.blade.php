@@ -3,7 +3,7 @@
         <div>
             <h2 id="consultationCreateModalTitle" class="font-display font-semibold text-lg lg:text-xl" style="color: var(--ink);">New Consultation</h2>
             <p id="consultationCreateModalSubtitle" class="text-xs lg:text-sm mt-1" style="color: var(--ink-muted);">
-                Attending to <span class="font-semibold" style="color: var(--ink);">{{ $patient->last_name }}, {{ ucwords($patient->first_name) }}@if($patient->suffix) {{ $patient->suffix }}@endif</span>
+                Attending to <span class="font-semibold" style="color: var(--ink);">{{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }}</span>
                 ({{ \App\Helpers\PatientCode::format((int) $patient->id) }})
             </p>
             <p id="consultationCreateModalMeta" class="text-xs lg:text-sm mt-0.5" style="color: var(--ink-muted);">{{ $patient->age }} y/o · {{ $patient->residential_address }}</p>

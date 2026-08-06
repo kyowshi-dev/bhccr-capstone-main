@@ -80,7 +80,7 @@
                 <p style="font-size:14px;font-weight:600;color:#1f2937;margin:0;">Outward Referral Slip</p>
                 <p style="font-size:12px;color:#6b7280;margin:0;">
                     R{{ str_pad($referral->id, 4, '0', STR_PAD_LEFT) }} ·
-                    {{ ucfirst($patient->last_name ?? '') }}, {{ ucwords($patient->first_name ?? '') }}
+                    {{ fullName($patient->last_name ?? null, $patient->first_name ?? null, $patient->middle_name ?? null, $patient->suffix ?? null) }}
                 </p>
                 <p style="font-size:11px;color:#6b7280;margin:4px 0 0;">
                     Form size: 850 × 722 px — use 100% scale when printing.

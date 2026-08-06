@@ -17,18 +17,21 @@
             align-items: center;
             justify-content: center;
             font-family: var(--font-sans, Poppins, sans-serif);
-            background: url('{{ asset('img/bg.svg') }}') center/cover no-repeat, var(--bg-page);
+            background:
+                linear-gradient(160deg, rgba(13, 74, 60, 0.88) 0%, rgba(10, 61, 50, 0.92) 100%),
+                url('{{ asset('img/bg.svg') }}') center/cover no-repeat,
+                var(--bg-page);
         }
 
         .auth-card {
-            width: min(92vw, 640px);
+            width: min(92vw, 560px);
             margin-left: auto;
             margin-right: auto;
             background: var(--bg-surface-elevated);
-            border: 1px solid var(--border);
-            border-radius: 1rem;
-            box-shadow: var(--shadow-lg);
-            padding: clamp(1.25rem, 2.5vw, 2rem);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 1.25rem;
+            box-shadow: 0 24px 60px -16px rgba(0, 0, 0, 0.45);
+            padding: clamp(1.5rem, 3vw, 2.5rem);
         }
 
         .auth-title {
@@ -39,11 +42,12 @@
         .auth-input {
             width: 100%;
             border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            padding: 0.625rem 0.75rem;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
             font-size: 0.875rem;
             color: var(--ink);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            background: #ffffff;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
 
         .auth-input::placeholder {
@@ -52,24 +56,25 @@
 
         .auth-input:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 0.25rem rgba(13, 74, 60, 0.2);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--ring);
         }
 
         .auth-btn {
             width: 100%;
-            border-radius: 0.5rem;
-            padding: 0.625rem 1rem;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
             font-size: 0.875rem;
             font-weight: 600;
             color: #ffffff;
             background: var(--primary);
-            box-shadow: 0 2px 8px rgba(13, 74, 60, 0.35);
-            transition: opacity 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 14px -2px rgba(13, 74, 60, 0.5);
+            transition: opacity 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
         }
 
         .auth-btn:hover {
             opacity: 0.95;
+            box-shadow: 0 6px 18px -2px rgba(13, 74, 60, 0.55);
         }
 
         .auth-btn:active {
@@ -83,9 +88,6 @@
     </style>
 </head>
 <body class="auth-body antialiased overflow-hidden">
-    <div class="grain fixed inset-0 z-0"></div>
-    <div class="absolute inset-0 z-0 opacity-50" style="background: linear-gradient(145deg, var(--teal-soft) 0%, transparent 40%, rgba(196, 92, 65, 0.06) 100%);"></div>
-
     <div class="relative z-10 w-full px-4">
         @yield('content')
     </div>

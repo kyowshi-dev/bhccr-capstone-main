@@ -5,7 +5,7 @@
 @section('content')
 <div class="space-y-4 lg:space-y-6">
     @if (session('success'))
-        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800">
+        <div class="p-4 rounded-xl bg-teal-soft border border-primary/20 text-primary">
             <div class="flex items-start gap-3">
                 <i class="fa-solid fa-check-circle mt-1"></i>
                 <span>{{ session('success') }}</span>
@@ -14,7 +14,7 @@
     @endif
 
     @if (session('error'))
-        <div class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800">
+        <div class="p-4 rounded-xl bg-danger-soft border border-danger/30 text-danger">
             <div class="flex items-start gap-3">
                 <i class="fa-solid fa-exclamation-circle mt-1"></i>
                 <span>{{ session('error') }}</span>
@@ -23,7 +23,7 @@
     @endif
 
     @if ($errors->any())
-        <div class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800">
+        <div class="p-4 rounded-xl bg-danger-soft border border-danger/30 text-danger">
             <div class="flex items-start gap-3">
                 <i class="fa-solid fa-exclamation-circle mt-1"></i>
                 <div>
@@ -40,8 +40,8 @@
         <p class="text-sm mt-1" style="color: var(--ink-muted);">Assign permissions to roles. Users inherit permissions from their role.</p>
     </div>
 
-    <div class="overflow-hidden rounded-xl lg:rounded-2xl border bg-white/80 shadow-sm" style="border-color: var(--border);">
-        <table class="min-w-full divide-y divide-gray-100">
+    <div class="overflow-hidden rounded-xl lg:rounded-2xl border bg-surface shadow-sm" style="border-color: var(--border);">
+        <table class="min-w-full divide-y divide-border">
             <thead class="bg-teal-soft/60">
                 <tr>
                     <th class="px-3 lg:px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-ink-muted whitespace-nowrap">Role</th>
@@ -49,7 +49,7 @@
                     <th class="px-3 lg:px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-ink-muted whitespace-nowrap">Actions</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-100">
+            <tbody class="bg-surface divide-y divide-border">
                 @forelse ($roles as $role)
                     <tr class="hover:bg-black/[0.03] transition-colors">
                         <td class="px-3 lg:px-6 py-3 text-sm font-medium whitespace-nowrap" style="color: var(--ink);">

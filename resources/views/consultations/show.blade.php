@@ -73,7 +73,7 @@
     @endphp
 
     @php
-        $consultationPatientName = trim(($patient->last_name ?? '') . ', ' . ($patient->first_name ?? ''));
+        $consultationPatientName = fullName($patient->last_name ?? null, $patient->first_name ?? null, $patient->middle_name ?? null, $patient->suffix ?? null);
         $consultationPatientMetaParts = [];
         if (! empty($patient->age)) {
             $consultationPatientMetaParts[] = $patient->age . ' y/o';
@@ -92,7 +92,7 @@
          class="hidden"></div>
 
     <div x-show="showVitalsModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" style="display: none;" class="fixed inset-0 z-[100] overflow-y-auto bg-black/40 p-4">
-        <div class="mx-auto my-4 w-full max-w-5xl rounded-2xl border bg-white shadow-xl" style="border-color: var(--border);">
+        <div class="mx-auto my-4 w-full max-w-5xl rounded-2xl border bg-surface shadow-xl" style="border-color: var(--border);">
             <div class="flex items-center justify-between gap-3 border-b px-4 py-3" style="border-color: var(--border);">
                 <div>
                     <h3 class="font-display text-lg font-semibold" style="color: var(--ink);">Vitals history</h3>
@@ -128,13 +128,13 @@
                                 <td class="px-2 py-2 uppercase">{{ $vitalVersion->phase ?? 'triage' }}</td>
                                 <td class="px-2 py-2">{{ $vitalVersion->bp_systolic ?? '—' }}/{{ $vitalVersion->bp_diastolic ?? '—' }}</td>
                                 <td class="px-2 py-2">{{ $vitalVersion->temperature_c ?? '—' }}°C</td>
-                                <td class="px-2 py-2">{{ trim(($vitalVersion->captured_by_first_name ?? '').' '.($vitalVersion->captured_by_last_name ?? '')) ?: 'N/A' }}</td>
+                                <td class="px-2 py-2">{{ fullName($vitalVersion->captured_by_last_name ?? null, $vitalVersion->captured_by_first_name ?? null) ?: 'N/A' }}</td>
                                 <td class="px-2 py-2" style="color: var(--ink-muted);">{{ $vitalVersion->notes ?? '—' }}</td>
                                 <td class="px-2 py-2">
                                     <div class="flex items-center gap-2">
                                         <details>
                                             <summary class="cursor-pointer text-[11px] font-semibold text-[var(--primary)] hover:underline">Edit</summary>
-                                            <div class="mt-2 w-[18rem] rounded-lg border bg-white p-2" style="border-color: var(--border);">
+                                            <div class="mt-2 w-[18rem] rounded-lg border bg-surface p-2" style="border-color: var(--border);">
                                                 <form action="{{ route('consultations.vitals.update', ['consultation' => $consultation->id, 'vitalId' => $vitalVersion->id]) }}" method="POST" class="space-y-2">
                                                     @csrf
                                                     @method('PUT')
@@ -232,7 +232,7 @@
                     <div>
                         <input type="text" x-model="query" @input.debounce.300ms="search()" placeholder="e.g. Dengue, Hypertension..." class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" autocomplete="off">
                         <input type="hidden" name="diagnosis_id" :value="selectedId">
-                        <div x-show="results.length > 0" class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border bg-white" style="display:none; border-color: var(--border);">
+                        <div x-show="results.length > 0" class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border bg-surface" style="display:none; border-color: var(--border);">
                             <ul>
                                 <template x-for="item in results" :key="item.id">
                                     <li @click="select(item)" class="px-3 py-2 cursor-pointer text-sm border-b hover:bg-black/5" style="border-color: var(--border); color: var(--ink);" x-text="item.text"></li>
@@ -309,17 +309,17 @@
                         <input type="text" x-model="query" @input.debounce.300ms="search()" @keydown.escape="results = []" placeholder="e.g. Paracetamol, Amoxicillin..." class="w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" autocomplete="off" aria-autocomplete="list" aria-expanded="false" :aria-expanded="results.length > 0">
                         <input type="hidden" name="medicine_id" :value="selectedId">
 
-                        <div x-show="results.length > 0" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border bg-white shadow-sm max-h-56 overflow-y-auto" style="display:none; border-color: var(--border);">
+                        <div x-show="results.length > 0" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border bg-surface shadow-sm max-h-56 overflow-y-auto" style="display:none; border-color: var(--border);">
                             <ul>
                                 <template x-for="item in results" :key="item.id">
                                     <li @click="select(item)" class="px-3 py-2 text-sm cursor-pointer border-b last:border-b-0 hover:bg-black/5" style="border-color: var(--border); color: var(--ink);" x-text="item.text"></li>
                                 </template>
                             </ul>
                         </div>
-                        <div x-show="query.length >= 2 && results.length === 0 && !searching && !selectedId" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border bg-white px-3 py-2 text-sm text-[var(--ink-subtle)]" style="display:none; border-color: var(--border);">
+                        <div x-show="query.length >= 2 && results.length === 0 && !searching && !selectedId" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border bg-surface px-3 py-2 text-sm text-[var(--ink-subtle)]" style="display:none; border-color: var(--border);">
                             No medicines found. Try a different search term.
                         </div>
-                        <div x-show="searching" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border border-[var(--primary-soft)] bg-white px-3 py-2 text-sm text-[var(--primary)]" style="display:none; border-color: var(--border);">
+                        <div x-show="searching" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border border-[var(--primary-soft)] bg-surface px-3 py-2 text-sm text-[var(--primary)]" style="display:none; border-color: var(--border);">
                             Searching medicines...
                         </div>
                     </div>
@@ -399,7 +399,7 @@
     </main>
 
     @if (($clinicalReviewOpen || ($consultation->status === \App\Enums\ConsultationStatus::NurseReview->value && $canReferExternally)) && ! in_array($consultation->status, \App\Enums\ConsultationStatus::terminalValues(), true))
-        <div class="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 px-4 py-3 backdrop-blur" style="border-color: var(--border);">
+        <div class="fixed bottom-0 left-0 right-0 z-40 border-t bg-surface/95 px-4 py-3 backdrop-blur" style="border-color: var(--border);">
             <div class="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-xs" style="color: var(--ink-muted);">
                     @if ($clinicalReviewOpen && ($diagnoses->count() ?? 0) > 0 && ($prescriptions->count() ?? 0) > 0)
@@ -430,7 +430,7 @@
 @push('page-modals')
     <div id="outwardReferralShowModal" x-show="$store.modals.outward" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeConsultationOutwardReferralWizard()"></div>
-        <div id="outwardReferralShowPanel" x-show="$store.modals.outward" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl bg-white focus:outline-none" tabindex="-1">
+        <div id="outwardReferralShowPanel" x-show="$store.modals.outward" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl bg-surface focus:outline-none" tabindex="-1">
             <div class="flex items-center justify-between gap-3 border-b px-5 py-4" style="border-color: var(--border);">
                 <div>
                     <h2 class="font-display text-lg font-semibold" style="color: var(--ink);">Outward Referral</h2>

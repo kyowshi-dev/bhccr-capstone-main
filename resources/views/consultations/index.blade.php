@@ -81,7 +81,7 @@
                                 class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2"
                                 :style="blurSensitive ? 'background: var(--accent); --tw-ring-color: var(--accent);' : 'background: var(--border); --tw-ring-color: var(--primary);'">
                             <span class="sr-only">Toggle masking for diagnosis and treatment</span>
-                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200"
+                            <span class="inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform duration-200"
                                   :class="blurSensitive ? 'translate-x-5' : 'translate-x-0.5'"></span>
                         </button>
                         <span class="text-xs whitespace-nowrap" :style="blurSensitive ? 'color: var(--accent);' : 'color: var(--ink-muted);'" x-text="blurSensitive ? 'Masked' : 'Visible'"></span>
@@ -245,10 +245,10 @@
                                     <div class="text-xs mt-1" style="color: var(--ink-muted);">{{ \Carbon\Carbon::parse($consultation->created_at)->format('h:i A') }}@if ($consultation->zone_number ?? null) · Zone {{ $consultation->zone_number }}@endif</div>
                                 </td>
                                 <td class="px-4 py-4 text-sm">
-                                    <div class="font-semibold" style="color: var(--ink);">{{ $consultation->patient_last_name }}, {{ ucwords($consultation->patient_first_name) }}</div>
+                                    <div class="font-semibold" style="color: var(--ink);">{{ fullName($consultation->patient_last_name, $consultation->patient_first_name) }}</div>
                                     <div class="text-xs mt-1" style="color: var(--ink-muted);">{{ \App\Helpers\PatientCode::format((int) $consultation->patient_id) }}</div>
                                 </td>
-                                <td class="px-4 py-4 text-sm" style="color: var(--ink);">{{ $consultation->worker_first_name }} {{ $consultation->worker_last_name }}</td>
+                                <td class="px-4 py-4 text-sm" style="color: var(--ink);">{{ fullName($consultation->worker_last_name, $consultation->worker_first_name) }}</td>
                                 <td class="px-4 py-4 text-sm" style="color: var(--ink);">
                                     @if (!empty($diagnoses))
                                         <div class="flex flex-wrap gap-2">

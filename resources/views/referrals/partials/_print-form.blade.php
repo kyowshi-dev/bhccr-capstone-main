@@ -5,7 +5,7 @@
         : '';
     $temperature = $vitals->temperature_c ?? null;
     $weight = $vitals->weight_kg ?? null;
-    $patientName = trim(($patient->last_name ?? '').', '.($patient->first_name ?? '').($patient->suffix ? ' '.$patient->suffix : ''));
+    $patientName = fullName($patient->last_name ?? null, $patient->first_name ?? null, $patient->middle_name ?? null, $patient->suffix ?? null);
     $dob = $patient->date_of_birth ? \Carbon\Carbon::parse($patient->date_of_birth)->format('m/d/Y') : '';
     $philhealthNo = ($patient->is_philhealth_member ?? 'n') === 'y' ? ($patient->philhealth_no ?? '') : '';
     $isPhilhealth = ($patient->is_philhealth_member ?? 'n') === 'y';

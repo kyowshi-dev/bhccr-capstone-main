@@ -44,7 +44,7 @@
                     @csrf
                     <div id="bulk-actions-bar" class="px-3 lg:px-4 py-3 flex items-center justify-between hidden" style="background: var(--bg-surface-elevated);">
                         <div>
-                            <button id="bulk-delete-btn" type="submit" class="inline-flex items-center justify-center px-3 py-2 rounded-lg text-xs font-semibold text-white transition hover:opacity-90" style="background: #ef4444;">Delete Selected</button>
+                            <button id="bulk-delete-btn" type="submit" class="inline-flex items-center justify-center px-3 py-2 rounded-lg text-xs font-semibold text-white transition hover:opacity-90" style="background: var(--danger);">Delete Selected</button>
                         </div>
                         <div class="text-sm" style="color: var(--ink-muted);">
                             <span id="selected-count">0</span> selected
@@ -74,7 +74,7 @@
                                             @if ($medicine->expiration_date)
                                                 {{ \Carbon\Carbon::parse($medicine->expiration_date)->format('M d, Y') }}
                                                 @if (\Carbon\Carbon::parse($medicine->expiration_date)->isPast())
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-800 w-fit ml-2">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-danger-soft text-danger w-fit ml-2">
                                                         Expired
                                                     </span>
                                                 @endif
@@ -119,7 +119,7 @@
                     @csrf
                     <div>
                         <label for="csv_file" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">CSV File</label>
-                        <input type="file" id="csv_file" name="csv_file" accept=".csv" required class="w-full rounded-lg border py-2 px-3 text-sm focus:outline-none focus:ring-2 transition file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">
+                        <input type="file" id="csv_file" name="csv_file" accept=".csv" required class="w-full rounded-lg border py-2 px-3 text-sm focus:outline-none focus:ring-2 transition file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-teal-soft file:text-ink hover:file:bg-teal-soft" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">
                         @error('csv_file')<p class="mt-1 text-xs" style="color: var(--accent);">{{ $message }}</p>@enderror
                     </div>
                     <button type="submit" class="px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md" style="background: var(--primary);">

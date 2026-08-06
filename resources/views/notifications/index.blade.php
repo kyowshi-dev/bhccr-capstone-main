@@ -32,7 +32,7 @@
         @if ($notifications->count() > 0)
             <div class="space-y-2">
                 @foreach ($notifications as $notification)
-                    <div class="p-4 rounded-lg border border-border hover:shadow-md transition-all duration-200 {{ is_null($notification->read_at) ? 'bg-teal-soft' : 'bg-white' }}">
+                    <div class="p-4 rounded-lg border border-border hover:shadow-md transition-all duration-200 {{ is_null($notification->read_at) ? 'bg-teal-soft' : 'bg-surface' }}">
                         <div class="flex gap-4">
                             <div class="flex-1">
                                 <h3 class="font-semibold text-ink">{{ $notification->data['title'] ?? 'Notification' }}</h3>
@@ -55,7 +55,7 @@
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="p-2 rounded-lg hover:bg-black/10 transition-colors" title="Delete">
-                                        <i class="fa-solid fa-trash text-red-500" aria-hidden="true"></i>
+                                        <i class="fa-solid fa-trash text-danger" aria-hidden="true"></i>
                                     </button>
                                 </form>
                             </div>

@@ -10,8 +10,8 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
     --font-display: 'Poppins', ui-sans-serif, system-ui, sans-serif;
 
-    /* Surfaces */
-    --color-page: #ffffff;
+    /* Surfaces — page carries a soft sage tint so white cards get real depth */
+    --color-page: #f4f7f5;
     --color-surface: #ffffff;
     --color-surface-elevated: #ffffff;
     --color-sidebar: #0d4a3c;
@@ -21,7 +21,7 @@
     --color-ink: #0f172a;
     --color-ink-muted: #475569;
     --color-ink-subtle: #94a3b8;
-    --color-border: rgba(15, 23, 42, 0.08);
+    --color-border: rgba(15, 23, 42, 0.1);
 
     /* Primary (DOH green) */
     --color-primary: #0d4a3c;
@@ -35,17 +35,20 @@
     --color-accent-soft: rgba(196, 92, 65, 0.12);
     --color-accent-blue: #0284c7;
     --color-accent-blue-soft: rgba(2, 132, 199, 0.12);
-    --color-amber: #d97706;
+    --color-amber: #b45309;
     --color-amber-soft: rgba(217, 119, 6, 0.14);
 
     /* Danger / clinical alert */
     --color-danger: #dc2626;
     --color-danger-soft: rgba(220, 38, 38, 0.12);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
-    --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
+    /* Focus ring */
+    --color-ring: rgba(2, 132, 199, 0.45);
+
+    /* Shadows — two-layer, slightly greener-neutral for depth without mud */
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(13, 74, 60, 0.04);
+    --shadow-md: 0 4px 14px -2px rgba(15, 23, 42, 0.09), 0 2px 4px -2px rgba(13, 74, 60, 0.05);
+    --shadow-lg: 0 18px 44px -12px rgba(15, 23, 42, 0.16), 0 6px 14px -6px rgba(13, 74, 60, 0.08);
 }
 
 /* === Legacy variable aliases ===
@@ -82,12 +85,156 @@
     --danger: var(--color-danger);
     --danger-soft: var(--color-danger-soft);
 
-    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
-    --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
+    --ring: var(--color-ring);
+
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(13, 74, 60, 0.04);
+    --shadow-md: 0 4px 14px -2px rgba(15, 23, 42, 0.09), 0 2px 4px -2px rgba(13, 74, 60, 0.05);
+    --shadow-lg: 0 18px 44px -12px rgba(15, 23, 42, 0.16), 0 6px 14px -6px rgba(13, 74, 60, 0.08);
 }
 
-/* === Component styles (kept from the layout's hand-rolled CSS) === */
+/* === Shared component primitives (prefer these over hand-rolled inline styles) === */
+
+/* Inputs: every text/select/date input across the app gets one consistent look */
+.input-base {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: 0.625rem;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--color-ink);
+    background: var(--color-surface);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-base::placeholder {
+    color: var(--color-ink-muted);
+}
+
+.input-base:focus {
+    outline: none;
+    border-color: var(--color-accent-blue);
+    box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* Buttons: primary CTA with soft brand shadow; consistent across pages */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.625rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--color-primary);
+    box-shadow: 0 2px 8px -1px rgba(13, 74, 60, 0.4);
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+    background: var(--color-primary-hover);
+    box-shadow: 0 4px 12px -2px rgba(13, 74, 60, 0.45);
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+.btn-outlined {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.625rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-outlined:hover {
+    background: var(--color-teal-soft);
+    border-color: rgba(13, 74, 60, 0.3);
+}
+
+.btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.625rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--color-danger);
+    box-shadow: 0 2px 8px -1px rgba(220, 38, 38, 0.35);
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-danger:hover {
+    background: #b91c1c;
+}
+
+.btn-danger:active {
+    transform: scale(0.98);
+}
+
+/* Card: the canonical white surface — border + soft shadow, never shadow-only */
+.surface-card {
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Table shell: consistent bordered container for registries */
+.tbl-shell {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-surface-elevated);
+    box-shadow: var(--shadow-sm);
+}
+
+.tbl-th {
+    padding: 0.75rem clamp(0.75rem, 1vw, 1.25rem);
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--color-ink-muted);
+    background: var(--color-teal-soft);
+}
+
+.tbl-td {
+    padding: 0.625rem clamp(0.75rem, 1vw, 1.25rem);
+    font-size: 0.8125rem;
+    color: var(--color-ink);
+}
+
+/* Page header icon chip (used by page-header component + page titles) */
+.header-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+    border-radius: 0.75rem;
+    background: var(--color-teal-soft);
+    color: var(--color-primary);
+    box-shadow: inset 0 0 0 1px rgba(13, 74, 60, 0.08);
+}
+
+/* App chrome: white-on-dark regardless of ink utilities */
 
 /* Subtle grain texture overlay used on app-shell backgrounds */
 .grain::before {
@@ -194,6 +341,11 @@ input[type='checkbox'] {
     color: #ffffff;
 }
 
+/* Sidebar: deep DOH-green gradient, not a flat slab */
+.app-sidebar {
+    background: linear-gradient(180deg, #0e5345 0%, #0b4438 55%, #0a3d32 100%) !important;
+}
+
 .app-sidebar .text-ink,
 .app-sidebar .text-ink-muted,
 .app-sidebar .text-primary,
@@ -203,12 +355,12 @@ input[type='checkbox'] {
 }
 
 .app-sidebar .border-border {
-    border-color: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
 }
 
 .app-sidebar .nav-link:hover,
 .app-sidebar button:hover {
-    background: rgba(255, 255, 255, 0.14) !important;
+    background: rgba(255, 255, 255, 0.12) !important;
     color: #ffffff !important;
 }
 
@@ -227,19 +379,45 @@ input[type='checkbox'] {
     color: var(--color-primary) !important;
 }
 
+/* Sidebar nav: active item gets a left accent bar + filled pill */
+.app-sidebar .nav-link,
+.app-sidebar .nav-submenu,
+.app-sidebar nav > div > button {
+    position: relative;
+    border-radius: 0.625rem;
+}
+
 .app-sidebar .nav-link:hover,
 .app-sidebar .nav-submenu:hover,
 .app-sidebar .nav-link[aria-current='page'],
 .app-sidebar .nav-submenu[aria-current='page'] {
-    background: rgba(255, 255, 255, 0.16) !important;
+    background: rgba(255, 255, 255, 0.13) !important;
     color: #ffffff !important;
+}
+
+.app-sidebar .nav-link[aria-current='page'],
+.app-sidebar .nav-submenu[aria-current='page'] {
+    box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.13) !important;
 }
 
 .app-sidebar .nav-link.router-link-active,
 .app-sidebar .nav-submenu.router-link-active {
-    background: rgba(255, 255, 255, 0.24) !important;
+    box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.18) !important;
     color: #ffffff !important;
     font-weight: 600;
+}
+
+/* Focus visibility: keyboard users always get a clear ring */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
 }
 
 /* Disabled controls — visible as inert, never silently dead */
@@ -264,35 +442,43 @@ input[type='checkbox'] {
 
 /* KPI cards (dashboard + role dashboards) */
 .kpi-card {
-    min-height: 4rem;
-    border-radius: 0.75rem;
+    min-height: 4.5rem;
+    border-radius: 0.875rem;
 }
 
 .kpi-card__icon {
-    width: 2.25rem;
-    height: 2.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 0.5rem;
+    border-radius: 0.625rem;
 }
 
 .kpi-card__icon svg {
-    width: 1.125rem;
-    height: 1.125rem;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.kpi-card__label {
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
 }
 
 .kpi-card__value {
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: 1.25rem;
-    line-height: 1.2;
+    font-size: clamp(1.375rem, 1.25rem + 0.5vw, 1.875rem);
+    line-height: 1.15;
     color: var(--color-ink);
 }
 
 .dashboard-chart__plot {
-    height: 16rem;
+    height: clamp(14rem, 18vw, 22rem);
 }
 
 /* Reduced motion: content must never depend on animation */

@@ -37,7 +37,7 @@
             <p class="text-xs uppercase tracking-wide font-semibold" style="color: var(--ink-muted);">Completed</p>
             <p class="mt-2 font-display text-2xl lg:text-3xl font-semibold" style="color: #166534;">{{ $statusCounts['completed'] ?? 0 }}</p>
         </div>
-        <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border); border-left: 4px solid #ef4444;">
+        <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border); border-left: 4px solid var(--danger);">
             <p class="text-xs uppercase tracking-wide font-semibold" style="color: var(--ink-muted);">No-show</p>
             <p class="mt-2 font-display text-2xl lg:text-3xl font-semibold" style="color: #991b1b;">{{ $statusCounts['no_show'] ?? 0 }}</p>
         </div>
@@ -88,7 +88,7 @@
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
-                            <h2 class="font-semibold text-lg" style="color: var(--ink);">{{ $referral->patient_last_name }}, {{ ucwords($referral->patient_first_name) }} <span class="text-sm font-medium" style="color: var(--ink-subtle);">({{ \App\Helpers\PatientCode::format((int) $referral->patient_id) }})</span></h2>
+                            <h2 class="font-semibold text-lg" style="color: var(--ink);">{{ fullName($referral->patient_last_name, $referral->patient_first_name) }} <span class="text-sm font-medium" style="color: var(--ink-subtle);">({{ \App\Helpers\PatientCode::format((int) $referral->patient_id) }})</span></h2>
                             <span class="px-2.5 py-1 rounded-full text-xs font-semibold" style="{{ $badgeStyle }}">{{ $statusLabels[$status] ?? ucfirst($status) }}</span>
                         </div>
                         <p class="text-sm mt-1" style="color: var(--ink-muted);">Referred to <strong>{{ $referral->destination_facility }}</strong></p>
@@ -117,7 +117,7 @@
                     </div>
                 </div>
                 <div class="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <span class="text-sm" style="color: var(--ink-muted);">Created by {{ $referral->worker_first_name }} {{ $referral->worker_last_name }}</span>
+                    <span class="text-sm" style="color: var(--ink-muted);">Created by {{ fullName($referral->worker_last_name, $referral->worker_first_name) }}</span>
                     <div class="flex flex-wrap items-center gap-3">
                         <form method="POST" action="{{ route('referrals.update-status', $referral->id) }}" class="flex flex-wrap items-center gap-2">
                             @csrf

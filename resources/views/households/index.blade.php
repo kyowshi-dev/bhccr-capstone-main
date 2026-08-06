@@ -263,7 +263,7 @@
 
 <!-- Zone Reassignment Modal -->
 <div id="zoneModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-lg p-6 max-w-md w-full mx-4"
+    <div class="bg-surface rounded-xl shadow-lg p-6 max-w-md w-full mx-4"
          style="background: var(--bg-surface-elevated);">
         <h2 class="text-lg font-semibold mb-4" style="color: var(--ink);">Reassign Zone</h2>
         <form id="zoneReassignForm" method="POST" action="{{ route('households.update-zone') }}">

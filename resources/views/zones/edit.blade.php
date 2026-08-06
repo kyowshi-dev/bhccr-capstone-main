@@ -28,7 +28,7 @@
                         <option value="">— Select a worker —</option>
                         @foreach ($healthWorkers as $worker)
                             <option value="{{ $worker->id }}" {{ old('assigned_worker_id', $zone->assigned_worker_id) == $worker->id ? 'selected' : '' }}>
-                                {{ $worker->name }}
+                                {{ fullName($worker->last_name, $worker->first_name) }}
                             </option>
                         @endforeach
                     </select>

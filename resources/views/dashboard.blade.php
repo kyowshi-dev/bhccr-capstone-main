@@ -38,13 +38,13 @@
     </div>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 lg:gap-3">
-        <div class="kpi-card animate-in opacity-0 delay-2 flex items-center gap-2.5 p-2.5 lg:p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
+        <div class="kpi-card animate-in opacity-0 delay-2 flex items-center gap-3 p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
              style="background: var(--bg-surface); border-color: var(--border); box-shadow: var(--shadow-sm); border-left: 4px solid var(--primary);">
             <span class="kpi-card__icon" style="background: var(--teal-soft); color: var(--primary);">
-                <i class="fa-solid fa-users text-lg" aria-hidden="true"></i>
+                <i class="fa-solid fa-users" aria-hidden="true"></i>
             </span>
             <div class="min-w-0 flex-1">
-                <p class="text-[10px] font-semibold uppercase tracking-wider truncate" style="color: var(--ink-muted);">Total Patients</p>
+                <p class="kpi-card__label truncate">Total Patients</p>
                 @if ($totalPatients === 0)
                     <p class="kpi-card__value">0</p>
                     <a href="{{ route('patients.create') }}" class="text-[10px] font-bold truncate block mt-0.5" style="color: var(--primary);">Register first patient</a>
@@ -55,13 +55,13 @@
             </div>
         </div>
 
-        <div class="kpi-card animate-in opacity-0 delay-3 flex items-center gap-2.5 p-2.5 lg:p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
+        <div class="kpi-card animate-in opacity-0 delay-3 flex items-center gap-3 p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
              style="background: var(--bg-surface); border-color: var(--border); box-shadow: var(--shadow-sm); border-left: 4px solid var(--accent);">
             <span class="kpi-card__icon" style="background: var(--teal-soft); color: var(--primary);">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </span>
             <div class="min-w-0 flex-1">
-                <p class="text-[10px] font-semibold uppercase tracking-wider truncate" style="color: var(--ink-muted);">Pending check-ups</p>
+                <p class="kpi-card__label truncate">Pending check-ups</p>
                 @if ($pendingAppointments === 0)
                     <p class="kpi-card__value">0</p>
                     <p class="text-[10px] truncate mt-0.5" style="color: var(--ink-muted);">All caught up</p>
@@ -72,13 +72,13 @@
             </div>
         </div>
 
-        <div class="kpi-card animate-in opacity-0 delay-4 flex items-center gap-2.5 p-2.5 lg:p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
+        <div class="kpi-card animate-in opacity-0 delay-4 flex items-center gap-3 p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
              style="background: {{ $overdueImmunizations > 0 ? 'var(--danger-soft)' : 'var(--bg-surface)' }}; border-color: var(--border); box-shadow: var(--shadow-sm); border-left: 4px solid {{ $overdueImmunizations > 0 ? 'var(--danger)' : 'var(--primary)' }};">
             <span class="kpi-card__icon" style="background: {{ $overdueImmunizations > 0 ? 'var(--danger)' : 'var(--teal-soft)' }}; color: {{ $overdueImmunizations > 0 ? '#fff' : 'var(--primary)' }};">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </span>
             <div class="min-w-0 flex-1">
-                <p class="text-[10px] font-semibold uppercase tracking-wider truncate" style="color: {{ $overdueImmunizations > 0 ? 'var(--danger)' : 'var(--ink-muted)' }};">Immunization Alerts</p>
+                <p class="kpi-card__label truncate" style="color: {{ $overdueImmunizations > 0 ? 'var(--danger)' : 'var(--ink-muted)' }};">Immunization Alerts</p>
                 @if ($overdueImmunizations === 0)
                     <p class="kpi-card__value">0</p>
                     <p class="text-[10px] truncate mt-0.5" style="color: var(--ink-muted);">On track</p>
@@ -89,30 +89,30 @@
             </div>
         </div>
 
-        <div class="kpi-card animate-in opacity-0 delay-5 flex items-center gap-2.5 p-2.5 lg:p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
+<div class="kpi-card animate-in opacity-0 delay-5 flex items-center gap-3 p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
              style="background: var(--bg-surface); border-color: var(--border); box-shadow: var(--shadow-sm); border-left: 4px solid var(--amber);">
             <span class="kpi-card__icon" style="background: var(--amber-soft); color: var(--amber);">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
             </span>
             <div class="min-w-0 flex-1">
-                <p class="text-[10px] font-semibold uppercase tracking-wider truncate" style="color: var(--ink-muted);">Follow-up today</p>
+                <p class="kpi-card__label truncate">Follow-up today</p>
                 @if ($followUpConsultationsToday === 0)
                     <p class="kpi-card__value">0</p>
                     <p class="text-[10px] truncate mt-0.5" style="color: var(--ink-muted);">None scheduled</p>
                 @else
                     <p class="kpi-card__value">{{ $followUpConsultationsToday }}</p>
-                    <p class="text-[10px] truncate mt-0.5" style="color: var(--ink-muted);">Visits today</p>
+                    <a href="{{ route('consultations.index') }}" class="text-[10px] font-bold truncate block mt-0.5" style="color: var(--amber);">Review visits</a>
                 @endif
             </div>
         </div>
 
-                <div class="kpi-card animate-in opacity-0 delay-5 flex items-center gap-2.5 p-2.5 lg:p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
+        <div class="kpi-card animate-in opacity-0 delay-6 flex items-center gap-3 p-3 rounded-xl border transition-[transform,box-shadow] duration-200 hover:scale-[1.01] hover:shadow-md"
              style="background: var(--bg-surface); border-color: var(--border); box-shadow: var(--shadow-sm); border-left: 4px solid var(--primary);">
             <span class="kpi-card__icon" style="background: var(--teal-soft); color: var(--primary);">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
             </span>
             <div class="min-w-0 flex-1">
-                <p class="text-[10px] font-semibold uppercase tracking-wider truncate" style="color: var(--ink-muted);">Health workers</p>
+                <p class="kpi-card__label truncate">Health workers</p>
                 <p class="kpi-card__value">{{ $doctorsOnDuty }}</p>
                 <p class="text-[10px] truncate mt-0.5" style="color: var(--ink-muted);">Staff on record</p>
             </div>

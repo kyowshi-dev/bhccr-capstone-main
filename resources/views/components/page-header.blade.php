@@ -8,8 +8,8 @@
 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
     <div class="flex items-start gap-3">
         @if ($icon)
-            <span class="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-soft text-primary">
-                <i class="{{ $icon }}" aria-hidden="true"></i>
+            <span class="mt-0.5 header-chip">
+                <i class="{{ $icon }} text-lg" aria-hidden="true"></i>
             </span>
         @endif
         <div>

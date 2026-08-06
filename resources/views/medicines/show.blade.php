@@ -66,7 +66,7 @@
                         <dd style="color: var(--ink);">
                             {{ \Carbon\Carbon::parse($medicine->expiration_date)->format('M d, Y') }}
                             @if (\Carbon\Carbon::parse($medicine->expiration_date)->isPast())
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-800 w-fit ml-2">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-danger-soft text-danger w-fit ml-2">
                                     Expired
                                 </span>
                             @endif

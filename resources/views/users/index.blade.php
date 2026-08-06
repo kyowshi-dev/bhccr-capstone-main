@@ -5,7 +5,7 @@
 @section('content')
 <div class="space-y-4 lg:space-y-6">
     @if (session('success'))
-        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800">
+        <div class="p-4 rounded-xl bg-teal-soft border border-primary/20 text-primary">
             <div class="flex items-start gap-3">
                 <i class="fa-solid fa-check-circle mt-1"></i>
                 <span>{{ session('success') }}</span>
@@ -14,7 +14,7 @@
     @endif
 
     @if (session('error'))
-        <div class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800">
+        <div class="p-4 rounded-xl bg-danger-soft border border-danger/30 text-danger">
             <div class="flex items-start gap-3">
                 <i class="fa-solid fa-exclamation-circle mt-1"></i>
                 <span>{{ session('error') }}</span>
@@ -25,7 +25,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
             <h1 class="text-2xl lg:text-3xl font-extrabold" style="color: var(--ink);">User Management</h1>
-            <p class="text-xs lg:text-sm text-gray-600 mt-1">
+            <p class="text-xs lg:text-sm text-ink-muted mt-1">
                 View and manage all registered users in the system.
             </p>
         </div>
@@ -36,44 +36,44 @@
 </a>
     </div>
 
-    <div class="overflow-hidden rounded-xl lg:rounded-2xl border border-gray-200 bg-white/80 shadow-sm">
+    <div class="overflow-hidden rounded-xl lg:rounded-2xl border border-border bg-surface shadow-sm">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50/80">
+            <table class="min-w-full divide-y divide-border">
+                <thead class="bg-teal-soft">
                     <tr>
-                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Username</th>
-                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">Email</th>
-                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Role</th>
-                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">Registered At</th>
-                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
-                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Actions</th>
+                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-semibold text-ink-muted uppercase tracking-wider whitespace-nowrap">Username</th>
+                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-semibold text-ink-muted uppercase tracking-wider whitespace-nowrap hidden md:table-cell">Email</th>
+                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-semibold text-ink-muted uppercase tracking-wider whitespace-nowrap">Role</th>
+                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-semibold text-ink-muted uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">Registered At</th>
+                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-semibold text-ink-muted uppercase tracking-wider whitespace-nowrap">Status</th>
+                        <th class="px-3 lg:px-6 py-2 lg:py-3 text-right text-xs font-semibold text-ink-muted uppercase tracking-wider whitespace-nowrap">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-100">
+                <tbody class="bg-surface divide-y divide-border">
                     @forelse ($users as $user)
-                        <tr class="hover:bg-sky-50/60 transition-colors">
-                            <td class="px-3 lg:px-6 py-2 lg:py-3 text-sm text-gray-700">
+                        <tr class="hover:bg-black/5 transition-colors">
+                            <td class="px-3 lg:px-6 py-2 lg:py-3 text-sm text-ink">
                                 <div class="font-medium">{{ $user->username }}</div>
-                                <div class="text-xs text-gray-500 md:hidden">{{ $user->email }}</div>
+                                <div class="text-xs text-ink-muted md:hidden">{{ $user->email }}</div>
                             </td>
-                            <td class="px-3 lg:px-6 py-2 lg:py-3 text-sm text-gray-500 hidden md:table-cell">
+                            <td class="px-3 lg:px-6 py-2 lg:py-3 text-sm text-ink-muted hidden md:table-cell">
                                 {{ $user->email }}
                             </td>
-                            <td class="px-3 lg:px-6 py-2 lg:py-3 text-sm text-gray-700">
+                            <td class="px-3 lg:px-6 py-2 lg:py-3 text-sm text-ink">
                                 <span class="inline-flex items-center px-2 lg:px-3 py-0.5 lg:py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200">
                                     {{ $user->role?->role_name ?? 'No role' }}
                                 </span>
                             </td>
-                            <td class="px-3 lg:px-6 py-2 lg:py-3 text-sm text-gray-500 hidden lg:table-cell">
+                            <td class="px-3 lg:px-6 py-2 lg:py-3 text-sm text-ink-muted hidden lg:table-cell">
                                 {{ $user->created_at?->format('M d, Y') }}
                             </td>
                             <td class="px-3 lg:px-6 py-2 lg:py-3 text-sm">
                                 @if ($user->is_active)
-                                    <span class="inline-flex items-center px-2 lg:px-3 py-0.5 lg:py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                                    <span class="inline-flex items-center px-2 lg:px-3 py-0.5 lg:py-1 rounded-full text-xs font-semibold bg-teal-soft text-primary">
                                         Active
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center px-2 lg:px-3 py-0.5 lg:py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700">
+                                    <span class="inline-flex items-center px-2 lg:px-3 py-0.5 lg:py-1 rounded-full text-xs font-semibold bg-teal-soft text-ink">
                                         Disabled
                                     </span>
                                 @endif
@@ -88,7 +88,7 @@
                                         <button
                                             type="button"
                                             onclick="confirmDisableUser({{ $user->id }})"
-                                            class="inline-flex items-center px-2 lg:px-3 py-1 lg:py-1.5 rounded-full border border-red-300 text-xs font-semibold text-red-600 hover:bg-red-50 transition"
+                                            class="inline-flex items-center px-2 lg:px-3 py-1 lg:py-1.5 rounded-full border border-danger/30 text-xs font-semibold text-danger hover:bg-danger-soft transition"
                                         >
                                             Disable
                                         </button>
@@ -97,7 +97,7 @@
                                         <button
                                             type="button"
                                             onclick="confirmEnableUser({{ $user->id }})"
-                                            class="inline-flex items-center px-2 lg:px-3 py-1 lg:py-1.5 rounded-full border border-emerald-300 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 transition"
+                                            class="inline-flex items-center px-2 lg:px-3 py-1 lg:py-1.5 rounded-full border border-emerald-300 text-xs font-semibold text-primary hover:bg-teal-soft transition"
                                         >
                                             Enable
                                         </button>
@@ -141,7 +141,7 @@
             text: 'Are you sure you want to disable this user? They will no longer be able to access the system.',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#ef4444',
+            confirmButtonColor: 'var(--danger)',
             cancelButtonColor: '#6b7280',
             confirmButtonText: 'Yes, Disable',
             cancelButtonText: 'Cancel'

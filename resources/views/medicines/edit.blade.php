@@ -44,7 +44,7 @@
                     @error('expiration_date')<p class="mt-1 text-xs" style="color: var(--accent);">{{ $message }}</p>@enderror
                 </div>
                 <div class="flex items-center gap-2">
-                    <input type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $medicine->is_active) ? 'checked' : '' }} class="rounded border-gray-300 text-sky-600 focus:ring-sky-500">
+                    <input type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $medicine->is_active) ? 'checked' : '' }} class="rounded border-border text-accent-blue focus:ring-accent-blue">
                     <label for="is_active" class="text-sm" style="color: var(--ink-muted);">Active</label>
                     @error('is_active')<p class="mt-1 text-xs" style="color: var(--accent);">{{ $message }}</p>@enderror
                 </div>

@@ -50,7 +50,7 @@
                 style="border-color: var(--border); background: var(--bg-surface-elevated);">
                 <div class="min-w-0">
                     <p class="text-sm font-semibold" style="color: var(--ink);">
-                        {{ $result->last_name }}, {{ ucwords($result->first_name) }}
+                        {{ fullName($result->last_name, $result->first_name) }}
                         <span class="font-medium" style="color: var(--primary);">{{ \App\Helpers\PatientCode::format((int) $result->patient_id) }}</span>
                     </p>
                     <p class="text-xs mt-0.5" style="color: var(--ink-muted);">

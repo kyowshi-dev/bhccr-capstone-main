@@ -11,7 +11,7 @@
         </div>
 
         <a href="{{ route('roles.index') }}"
-           class="inline-flex items-center px-3 lg:px-4 py-2 rounded-xl border border-gray-300 bg-white text-xs lg:text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+           class="inline-flex items-center px-3 lg:px-4 py-2 rounded-xl border border-border bg-surface text-xs lg:text-sm font-medium text-ink hover:bg-teal-soft transition">
             ← Back
         </a>
     </div>
@@ -22,19 +22,19 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
             <div>
-                <label for="role_name" class="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
-                    Role Name <span class="text-red-500">*</span>
+                <label for="role_name" class="block text-xs lg:text-sm font-medium text-ink mb-1">
+                    Role Name <span class="text-danger">*</span>
                 </label>
                 <input
                     type="text"
                     id="role_name"
                     name="role_name"
                     value="{{ old('role_name', $role->role_name) }}"
-                    class="block w-full px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 text-sm"
+                    class="block w-full px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl border border-border shadow-sm focus:border-accent-blue focus:ring-accent-blue text-sm"
                     required
                 >
                 @error('role_name')
-                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-xs text-danger">{{ $message }}</p>
                 @enderror
             </div>
         </div>
@@ -43,7 +43,7 @@
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold" style="color: var(--ink);">Module Permissions</h3>
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="selectAllPermissions" class="h-4 w-4 rounded border-gray-300 focus:ring-accent-blue">
+                    <input type="checkbox" id="selectAllPermissions" class="h-4 w-4 rounded border-border focus:ring-accent-blue">
                     <span class="text-sm" style="color: var(--ink-muted);">Select All</span>
                 </label>
             </div>
@@ -57,7 +57,7 @@
                             type="checkbox"
                             name="permissions[]"
                             value="{{ $permission->id }}"
-                            class="permission-checkbox h-4 w-4 mt-0.5 rounded border-gray-300 focus:ring-accent-blue"
+                            class="permission-checkbox h-4 w-4 mt-0.5 rounded border-border focus:ring-accent-blue"
                             @checked(in_array($permission->id, old('permissions', $role->permissions->pluck('id')->all()), true))
                             @disabled($role->role_name === 'Admin' && $permission->name === 'users')
                             data-name="{{ $permission->name }}"
@@ -70,13 +70,13 @@
                 @endforeach
             </div>
             @error('permissions')
-                <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                <p class="mt-2 text-xs text-danger">{{ $message }}</p>
             @enderror
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-2 lg:gap-3 pt-2">
-            <a href="{{ route('roles.index') }}" class="px-4 lg:px-5 py-2 lg:py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium text-xs lg:text-sm hover:bg-gray-50">Cancel</a>
-            <button type="submit" class="px-5 lg:px-6 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold text-white bg-emerald-900 hover:bg-emerald-800 transition shadow-md hover:shadow-xl">
+            <a href="{{ route('roles.index') }}" class="px-4 lg:px-5 py-2 lg:py-2.5 rounded-xl border border-border text-ink font-medium text-xs lg:text-sm hover:bg-teal-soft">Cancel</a>
+            <button type="submit" class="px-5 lg:px-6 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold text-white bg-primary hover:bg-primary-hover transition shadow-md hover:shadow-xl">
                 Update Role
             </button>
         </div>

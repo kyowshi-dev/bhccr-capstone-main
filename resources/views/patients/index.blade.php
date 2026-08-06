@@ -30,7 +30,7 @@
         </div>
         <a href="{{ url('/patients/create') }}"
            class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:opacity-95 active:scale-[0.98] shrink-0"
-           style="background: #0d4a3c; box-shadow: 0 2px 8px rgba(196, 92, 65, 0.25);">
+           style="background: var(--primary); box-shadow: 0 2px 8px rgba(196, 92, 65, 0.25);">
             Enrol New Patient 
         </a>
     </div>
@@ -104,11 +104,11 @@
                         <tr class="transition-colors hover:bg-black/[0.02]">
                             <td class="px-4 py-2.5 font-medium whitespace-nowrap" style="color: var(--ink);">{{ \App\Helpers\PatientCode::format((int) $patient->id) }}</td>
                             <td class="px-4 py-2.5" style="color: var(--ink);">
-                                <div class="font-medium">{{ ucfirst($patient->last_name) }}, {{ ucwords($patient->first_name) }}</div>
-                                <div class="text-xs mt-0.5 line-clamp-2 text-slate-500" style="color: var(--ink-muted);">
+                                <div class="font-medium">{{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }}</div>
+                                <div class="text-xs mt-0.5 line-clamp-2 text-ink-muted" style="color: var(--ink-muted);">
                                     {{ \Carbon\Carbon::parse($patient->date_of_birth)->format('M j, Y') }}
                                     @if (! empty($patient->residential_address))
-                                        <span class="text-slate-400"> · </span>{{ \Illuminate\Support\Str::limit($patient->residential_address, 52) }}
+                                        <span class="text-ink-subtle"> · </span>{{ \Illuminate\Support\Str::limit($patient->residential_address, 52) }}
                                     @endif
                                 </div>
                                 <div class="text-xs sm:hidden mt-0.5" style="color: var(--ink-muted);">{{ $patient->sex }}</div>
@@ -171,7 +171,11 @@
                 this.loading = true;
                 try {
                     const response = await fetch(`{{ route('search.patients') }}?query=${this.query}`);
-                    this.results = await response.json();
+                    const data = await response.json();
+                    this.results = data.map(item => ({
+                        ...item,
+                        text: item.text.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+                    }));
                 } catch (e) { console.error('Search failed:', e); }
                 this.loading = false;
             },
@@ -190,7 +194,7 @@
             showCancelButton: true,
             confirmButtonText: 'Proceed to Consultation',
             cancelButtonText: 'Back to Home',
-            confirmButtonColor: '#0d4a3c',
+            confirmButtonColor: 'var(--primary)',
             cancelButtonColor: '#6b7280',
             reverseButtons: true
         }).then((result) => {

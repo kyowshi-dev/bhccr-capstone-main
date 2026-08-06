@@ -16,7 +16,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">Edit Consultation</h1>
-                <p class="text-sm mt-1" style="color: var(--ink-muted);">{{ \App\Helpers\PatientCode::format((int) $consultation->patient_id) }} - {{ $patient->last_name }}, {{ $patient->first_name }}</p>
+                <p class="text-sm mt-1" style="color: var(--ink-muted);">{{ \App\Helpers\PatientCode::format((int) $consultation->patient_id) }} - {{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }}</p>
             </div>
         </div>
 
@@ -32,7 +32,7 @@
             </div>
             <div>
                 <p style="color: var(--ink-muted);" class="text-xs font-medium">HEALTH WORKER</p>
-                <p style="color: var(--ink);" class="font-medium">{{ trim(($consultation->worker_first_name ?? '').' '.($consultation->worker_last_name ?? '')) ?: 'Not assigned' }}</p>
+                <p style="color: var(--ink);" class="font-medium">{{ fullName($consultation->worker_last_name ?? null, $consultation->worker_first_name ?? null) ?: 'Not assigned' }}</p>
             </div>
             <div>
                 <p style="color: var(--ink-muted);" class="text-xs font-medium">NATURE OF VISIT</p>
@@ -134,7 +134,7 @@
                 <div class="space-y-3 text-sm">
                     <div>
                         <p style="color: var(--ink-muted);">Name</p>
-                        <p class="font-medium" style="color: var(--ink);">{{ $patient->last_name }}, {{ $patient->first_name }}</p>
+                        <p class="font-medium" style="color: var(--ink);">{{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }}</p>
                     </div>
                     <div>
                         <p style="color: var(--ink-muted);">Patient ID</p>
@@ -157,7 +157,7 @@
 <!-- Diagnosis Modal -->
 <div id="diagnosisModal" x-show="$store.modals.diagnosis" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeDiagnosisModal()"></div>
-    <div id="diagnosisPanel" x-show="$store.modals.diagnosis" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="bg-white rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
+    <div id="diagnosisPanel" x-show="$store.modals.diagnosis" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="bg-surface rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
         <h3 class="font-semibold text-lg">Add Diagnosis</h3>
         <div class="space-y-4">
             <div>
@@ -179,7 +179,7 @@
 <!-- Prescription Modal -->
 <div id="prescriptionModal" x-show="$store.modals.prescription" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closePrescriptionModal()"></div>
-    <div id="prescriptionPanel" x-show="$store.modals.prescription" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="bg-white rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
+    <div id="prescriptionPanel" x-show="$store.modals.prescription" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="bg-surface rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
         <h3 class="font-semibold text-lg">Add Prescription</h3>
         <div class="space-y-4">
             <div>
