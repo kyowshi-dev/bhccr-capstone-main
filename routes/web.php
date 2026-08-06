@@ -13,10 +13,14 @@ use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleManagementController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SessionController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ZoneController;
+use App\Http\Middleware\ReadOnlySession;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
 |--------------------------------------------------------------------------
@@ -55,172 +59,255 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:household', 'throttle:60,1')
         ->name('search.households');
     Route::get('/search/diagnoses', [SearchController::class, 'diagnoses'])
-        ->middleware('throttle:60,1')
+        ->middleware('permission:consultations', 'throttle:60,1')
         ->name('search.diagnoses');
     Route::get('/search/medicines', [SearchController::class, 'medicines'])
-        ->middleware('throttle:60,1')
+        ->middleware('permission:consultations', 'throttle:60,1')
         ->name('search.medicines');
 
     // 3. PATIENT MANAGEMENT
     Route::get('/households', [HouseholdController::class, 'index'])
+        ->middleware('permission:household')
         ->name('households.index');
     Route::get('/households/create', [HouseholdController::class, 'create'])
+        ->middleware('permission:household')
         ->name('households.create');
     Route::post('/households', [HouseholdController::class, 'store'])
+        ->middleware('permission:household')
         ->name('households.store');
     Route::get('/households/{id}/edit', [HouseholdController::class, 'edit'])
+        ->middleware('permission:household')
         ->name('households.edit');
     Route::put('/households/{id}', [HouseholdController::class, 'update'])
+        ->middleware('permission:household')
         ->name('households.update');
     Route::post('/households/export/csv', [HouseholdController::class, 'exportCSV'])
+        ->middleware('permission:household')
         ->name('households.export.csv');
     Route::post('/households/export/pdf', [HouseholdController::class, 'exportPDF'])
+        ->middleware('permission:household')
         ->name('households.export.pdf');
     Route::post('/households/bulk-update-zone', [HouseholdController::class, 'updateZone'])
+        ->middleware('permission:household')
         ->name('households.update-zone');
 
     // 3a. Patients
-    Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
+    Route::get('/patients', [PatientController::class, 'index'])
+        ->middleware('permission:patients')
+        ->name('patients.index');
 
     // 3b. Create Patient (Order matters: This must be BEFORE {id})
-    Route::get('/patients/create', [PatientController::class, 'create'])->name('patients.create');
-    Route::post('/patients', [PatientController::class, 'store'])->name('patients.store');
+    Route::get('/patients/create', [PatientController::class, 'create'])
+        ->middleware('permission:patients')
+        ->name('patients.create');
+    Route::post('/patients', [PatientController::class, 'store'])
+        ->middleware('permission:patients')
+        ->name('patients.store');
 
     // 3c. Show Patient Profile (Wildcard catches IDs like 1, 2, 100)
-    Route::get('/patients/{id}', [PatientController::class, 'show'])->name('patients.show');
+    Route::get('/patients/{id}', [PatientController::class, 'show'])
+        ->middleware('permission:patients')
+        ->name('patients.show');
 
     // 4. CONSULTATION MODULE
     // Consultation History (list) – must be before /consultations/{id}
-    Route::get('/consultations', [ConsultationController::class, 'index'])->name('consultations.index');
-    Route::get('/consultations/live-requests', [ConsultationController::class, 'liveRequests'])->name('consultations.live-requests');
-    Route::get('/referrals', [ReferralController::class, 'index'])->name('referrals.index');
-    Route::get('/referrals/{id}/print', [ReferralController::class, 'print'])->name('referrals.print');
-    Route::patch('/referrals/{id}/status', [ReferralController::class, 'updateStatus'])->name('referrals.update-status');
+    Route::get('/consultations', [ConsultationController::class, 'index'])
+        ->middleware('permission:consultations')
+        ->name('consultations.index');
+    Route::get('/referrals', [ReferralController::class, 'index'])
+        ->middleware('permission:consultations')
+        ->name('referrals.index');
+    Route::get('/referrals/{id}/print', [ReferralController::class, 'print'])
+        ->middleware('permission:print_handouts')
+        ->name('referrals.print');
+    Route::patch('/referrals/{id}/status', [ReferralController::class, 'updateStatus'])
+        ->middleware('permission:consultations')
+        ->name('referrals.update-status');
 
     // Triage / New Admission
-    Route::get('/patients/{patient}/consultations/create', [ConsultationController::class, 'create'])->name('consultations.create');
-    Route::post('/patients/{patient}/consultations', [ConsultationController::class, 'store'])->name('consultations.store');
+    Route::get('/patients/{patient}/consultations/create', [ConsultationController::class, 'create'])
+        ->middleware('permission:consultations')
+        ->name('consultations.create');
+    Route::post('/patients/{patient}/consultations', [ConsultationController::class, 'store'])
+        ->middleware('permission:consultations')
+        ->name('consultations.store');
 
     // Quick Edit for Consultations
-    Route::get('/consultations/{consultation}/edit', [ConsultationController::class, 'edit'])->name('consultations.edit');
-    Route::put('/consultations/{consultation}', [ConsultationController::class, 'update'])->name('consultations.update');
+    Route::get('/consultations/{consultation}/edit', [ConsultationController::class, 'edit'])
+        ->middleware('permission:consultations')
+        ->name('consultations.edit');
+    Route::put('/consultations/{consultation}', [ConsultationController::class, 'update'])
+        ->middleware('permission:consultations')
+        ->name('consultations.update');
 
     // Doctor's Workspace (View specific consultation)
     Route::get('/consultations/{consultation}', [ConsultationController::class, 'show'])
+        ->whereNumber('consultation')
+        ->middleware('permission:consultations')
         ->name('consultations.show');
 
     // Doctor Actions (Diagnosis & Rx)
     Route::post('/consultations/{consultation}/diagnosis', [ConsultationController::class, 'addDiagnosis'])
+        ->middleware('permission:consultations')
         ->name('consultations.diagnosis');
     Route::post('/consultations/{consultation}/finalize', [ConsultationController::class, 'finalizeConsultation'])
+        ->middleware('permission:consultations')
         ->name('consultations.finalize');
     Route::post('/consultations/{consultation}/refer', [ConsultationController::class, 'refer'])
+        ->middleware('permission:consultations')
         ->name('consultations.refer');
     Route::get('/consultations/{consultation}/referral-context', [ConsultationController::class, 'referralContext'])
+        ->middleware('permission:consultations')
         ->name('consultations.referral-context');
     Route::post('/consultations/{consultation}/acknowledge-intake', [ConsultationController::class, 'acknowledgeIntake'])
+        ->middleware('permission:consultations')
         ->name('consultations.acknowledge-intake');
     Route::delete('/consultations/{consultation}', [ConsultationController::class, 'cancelIntake'])
+        ->middleware('permission:consultations')
         ->name('consultations.cancel');
     Route::get('/consultations/{consultation}/handout', [ConsultationController::class, 'printHandout'])
+        ->middleware('permission:print_handouts')
         ->name('consultations.handout');
     Route::get('/consultations/{consultation}/handout/pdf', [ConsultationController::class, 'downloadHandoutPdf'])
+        ->middleware('permission:print_handouts')
         ->name('consultations.handout.pdf');
     Route::post('/consultations/{consultation}/vitals/retake', [ConsultationController::class, 'retakeVitals'])
+        ->middleware('permission:consultations')
         ->name('consultations.vitals.retake');
     Route::put('/consultations/{consultation}/vitals/{vitalId}', [ConsultationController::class, 'updateVitalVersion'])
+        ->middleware('permission:consultations')
         ->name('consultations.vitals.update');
     Route::delete('/consultations/{consultation}/vitals/{vitalId}', [ConsultationController::class, 'deleteVitalVersion'])
+        ->middleware('permission:consultations')
         ->name('consultations.vitals.delete');
     Route::post('/consultations/{consultation}/prescription', [ConsultationController::class, 'addPrescription'])
+        ->middleware('permission:consultations')
         ->name('consultations.prescription');
     Route::delete('/consultations/{consultation}/diagnoses/{diagnosisId}', [ConsultationController::class, 'deleteDiagnosis'])
+        ->middleware('permission:consultations')
         ->name('consultations.diagnosis.delete');
     Route::delete('/consultations/{consultation}/prescriptions/{prescriptionId}', [ConsultationController::class, 'deletePrescription'])
+        ->middleware('permission:consultations')
         ->name('consultations.prescription.delete');
 
     // 5. IMMUNIZATION
-    Route::get('/immunizations', [ImmunizationController::class, 'index'])->name('immunizations.index');
-    Route::get('/patients/{id}/immunizations', [ImmunizationController::class, 'forPatient'])->name('immunizations.patient');
-    Route::post('/immunizations', [ImmunizationController::class, 'store'])->name('immunizations.store');
+    Route::get('/immunizations', [ImmunizationController::class, 'index'])
+        ->middleware('permission:immunizations')
+        ->name('immunizations.index');
+    Route::get('/patients/{id}/immunizations', [ImmunizationController::class, 'forPatient'])
+        ->middleware('permission:immunizations')
+        ->name('immunizations.patient');
     Route::post('/patients/{id}/immunizations/administer', [ImmunizationController::class, 'administer'])
+        ->middleware('permission:immunizations')
         ->name('immunizations.administer');
     Route::post('/immunizations/infants', [ImmunizationController::class, 'enrollInfant'])
+        ->middleware('permission:immunizations')
         ->name('immunizations.enroll-infant');
-    Route::post('/immunizations/records/{record}/no-show', [ImmunizationController::class, 'toggleNoShow'])
+    Route::post('/immunizations/no-show', [ImmunizationController::class, 'toggleNoShow'])
+        ->middleware('permission:immunizations')
         ->name('immunizations.no-show');
     Route::get('/immunizations/household-match', [ImmunizationController::class, 'householdMatch'])
-        ->middleware('throttle:60,1')
+        ->middleware('permission:immunizations', 'throttle:60,1')
         ->name('immunizations.household-match');
 
     // 6. REPORTS (FHSIS)
     Route::get('/reports', [ReportController::class, 'index'])
+        ->middleware('permission:reports')
         ->name('reports.index');
     Route::get('/reports/morbidity', [ReportController::class, 'morbidity'])
+        ->middleware('permission:reports')
         ->name('reports.morbidity');
     Route::get('/reports/morbidity/download', [ReportController::class, 'downloadMorbidityPdf'])
+        ->middleware('permission:reports')
         ->name('reports.morbidity.download');
 
     // 8. USER MANAGEMENT
     Route::get('/users', [UserManagementController::class, 'index'])
+        ->middleware('permission:users')
         ->name('users.index');
     Route::get('/users/create', [UserManagementController::class, 'create'])
+        ->middleware('permission:users')
         ->name('users.create');
     Route::post('/users', [UserManagementController::class, 'store'])
+        ->middleware('permission:users')
         ->name('users.store');
     Route::get('/users/{user}/edit', [UserManagementController::class, 'edit'])
+        ->middleware('permission:users')
         ->name('users.edit');
     Route::put('/users/{user}', [UserManagementController::class, 'update'])
+        ->middleware('permission:users')
         ->name('users.update');
     Route::post('/users/{user}/disable', [UserManagementController::class, 'disable'])
+        ->middleware('permission:users')
         ->name('users.disable');
     Route::post('/users/{user}/enable', [UserManagementController::class, 'enable'])
+        ->middleware('permission:users')
         ->name('users.enable');
     Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])
+        ->middleware('permission:users')
         ->name('users.destroy');
 
     // 9. ROLE MANAGEMENT
     Route::get('/roles', [RoleManagementController::class, 'index'])
+        ->middleware('permission:users')
         ->name('roles.index');
     Route::get('/roles/{role}/edit', [RoleManagementController::class, 'edit'])
+        ->middleware('permission:users')
         ->name('roles.edit');
     Route::put('/roles/{role}', [RoleManagementController::class, 'update'])
+        ->middleware('permission:users')
         ->name('roles.update');
 
     // 10. ZONE MANAGEMENT
     Route::get('/zones', [ZoneController::class, 'index'])
+        ->middleware('permission:zones')
         ->name('zones.index');
     Route::get('/zones/create', [ZoneController::class, 'create'])
+        ->middleware('permission:zones')
         ->name('zones.create');
     Route::post('/zones', [ZoneController::class, 'store'])
+        ->middleware('permission:zones')
         ->name('zones.store');
     Route::get('/zones/{id}', [ZoneController::class, 'show'])
+        ->middleware('permission:zones')
         ->name('zones.show');
     Route::get('/zones/{id}/edit', [ZoneController::class, 'edit'])
+        ->middleware('permission:zones')
         ->name('zones.edit');
     Route::put('/zones/{id}', [ZoneController::class, 'update'])
+        ->middleware('permission:zones')
         ->name('zones.update');
     Route::delete('/zones/{id}', [ZoneController::class, 'destroy'])
+        ->middleware('permission:zones')
         ->name('zones.destroy');
 
     // 11. MEDICINE MANAGEMENT
     Route::get('/medicines', [MedicineController::class, 'index'])
+        ->middleware('permission:medicines')
         ->name('medicines.index');
     Route::get('/medicines/create', [MedicineController::class, 'create'])
+        ->middleware('permission:medicines')
         ->name('medicines.create');
     Route::post('/medicines', [MedicineController::class, 'store'])
+        ->middleware('permission:medicines')
         ->name('medicines.store');
     Route::post('/medicines/import', [MedicineController::class, 'import'])
+        ->middleware('permission:medicines')
         ->name('medicines.import');
     Route::post('/medicines/bulk-delete', [MedicineController::class, 'bulkDestroy'])
+        ->middleware('permission:medicines')
         ->name('medicines.bulk-delete');
     Route::get('/medicines/{id}', [MedicineController::class, 'show'])
+        ->middleware('permission:medicines')
         ->name('medicines.show');
     Route::get('/medicines/{id}/edit', [MedicineController::class, 'edit'])
+        ->middleware('permission:medicines')
         ->name('medicines.edit');
     Route::put('/medicines/{id}', [MedicineController::class, 'update'])
+        ->middleware('permission:medicines')
         ->name('medicines.update');
     Route::delete('/medicines/{id}', [MedicineController::class, 'destroy'])
+        ->middleware('permission:medicines')
         ->name('medicines.destroy');
 
     // 12. SETTINGS
@@ -228,10 +315,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/account', [SettingsController::class, 'account'])->name('settings.account');
     Route::post('/settings/account', [SettingsController::class, 'updateAccount'])->name('settings.account.update');
     Route::get('/settings/backups', [SettingsController::class, 'backups'])
+        ->middleware('permission:users')
         ->name('settings.backups');
     Route::post('/settings/backups/export', [SettingsController::class, 'exportBackup'])
+        ->middleware('permission:users', 'throttle:1,60')  // max 1 export per hour
         ->name('settings.backups.export');
     Route::post('/settings/backups/import', [SettingsController::class, 'importBackup'])
+        ->middleware('permission:users', 'throttle:1,60')  // max 1 import per hour
         ->name('settings.backups.import');
 
     // 13. PROFILE MANAGEMENT
@@ -244,7 +334,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile/settings', [ProfileController::class, 'updateSettings'])
         ->middleware('permission:users')
         ->name('profile.settings.update');
-    Route::get('/session/status', [ProfileController::class, 'sessionStatus'])->name('session.status');
+    Route::get('/session/heartbeat', [SessionController::class, 'heartbeat'])->name('session.heartbeat');
 
     // 14. NOTIFICATIONS
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -256,3 +346,30 @@ Route::middleware('auth')->group(function () {
     // 15. MISC
 
 }); // <--- End of Auth Group
+
+// --- SESSION STATUS (public route: must report expiry, never redirect to HTML) ---
+// The read-only session boot keeps this poll from refreshing last_activity,
+// so an open-but-idle tab cannot act as a keep-alive.
+Route::get('/session/status', [SessionController::class, 'status'])
+    ->withoutMiddleware([
+        StartSession::class,
+        ShareErrorsFromSession::class,
+    ])
+    ->middleware(ReadOnlySession::class)
+    ->name('session.status');
+
+// --- CONSULTATION LIVE REQUESTS (outside the auth group) ---
+// Polled every ~12s by the frontend; the read-only session keeps it from
+// acting as a keep-alive, so the idle timeout applies to BHWs/doctors too.
+// Middleware order matters: the session is read before auth runs.
+Route::get('/consultations/live-requests', [ConsultationController::class, 'liveRequests'])
+    ->withoutMiddleware([
+        StartSession::class,
+        ShareErrorsFromSession::class,
+    ])
+    ->middleware([
+        ReadOnlySession::class,
+        'auth',
+        'permission:consultations',
+    ])
+    ->name('consultations.live-requests');

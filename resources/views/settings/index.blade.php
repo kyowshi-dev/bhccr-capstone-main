@@ -15,11 +15,13 @@
             <h3 class="font-display font-semibold text-base mb-1" style="color: var(--ink);">Account management</h3>
             <p class="text-sm" style="color: var(--ink-muted);">Change your password and manage your login credentials.</p>
         </a>
-        <a href="{{ route('settings.backups') }}"
-           class="block p-5 lg:p-6 rounded-xl border transition-all duration-200 hover:shadow-md hover:scale-[1.01]" style="background: var(--bg-surface); border-color: var(--border);">
-            <h3 class="font-display font-semibold text-base mb-1" style="color: var(--ink);">Backups</h3>
-            <p class="text-sm" style="color: var(--ink-muted);">Export the database for backup or transfer.</p>
-        </a>
+        @if(auth()->user()->hasPermission('users'))
+            <a href="{{ route('settings.backups') }}"
+               class="block p-5 lg:p-6 rounded-xl border transition-all duration-200 hover:shadow-md hover:scale-[1.01]" style="background: var(--bg-surface); border-color: var(--border);">
+                <h3 class="font-display font-semibold text-base mb-1" style="color: var(--ink);">Backups</h3>
+                <p class="text-sm" style="color: var(--ink-muted);">Export the database for backup or transfer.</p>
+            </a>
+        @endif
     </div>
 </div>
 @endsection

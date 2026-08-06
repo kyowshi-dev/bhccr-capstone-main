@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class IcdApiService
@@ -34,7 +34,7 @@ class IcdApiService
         $base = rtrim(config('bhcis.icd_api.base_url'), '/');
         $pathTemplate = config('bhcis.icd_api.search_path') ?: '/search';
         $path = $this->buildSearchPath($pathTemplate, $query, $limit);
-        $url = $base . $path;
+        $url = $base.$path;
 
         $requestData = [];
         if (! str_contains($pathTemplate, '{query}') && ! str_contains($pathTemplate, '{code}') && ! str_contains($pathTemplate, '{limit}')) {
@@ -49,21 +49,19 @@ class IcdApiService
 
             if (! $resp->successful()) {
                 Log::warning('ICD API search request failed', [
-                    'query' => $query,
-                    'url' => $url,
                     'status' => $resp->status(),
                     'body' => $resp->body(),
                 ]);
+
                 return [];
             }
 
             $data = $resp->json();
             if (! is_array($data)) {
                 Log::warning('ICD API search returned non-array payload', [
-                    'query' => $query,
-                    'url' => $url,
                     'payload' => $resp->body(),
                 ]);
+
                 return [];
             }
 
@@ -84,6 +82,7 @@ class IcdApiService
             foreach ($itemsData as $item) {
                 if (is_string($item)) {
                     $items[] = ['id' => $item, 'text' => $item];
+
                     continue;
                 }
                 if (! is_array($item) && ! is_object($item)) {
@@ -109,11 +108,10 @@ class IcdApiService
             return array_slice($items, 0, $limit);
         } catch (\Throwable $e) {
             Log::error('ICD API search exception', [
-                'query' => $query,
-                'url' => $url,
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return [];
         }
     }
@@ -146,6 +144,7 @@ class IcdApiService
         $tokenUrl = config('bhcis.icd_api.token_url');
         if (empty($tokenUrl)) {
             Log::warning('ICD API token URL is not configured');
+
             return null;
         }
 
@@ -162,6 +161,7 @@ class IcdApiService
                     'status' => $resp->status(),
                     'body' => $resp->body(),
                 ]);
+
                 return null;
             }
 
@@ -171,6 +171,7 @@ class IcdApiService
                     'url' => $tokenUrl,
                     'payload' => $resp->body(),
                 ]);
+
                 return null;
             }
 
@@ -184,6 +185,7 @@ class IcdApiService
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return null;
         }
     }
