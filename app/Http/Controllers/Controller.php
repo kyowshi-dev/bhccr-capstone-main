@@ -5,20 +5,18 @@ namespace App\Http\Controllers;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
-use Illuminate\Support\Facades\DB;
 
 abstract class Controller extends BaseController
 {
     use AuthorizesRequests, ValidatesRequests;
 
-    protected function dbConcat(array $columns, string $separator = ' '): string
+    /**
+     * Abort with 403 unless the authenticated user holds the given permission.
+     */
+    protected function authorizePermission(string $permission): void
     {
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return implode(" || '{$separator}' || ", $columns);
+        if (! auth()->user()->hasPermission($permission)) {
+            abort(403, 'Unauthorized');
         }
-
-        $escapedSeparator = str_replace("'", "''", $separator);
-
-        return 'CONCAT('.implode(", '{$escapedSeparator}', ", $columns).')';
     }
 }

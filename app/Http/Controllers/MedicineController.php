@@ -2,16 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
+use App\Services\MedicineImportService;
+use App\Services\MedicineService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class MedicineController extends Controller
 {
-    public function index()
+    public function index(): View
     {
-        if (! auth()->user()->hasPermission('medicines')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('medicines');
 
         $medicines = DB::table('medicines_lookup')
             ->orderBy('name')
@@ -23,149 +27,78 @@ class MedicineController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(): View
     {
-        if (! auth()->user()->hasPermission('medicines')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('medicines');
 
         return view('medicines.create');
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('medicines')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('medicines');
 
-        $request->merge(["name" => $request->input('name', $request->input('medicine_name'))]);
+        $request->merge(['name' => $request->input('name', $request->input('medicine_name'))]);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,name'],
             'generic_name' => ['nullable', 'string', 'max:255'],
-            //'strength' => ['nullable', 'string', 'max:255'],
             'form' => ['nullable', 'string', 'max:255'],
             'manufacturer' => ['nullable', 'string', 'max:255'],
             'expiration_date' => ['nullable', 'date'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
-        DB::table('medicines_lookup')->insert([
-            'name' => $validated['name'],
-            'generic_name' => $validated['generic_name'] ?? null,
-            'strength' => $validated['strength'] ?? null,
-            'form' => $validated['form'] ?? null,
-            'manufacturer' => $validated['manufacturer'] ?? null,
-            'expiration_date' => $validated['expiration_date'] ?? null,
-            'is_active' => $request->boolean('is_active', true),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        MedicineService::create($validated, $request->boolean('is_active', true));
 
         return redirect()
             ->route('medicines.index')
             ->with('success', 'Medicine added successfully.');
     }
 
-    public function import(Request $request)
+    public function import(Request $request): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('medicines')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('medicines');
 
         $request->validate([
             'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
         ]);
 
-        $file = $request->file('csv_file');
-        $path = $file->getRealPath();
+        $result = MedicineImportService::import($request->file('csv_file')->getRealPath());
 
-        $data = [];
-        $errors = [];
-        $successCount = 0;
+        if ($result['fatal_error'] !== null) {
+            AuditLog::query()->create([
+                'user_id' => Auth::id(),
+                'action' => 'medicines_import_failed',
+                'table_name' => 'medicines_lookup',
+                'record_id' => null,
+                'old_values' => null,
+                'new_values' => ['fatal_error' => $result['fatal_error']],
+                'ip_address' => $request->ip(),
+                'created_at' => now(),
+            ]);
 
-        if (($handle = fopen($path, 'r')) !== false) {
-            $header = fgetcsv($handle, 1000, ',');
-
-            // Validate header
-            $expectedHeaders = ['name'];
-            if (! $header || count($header) < 1) {
-                return redirect()
-                    ->route('medicines.index')
-                    ->with('error', 'CSV file must have at least a name column.');
-            }
-
-            $rowNumber = 1;
-            while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-                $rowNumber++;
-
-                if (count($row) === 0 || empty(trim($row[0]))) {
-                    continue; // Skip empty rows
-                }
-
-                $medicineData = [];
-                foreach ($header as $index => $column) {
-                    $column = trim(strtolower($column));
-                    if (isset($row[$index])) {
-                        $medicineData[$column] = trim($row[$index]);
-                    }
-                }
-
-                $medicineData['name'] = $medicineData['name'] ?? $medicineData['medicine_name'] ?? null;
-
-                // Validate required fields
-                if (empty($medicineData['name'])) {
-                    $errors[] = "Row {$rowNumber}: Medicine name is required.";
-
-                    continue;
-                }
-
-                // Check for duplicates
-                $existing = DB::table('medicines_lookup')
-                    ->where('name', $medicineData['name'])
-                    ->exists();
-
-                if ($existing) {
-                    $errors[] = "Row {$rowNumber}: Medicine '{$medicineData['name']}' already exists.";
-
-                    continue;
-                }
-
-                // Validate expiration date if provided
-                if (! empty($medicineData['expiration_date'])) {
-                    $date = date('Y-m-d', strtotime($medicineData['expiration_date']));
-                    if ($date === '1970-01-01' || $date === false) {
-                        $errors[] = "Row {$rowNumber}: Invalid expiration date format.";
-
-                        continue;
-                    }
-                    $medicineData['expiration_date'] = $date;
-                }
-
-                $data[] = [
-                    'name' => $medicineData['name'],
-                    'generic_name' => $medicineData['generic_name'] ?? null,
-                    'strength' => $medicineData['strength'] ?? null,
-                    'form' => $medicineData['form'] ?? null,
-                    'manufacturer' => $medicineData['manufacturer'] ?? null,
-                    'expiration_date' => $medicineData['expiration_date'] ?? null,
-                    'is_active' => $this->normalizeBoolean($medicineData['is_active'] ?? 'true'),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
-            fclose($handle);
+            return redirect()
+                ->route('medicines.index')
+                ->with('error', $result['fatal_error']);
         }
 
-        // Insert valid data
-        if (! empty($data)) {
-            try {
-                DB::table('medicines_lookup')->insert($data);
-                $successCount = count($data);
-            } catch (\Exception $e) {
-                $errors[] = 'Database error: '.$e->getMessage();
-            }
-        }
+        $successCount = $result['success_count'];
+        $errors = $result['errors'];
+
+        AuditLog::query()->create([
+            'user_id' => Auth::id(),
+            'action' => 'medicines_imported',
+            'table_name' => 'medicines_lookup',
+            'record_id' => null,
+            'old_values' => null,
+            'new_values' => [
+                'success_count' => $successCount,
+                'error_count' => count($errors),
+            ],
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
+        ]);
 
         $message = '';
         if ($successCount > 0) {
@@ -181,63 +114,37 @@ class MedicineController extends Controller
             ->with('import_errors', $errors);
     }
 
-    public function show($id)
+    public function show($id): View
     {
-        if (! auth()->user()->hasPermission('medicines')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('medicines');
 
-        $medicine = DB::table('medicines_lookup')->where('id', $id)->first();
+        $medicine = MedicineService::findOrFail($id);
 
-        if (! $medicine) {
-            abort(404, 'Resource not found');
-        }
-
-        // Get usage statistics
-        $prescriptionCount = DB::table('prescriptions')->where('medicine_id', $id)->count();
-        $lastPrescribed = DB::table('prescriptions')
-            ->where('medicine_id', $id)
-            ->orderByDesc('created_at')
-            ->value('created_at');
-
-        $medicine->prescription_count = $prescriptionCount;
-        $medicine->last_prescribed = $lastPrescribed;
+        $usage = MedicineService::usage($id);
+        $medicine->prescription_count = $usage['prescription_count'];
+        $medicine->last_prescribed = $usage['last_prescribed'];
 
         return view('medicines.show', [
             'medicine' => $medicine,
         ]);
     }
 
-    public function edit($id)
+    public function edit($id): View
     {
-        if (! auth()->user()->hasPermission('medicines')) {
-            abort(403, 'Unauthorized');
-        }
-
-        $medicine = DB::table('medicines_lookup')->where('id', $id)->first();
-
-        if (! $medicine) {
-            abort(404, 'Resource not found');
-        }
+        $this->authorizePermission('medicines');
 
         return view('medicines.edit', [
-            'medicine' => $medicine,
+            'medicine' => MedicineService::findOrFail($id),
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $id): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('medicines')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('medicines');
 
-        $medicine = DB::table('medicines_lookup')->where('id', $id)->first();
+        MedicineService::findOrFail($id);
 
-        if (! $medicine) {
-            abort(404, 'Resource not found');
-        }
-
-        $request->merge(["name" => $request->input('name', $request->input('medicine_name'))]);
+        $request->merge(['name' => $request->input('name', $request->input('medicine_name'))]);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,name,'.$id],
@@ -249,58 +156,35 @@ class MedicineController extends Controller
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
-        DB::table('medicines_lookup')
-            ->where('id', $id)
-            ->update([
-                'name' => $validated['name'],
-                'generic_name' => $validated['generic_name'] ?? null,
-                'strength' => $validated['strength'] ?? null,
-                'form' => $validated['form'] ?? null,
-                'manufacturer' => $validated['manufacturer'] ?? null,
-                'expiration_date' => $validated['expiration_date'] ?? null,
-                'is_active' => $request->boolean('is_active', false),
-                'updated_at' => now(),
-            ]);
+        MedicineService::update($id, $validated, $request->boolean('is_active', false));
 
         return redirect()
             ->route('medicines.index')
             ->with('success', 'Medicine updated successfully.');
     }
 
-    public function destroy($id)
+    public function destroy($id): RedirectResponse
     {
-        // Check authorization
-        if (! auth()->user()->hasPermission('medicines')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('medicines');
 
-        $medicine = DB::table('medicines_lookup')->where('id', $id)->first();
+        MedicineService::findOrFail($id);
 
-        if (! $medicine) {
-            abort(404, 'Resource not found');
-        }
-
-        // Check if medicine is used in prescriptions
-        $usedInPrescriptions = DB::table('prescriptions')->where('medicine_id', $id)->exists();
-
-        if ($usedInPrescriptions) {
+        if (MedicineService::isUsedInPrescriptions($id)) {
             return redirect()
                 ->route('medicines.index')
                 ->with('error', 'Cannot delete medicine that is used in prescriptions.');
         }
 
-        DB::table('medicines_lookup')->where('id', $id)->delete();
+        MedicineService::destroy($id);
 
         return redirect()
             ->route('medicines.index')
             ->with('success', 'Medicine deleted successfully.');
     }
 
-    public function bulkDestroy(Request $request)
+    public function bulkDestroy(Request $request): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('medicines')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('medicines');
 
         $ids = $request->input('ids', []);
 
@@ -318,18 +202,18 @@ class MedicineController extends Controller
 
             if (! $medicine) {
                 $failed[] = "Medicine ID {$id} not found.";
+
                 continue;
             }
 
-            $usedInPrescriptions = DB::table('prescriptions')->where('medicine_id', $id)->exists();
-
-            if ($usedInPrescriptions) {
+            if (MedicineService::isUsedInPrescriptions($id)) {
                 $failed[] = "{$medicine->name} is used in prescriptions.";
+
                 continue;
             }
 
             try {
-                DB::table('medicines_lookup')->where('id', $id)->delete();
+                MedicineService::destroy($id);
                 $deleted++;
             } catch (\Exception $e) {
                 $failed[] = "{$medicine->name}: DB error.";
@@ -338,30 +222,15 @@ class MedicineController extends Controller
 
         $message = '';
         if ($deleted > 0) {
-            $message .= "{$deleted} medicine" . ($deleted > 1 ? 's' : '') . " deleted successfully.";
+            $message .= "{$deleted} medicine".($deleted > 1 ? 's' : '').' deleted successfully.';
         }
         if (! empty($failed)) {
             $message .= ' '.count($failed).' could not be deleted.';
         }
 
-        // Return errors (if any) in session under delete_errors
         return redirect()
             ->route('medicines.index')
             ->with($deleted > 0 ? 'success' : 'error', $message)
             ->with('delete_errors', $failed);
-    }
-
-    private function normalizeBoolean(?string $value): ?bool
-    {
-        if ($value === null || trim($value) === '') {
-            return null;
-        }
-
-        $normalized = strtolower(trim($value));
-        if (in_array($normalized, ['0', 'false', 'no', 'off'], true)) {
-            return false;
-        }
-
-        return true;
     }
 }

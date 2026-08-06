@@ -4,20 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Services\UserManagementService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class UserManagementController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('users');
 
-        $pageSize = auth()->check() && auth()->user()->isAdmin() ? 10 : 15;
+        $pageSize = auth()->user()->isAdmin() ? 10 : 15;
 
         $users = User::with('role')->orderBy('username')->paginate($pageSize);
 
@@ -26,22 +25,18 @@ class UserManagementController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(): View
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('users');
 
         return view('users.create', [
             'roles' => Role::orderBy('role_name')->get(),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('users');
 
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
@@ -53,38 +48,16 @@ class UserManagementController extends Controller
             'role_id' => ['required', 'exists:user_roles,id'],
         ]);
 
-        $role = Role::findOrFail($validated['role_id']);
-
-        DB::transaction(function () use ($validated, $role) {
-            $user = User::query()->create([
-                'username' => $validated['username'],
-                'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
-                'is_active' => true,
-                'role_id' => $role->id,
-            ]);
-
-            DB::table('health_workers')->insert([
-                'user_id' => $user->id,
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
-                'role' => $role->role_name,
-                'contact_number' => $validated['contact_number'] ?? null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        });
+        UserManagementService::create($validated);
 
         return redirect()
             ->route('users.index')
             ->with('success', 'User created successfully.');
     }
 
-    public function edit(User $user)
+    public function edit(User $user): View
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('users');
 
         $healthWorker = DB::table('health_workers')->where('user_id', $user->id)->first();
 
@@ -95,11 +68,9 @@ class UserManagementController extends Controller
         ]);
     }
 
-    public function update(Request $request, User $user)
+    public function update(Request $request, User $user): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('users');
 
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
@@ -111,47 +82,16 @@ class UserManagementController extends Controller
             'role_id' => ['required', 'exists:user_roles,id'],
         ]);
 
-        $role = Role::findOrFail($validated['role_id']);
-
-        DB::transaction(function () use ($user, $validated, $role) {
-            if ($user->username !== $validated['username']) {
-                $user->username = $validated['username'];
-            }
-
-            if ($user->email !== $validated['email']) {
-                $user->email = $validated['email'];
-            }
-
-            if (! empty($validated['password'])) {
-                $user->password = Hash::make($validated['password']);
-            }
-
-            $user->role_id = $role->id;
-            $user->save();
-
-            Cache::forget("user_permissions_{$user->id}");
-
-            DB::table('health_workers')
-                ->where('user_id', $user->id)
-                ->update([
-                    'first_name' => $validated['first_name'],
-                    'last_name' => $validated['last_name'],
-                    'role' => $role->role_name,
-                    'contact_number' => $validated['contact_number'] ?? null,
-                    'updated_at' => now(),
-                ]);
-        });
+        UserManagementService::update($user, $validated);
 
         return redirect()
             ->route('users.index')
             ->with('success', 'User updated successfully.');
     }
 
-    public function disable(User $user)
+    public function disable(User $user): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('users');
 
         if ($user->isAdmin()) {
             return redirect()
@@ -173,11 +113,9 @@ class UserManagementController extends Controller
             ->with('success', 'User disabled successfully.');
     }
 
-    public function enable(Request $request, User $user)
+    public function enable(Request $request, User $user): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('users');
 
         // Validate password confirmation
         $request->validate([
@@ -198,11 +136,9 @@ class UserManagementController extends Controller
             ->with('success', 'User enabled successfully.');
     }
 
-    public function destroy(Request $request, User $user)
+    public function destroy(Request $request, User $user): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('users');
 
         // Prevent self-deletion
         if ($user->id === auth()->id()) {

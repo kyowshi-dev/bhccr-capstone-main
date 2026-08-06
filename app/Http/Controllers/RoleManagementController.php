@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Permission;
 use App\Models\Role;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class RoleManagementController extends Controller
 {
-    public function index()
+    public function index(): View
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('users');
 
         $roles = Role::with('permissions')->orderBy('role_name')->get();
 
@@ -23,11 +25,9 @@ class RoleManagementController extends Controller
         ]);
     }
 
-    public function edit(Role $role)
+    public function edit(Role $role): View
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('users');
 
         return view('roles.edit', [
             'role' => $role->load('permissions'),
@@ -35,11 +35,9 @@ class RoleManagementController extends Controller
         ]);
     }
 
-    public function update(Request $request, Role $role)
+    public function update(Request $request, Role $role): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('users')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('users');
 
         $validated = $request->validate([
             'role_name' => ['required', 'string', 'max:255', 'unique:user_roles,role_name,'.$role->id],
@@ -55,6 +53,9 @@ class RoleManagementController extends Controller
                 ->withInput();
         }
 
+        $oldRoleName = $role->role_name;
+        $oldPermissions = $role->permissions()->pluck('permissions.id')->map(fn ($id) => (int) $id)->values()->all();
+
         DB::transaction(function () use ($role, $validated) {
             $role->update(['role_name' => $validated['role_name']]);
             $role->permissions()->sync($validated['permissions'] ?? []);
@@ -64,6 +65,23 @@ class RoleManagementController extends Controller
                 Cache::forget("user_permissions_{$user->id}");
             }
         });
+
+        AuditLog::query()->create([
+            'user_id' => Auth::id(),
+            'action' => 'role_updated',
+            'table_name' => 'user_roles',
+            'record_id' => $role->id,
+            'old_values' => [
+                'role_name' => $oldRoleName,
+                'permission_ids' => $oldPermissions,
+            ],
+            'new_values' => [
+                'role_name' => $role->role_name,
+                'permission_ids' => array_map('intval', $validated['permissions'] ?? []),
+            ],
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
+        ]);
 
         return redirect()
             ->route('roles.index')

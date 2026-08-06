@@ -4,16 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Enums\ConsultationStatus;
 use App\Helpers\PatientCode;
+use App\Models\User;
+use App\Services\DashboardQueryService;
 use Asantibanez\LivewireCharts\Models\LineChartModel;
 use Asantibanez\LivewireCharts\Models\PieChartModel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $user = auth()->user();
         $today = Carbon::today();
@@ -34,21 +37,16 @@ class DashboardController extends Controller
         return DB::table('health_workers')->where('user_id', $userId)->value('role');
     }
 
-    private function bhwDashboard(Request $request, $user, Carbon $today)
+    private function bhwDashboard(Request $request, User $user, Carbon $today): View
     {
-        $totalPatients = DB::table('patients')->count();
-
-        $consultationsToday = DB::table('consultations')
-            ->whereDate('created_at', $today)
-            ->count();
-
-        $pendingConsultations = DB::table('consultations')
-            ->whereIn('status', ConsultationStatus::activeValues())
-            ->count();
+        $totalPatients = DashboardQueryService::totalPatients($user);
+        $consultationsToday = DashboardQueryService::consultationsToday($today, $user);
+        $pendingConsultations = DashboardQueryService::activeConsultations($user);
 
         $pendingQueue = DB::table('consultations')
             ->join('patients', 'consultations.patient_id', '=', 'patients.id')
             ->whereIn('consultations.status', ConsultationStatus::activeValues())
+            ->when($user->isZoneScoped(), fn ($query) => $query->whereIn('patients.household_id', $user->accessibleHouseholdIds()))
             ->orderBy('consultations.created_at')
             ->limit(5)
             ->select(
@@ -65,14 +63,10 @@ class DashboardController extends Controller
                 ];
             });
 
-        $recentActivity = DB::table('audit_logs')
-            ->leftJoin('users', 'audit_logs.user_id', '=', 'users.id')
-            ->select('audit_logs.*', 'users.username')
-            ->orderByDesc('audit_logs.created_at')
-            ->limit(5)
-            ->get();
+        $recentActivity = DashboardQueryService::recentActivity(5, $user);
 
         $recentPatients = DB::table('patients')
+            ->when($user->isZoneScoped(), fn ($query) => $query->whereIn('household_id', $user->accessibleHouseholdIds()))
             ->select('id', 'first_name', 'last_name')
             ->orderByDesc('created_at')
             ->limit(3)
@@ -85,9 +79,7 @@ class DashboardController extends Controller
                 ];
             });
 
-        $handoutData = $user->canViewDashboardHandouts('bhw')
-            ? $this->loadResultsReady($request)
-            : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
+        $handoutData = $this->handoutData($request, $user, 'bhw');
 
         return view('dashboard_bhw', [
             'totalPatients' => $totalPatients,
@@ -101,11 +93,9 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function midwifeDashboard(Request $request, $user, Carbon $today)
+    private function midwifeDashboard(Request $request, User $user, Carbon $today): View
     {
-        $handoutData = $user->canViewDashboardHandouts('midwife')
-            ? $this->loadResultsReady($request, limit: 8, defaultToToday: true)
-            : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
+        $handoutData = $this->handoutData($request, $user, 'midwife', limit: 8, defaultToToday: true);
 
         return view('dashboard_midwife', [
             'showResultsReady' => $user->canViewDashboardHandouts('midwife'),
@@ -113,11 +103,9 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function nurseDashboard(Request $request, $user, Carbon $today)
+    private function nurseDashboard(Request $request, User $user, Carbon $today): View
     {
-        $consultationsToday = DB::table('consultations')
-            ->whereDate('created_at', $today)
-            ->count();
+        $consultationsToday = DashboardQueryService::consultationsToday($today);
 
         $pendingValidationCount = DB::table('consultations')
             ->where('status', ConsultationStatus::NurseReview->value)
@@ -141,9 +129,7 @@ class DashboardController extends Controller
             )
             ->get();
 
-        $handoutData = $user->canViewDashboardHandouts('clinical')
-            ? $this->loadResultsReady($request, limit: 8, defaultToToday: true)
-            : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
+        $handoutData = $this->handoutData($request, $user, 'clinical', limit: 8, defaultToToday: true);
 
         return view('dashboard_nurse', [
             'consultationsToday' => $consultationsToday,
@@ -155,7 +141,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function doctorDashboard(Request $request, $user, Carbon $today)
+    private function doctorDashboard(Request $request, User $user, Carbon $today): View
     {
         $pendingDoctorCount = DB::table('consultations')
             ->whereIn('status', [ConsultationStatus::DoctorReview->value, ConsultationStatus::InProgress->value])
@@ -168,10 +154,7 @@ class DashboardController extends Controller
 
         $consultationsToday = $pendingDoctorCount + $completedConsultationsToday;
 
-        $followUpConsultationsToday = DB::table('consultations')
-            ->whereDate('created_at', $today)
-            ->where('nature_of_visit', 'Follow-up')
-            ->count();
+        $followUpConsultationsToday = DashboardQueryService::followUpsToday($today);
 
         $doctorQueue = DB::table('consultations')
             ->join('patients', 'consultations.patient_id', '=', 'patients.id')
@@ -198,9 +181,7 @@ class DashboardController extends Controller
             })
             ->all();
 
-        $handoutData = $user->canViewDashboardHandouts('clinical')
-            ? $this->loadResultsReady($request, limit: 8, defaultToToday: true)
-            : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
+        $handoutData = $this->handoutData($request, $user, 'clinical', limit: 8, defaultToToday: true);
 
         return view('dashboard_doctor', [
             'consultationsToday' => $consultationsToday,
@@ -213,24 +194,12 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function adminDashboard(Request $request, $user, Carbon $today)
+    private function adminDashboard(Request $request, User $user, Carbon $today): View
     {
-        $totalPatients = DB::table('patients')->count();
-
-        $pendingAppointments = DB::table('consultations')
-            ->whereIn('status', ConsultationStatus::activeValues())
-            ->count();
-
-        $overdueImmunizations = DB::table('immunization_records')
-            ->whereNotNull('next_due_date')
-            ->whereDate('next_due_date', '<', $today)
-            ->distinct('patient_id')
-            ->count('patient_id');
-
-        $followUpConsultationsToday = DB::table('consultations')
-            ->whereDate('created_at', $today)
-            ->where('nature_of_visit', 'Follow-up')
-            ->count();
+        $totalPatients = DashboardQueryService::totalPatients();
+        $pendingAppointments = DashboardQueryService::activeConsultations();
+        $overdueImmunizations = DashboardQueryService::overdueImmunizations($today);
+        $followUpConsultationsToday = DashboardQueryService::followUpsToday($today);
 
         $volumeStart = $today->copy()->subDays(6)->startOfDay();
         $volumeEnd = $today->copy()->endOfDay();
@@ -311,17 +280,9 @@ class DashboardController extends Controller
             })
             ->all();
 
-        $recentActivity = DB::table('audit_logs')
-            ->leftJoin('users', 'audit_logs.user_id', '=', 'users.id')
-            ->select('audit_logs.*', 'users.username')
-            ->orderByDesc('audit_logs.created_at')
-            ->limit(5)
-            ->get()
-            ->all();
+        $recentActivity = DashboardQueryService::recentActivity()->all();
 
-        $handoutData = $user->canViewDashboardHandouts('admin')
-            ? $this->loadResultsReady($request, limit: 10)
-            : ['resultsReady' => collect(), 'resultsReadyCount' => 0, 'resultsFilters' => $this->emptyResultsFilters()];
+        $handoutData = $this->handoutData($request, $user, 'admin', limit: 10);
 
         return view('dashboard', [
             'totalPatients' => $totalPatients,
@@ -342,81 +303,20 @@ class DashboardController extends Controller
     /**
      * @return array{resultsReady: Collection, resultsReadyCount: int, resultsFilters: array{query: string, from: string, to: string}}
      */
-    private function loadResultsReady(Request $request, int $limit = 15, bool $defaultToToday = false): array
+    private function handoutData(Request $request, User $user, string $scope, int $limit = 15, bool $defaultToToday = false): array
     {
-        $resultsQuery = DB::table('consultations')
-            ->join('patients', 'consultations.patient_id', '=', 'patients.id')
-            ->whereIn('consultations.status', ConsultationStatus::terminalValues())
-            ->select(
-                'consultations.id',
-                'consultations.updated_at',
-                'patients.first_name',
-                'patients.last_name',
-                'patients.id as patient_id'
-            )
-            ->orderByDesc('consultations.updated_at');
-
-        if ($request->filled('results_query')) {
-            $q = $request->input('results_query');
-            $resultsQuery->where(function ($qb) use ($q) {
-                $qb->where('patients.first_name', 'like', '%'.$q.'%')
-                    ->orWhere('patients.last_name', 'like', '%'.$q.'%');
-                if (is_numeric($q)) {
-                    $qb->orWhere('patients.id', (int) $q);
-                }
-            });
+        if (! $user->canViewDashboardHandouts($scope)) {
+            return [
+                'resultsReady' => collect(),
+                'resultsReadyCount' => 0,
+                'resultsFilters' => ['query' => '', 'from' => '', 'to' => ''],
+            ];
         }
 
-        $from = $request->input('results_from', $defaultToToday ? Carbon::today()->toDateString() : '');
-        $to = $request->input('results_to', $defaultToToday ? Carbon::today()->toDateString() : '');
-
-        if ($from !== '') {
-            $resultsQuery->whereDate('consultations.updated_at', '>=', $from);
-        }
-        if ($to !== '') {
-            $resultsQuery->whereDate('consultations.updated_at', '<=', $to);
-        }
-
-        $resultsReady = $resultsQuery->limit($limit)->get();
-        $resultIds = $resultsReady->pluck('id')->all();
-        $diagnosisSummaryByConsultation = [];
-
-        if (! empty($resultIds)) {
-            $dxRows = DB::table('diagnosis_records')
-                ->join('diagnosis_lookup', 'diagnosis_records.diagnosis_id', '=', 'diagnosis_lookup.id')
-                ->whereIn('diagnosis_records.consultation_id', $resultIds)
-                ->select('diagnosis_records.consultation_id', 'diagnosis_lookup.diagnosis_name')
-                ->orderBy('diagnosis_records.id')
-                ->get();
-
-            foreach ($dxRows as $dxRow) {
-                $diagnosisSummaryByConsultation[$dxRow->consultation_id][] = $dxRow->diagnosis_name;
-            }
-        }
-
-        $resultsReady = $resultsReady->map(function ($row) use ($diagnosisSummaryByConsultation) {
-            $names = $diagnosisSummaryByConsultation[$row->id] ?? [];
-            $row->diagnosis_summary = $names ? implode(', ', $names) : null;
-
-            return $row;
-        });
-
-        return [
-            'resultsReady' => $resultsReady,
-            'resultsReadyCount' => (clone $resultsQuery)->count(),
-            'resultsFilters' => [
-                'query' => $request->input('results_query', ''),
-                'from' => $from,
-                'to' => $to,
-            ],
-        ];
-    }
-
-    /**
-     * @return array{query: string, from: string, to: string}
-     */
-    private function emptyResultsFilters(): array
-    {
-        return ['query' => '', 'from' => '', 'to' => ''];
+        return DashboardQueryService::resultsReady([
+            'query' => $request->input('results_query'),
+            'from' => $request->input('results_from'),
+            'to' => $request->input('results_to'),
+        ], $limit, $defaultToToday, $user);
     }
 }

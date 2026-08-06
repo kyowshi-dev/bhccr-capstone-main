@@ -2,48 +2,35 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\HealthWorker;
 use App\Models\Zone;
+use App\Services\ZoneQueryService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ZoneController extends Controller
 {
-    public function index()
+    public function index(): View
     {
-        if (! auth()->user()->hasPermission('zones')) {
-            abort(403, 'Unauthorized');
-        }
-
-        $zones = Zone::with('assignedWorker')
-            ->orderBy('zone_number')
-            ->paginate(10)
-            ->withQueryString();
+        $this->authorizePermission('zones');
 
         return view('zones.index', [
-            'zones' => $zones,
+            'zones' => ZoneQueryService::paginated(),
         ]);
     }
 
-    public function create()
+    public function create(): View
     {
-        if (! auth()->user()->hasPermission('zones')) {
-            abort(403, 'Unauthorized');
-        }
-
-        $healthWorkers = HealthWorker::query()
-            ->orderBy('first_name')
-            ->get();
+        $this->authorizePermission('zones');
 
         return view('zones.create', [
-            'healthWorkers' => $healthWorkers,
+            'healthWorkers' => ZoneQueryService::healthWorkers(),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('zones')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('zones');
 
         $validated = $request->validate([
             'zone_number' => ['required', 'string', 'max:255', 'unique:zones,zone_number'],
@@ -60,11 +47,9 @@ class ZoneController extends Controller
             ->with('success', 'Zone added successfully.');
     }
 
-    public function show($id)
+    public function show($id): View
     {
-        if (! auth()->user()->hasPermission('zones')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('zones');
 
         $zone = Zone::with('assignedWorker')->findOrFail($id);
 
@@ -73,29 +58,19 @@ class ZoneController extends Controller
         ]);
     }
 
-    public function edit($id)
+    public function edit($id): View
     {
-        if (! auth()->user()->hasPermission('zones')) {
-            abort(403, 'Unauthorized');
-        }
-
-        $zone = Zone::findOrFail($id);
-
-        $healthWorkers = HealthWorker::query()
-            ->orderBy('first_name')
-            ->get();
+        $this->authorizePermission('zones');
 
         return view('zones.edit', [
-            'zone' => $zone,
-            'healthWorkers' => $healthWorkers,
+            'zone' => Zone::findOrFail($id),
+            'healthWorkers' => ZoneQueryService::healthWorkers(),
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $id): RedirectResponse
     {
-        if (! auth()->user()->hasPermission('zones')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('zones');
 
         $zone = Zone::findOrFail($id);
 
@@ -114,12 +89,9 @@ class ZoneController extends Controller
             ->with('success', 'Zone updated successfully.');
     }
 
-    public function destroy($id)
+    public function destroy($id): RedirectResponse
     {
-        // Check authorization
-        if (! auth()->user()->hasPermission('zones')) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizePermission('zones');
 
         $zone = Zone::findOrFail($id);
 

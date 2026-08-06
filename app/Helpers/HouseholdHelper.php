@@ -115,8 +115,8 @@ class HouseholdHelper
      */
     public static function enrichHouseholdsWithMemberCounts($households): array
     {
-        $householdIds = method_exists($households, 'pluck')
-            ? $households->pluck('id')->toArray()
+        $householdIds = method_exists($households, 'getCollection')
+            ? $households->getCollection()->pluck('id')->toArray()
             : collect($households)->pluck('id')->toArray();
 
         if (empty($householdIds)) {

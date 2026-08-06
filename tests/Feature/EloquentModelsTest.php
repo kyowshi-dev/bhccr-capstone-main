@@ -149,7 +149,7 @@ class EloquentModelsTest extends TestCase
         $this->actingAs($user)
             ->get(route('zones.index'))
             ->assertOk()
-            ->assertSee('Maria Clara');
+            ->assertSee('Clara, Maria');
     }
 
     public function test_zones_show_renders_household_and_patient_counts(): void
