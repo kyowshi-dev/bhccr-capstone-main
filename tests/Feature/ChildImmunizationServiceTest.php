@@ -185,7 +185,9 @@ class ChildImmunizationServiceTest extends TestCase
             'temp_recorded' => '36.80',
             'no_show' => 0,
         ]);
-        $this->assertTrue(Carbon::parse($record->next_due_date)->isSameDay(now()->addDays(28)));
+        $this->assertTrue(
+            $this->service->nextDoseDate($patient, $pentA, 1)?->isSameDay(now()->addDays(28))
+        );
     }
 
     public function test_administer_auto_advances_dose_number(): void
@@ -193,10 +195,31 @@ class ChildImmunizationServiceTest extends TestCase
         $patient = $this->makePatient(now()->subDays(120));
         $pentA = $this->vaccine('PENTA');
 
-        $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5']);
+        $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5', 'date_given' => now()->subDays(40)]);
         $second = $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5']);
 
         $this->assertSame(2, $second->dose_number);
+    }
+
+    public function test_administer_rejects_next_dose_before_interval_elapses(): void
+    {
+        $patient = $this->makePatient(now()->subDays(120));
+        $pentA = $this->vaccine('PENTA');
+
+        $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5', 'date_given' => now()->subDays(10)->toDateString()]);
+
+        $this->expectException(ValidationException::class);
+        $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5']);
+    }
+
+    public function test_status_is_waiting_when_interval_since_last_dose_not_elapsed(): void
+    {
+        $patient = $this->makePatient(now()->subDays(120));
+        $pentA = $this->vaccine('PENTA');
+
+        $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5', 'date_given' => now()->subDays(10)->toDateString()]);
+
+        $this->assertSame('waiting', $this->service->statusFor($patient, $pentA));
     }
 
     public function test_administer_requires_temp_when_schedule_requires_it(): void
@@ -282,19 +305,20 @@ class ChildImmunizationServiceTest extends TestCase
         $this->assertSame(1, $record->dose_number);
     }
 
-    public function test_mark_no_show_creates_flagged_record_and_clear_removes_it(): void
+    public function test_mark_no_show_appends_missed_event_and_clear_resolves_it(): void
     {
         $patient = $this->makePatient(now()->subDays(100));
         $pentA = $this->vaccine('PENTA');
 
-        $record = $this->service->markNoShow($patient, $pentA);
+        $event = $this->service->markNoShow($patient, $pentA);
 
-        $this->assertDatabaseHas('immunization_records', ['id' => $record->id, 'no_show' => 1]);
-        $this->assertNotNull($record->no_show_at);
+        $this->assertSame('missed', $event->event_type);
+        $this->assertDatabaseHas('immunization_status_events', ['id' => $event->id, 'event_type' => 'missed']);
+        $this->assertDatabaseCount('immunization_records', 0);
+        $this->assertSame('no_show', $this->service->statusFor($patient, $pentA));
 
-        $this->service->clearNoShow($record);
+        $this->service->clearNoShow($patient, $pentA);
 
-        $this->assertDatabaseMissing('immunization_records', ['id' => $record->id]);
         $this->assertSame('overdue', $this->service->statusFor($patient, $pentA));
     }
 
@@ -307,5 +331,11 @@ class ChildImmunizationServiceTest extends TestCase
         $record = $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5']);
 
         $this->assertSame(1, $record->dose_number);
+        $this->assertDatabaseHas('immunization_status_events', [
+            'patient_id' => $patient->id,
+            'vaccine_id' => $pentA->id,
+            'event_type' => 'attended',
+        ]);
+        $this->assertSame('waiting', $this->service->statusFor($patient, $pentA));
     }
 }

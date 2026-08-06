@@ -23,6 +23,9 @@ class MarkNoShowRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'patient_id' => ['required', 'integer', 'exists:patients,id'],
+            'vaccine_id' => ['required', 'integer', 'exists:vaccines_lookup,id'],
+            'dose_number' => ['nullable', 'integer', 'min:1', 'max:99'],
             'no_show' => ['required', 'boolean'],
         ];
     }

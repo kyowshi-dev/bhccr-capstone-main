@@ -41,6 +41,7 @@ class StoreInfantWithHouseholdRequest extends FormRequest
             'sex' => ['required', 'in:Male,Female'],
             'date_of_birth' => ['required', 'date', 'before:today'],
             'birth_weight' => ['nullable', 'numeric', 'between:0.1,10'],
+            'mother_name' => ['nullable', 'string', 'max:255'],
             'guardian_name' => ['nullable', 'string', 'max:255'],
         ];
     }

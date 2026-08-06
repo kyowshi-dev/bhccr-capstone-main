@@ -90,7 +90,7 @@ class ImmunizationIndexTest extends TestCase
             ->assertViewHas('mode', 'adult');
     }
 
-    public function test_due_today_kpi_counts_infants_matching_date_filter(): void
+    public function test_due_kpi_counts_infants_in_due_window(): void
     {
         $this->actingAs($this->userWithPermission());
 
@@ -99,7 +99,7 @@ class ImmunizationIndexTest extends TestCase
 
         $this->get(route('immunizations.index'))
             ->assertOk()
-            ->assertViewHas('dueTodayCount', 1);
+            ->assertViewHas('dueTodayCount', 2);
 
         $this->get(route('immunizations.index', ['date' => now()->addDay()->toDateString()]))
             ->assertOk()
@@ -129,7 +129,7 @@ class ImmunizationIndexTest extends TestCase
             ->assertViewHas('overdueCount', fn (int $count) => $count >= 1);
     }
 
-    public function test_adult_mode_uses_legacy_records_queue(): void
+    public function test_adult_mode_excludes_children_from_queues(): void
     {
         $this->actingAs($this->userWithPermission());
 
@@ -138,6 +138,8 @@ class ImmunizationIndexTest extends TestCase
         $this->get(route('immunizations.index', ['mode' => 'adult']))
             ->assertOk()
             ->assertViewHas('mode', 'adult')
-            ->assertViewHas('queues', []);
+            ->assertViewHas('queues', fn (array $queues) => collect($queues)->every(
+                fn ($queue) => $queue->isEmpty()
+            ));
     }
 }

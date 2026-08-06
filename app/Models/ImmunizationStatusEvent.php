@@ -2,36 +2,32 @@
 
 namespace App\Models;
 
-use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Immunization extends Model
+class ImmunizationStatusEvent extends Model
 {
-    use LogsActivity;
+    public const TYPE_MISSED = 'missed';
 
-    protected $table = 'immunization_records';
+    public const TYPE_ATTENDED = 'attended';
+
+    public const TYPE_CLEARED = 'cleared';
 
     protected $fillable = [
         'patient_id',
         'vaccine_id',
         'dose_number',
-        'date_given',
-        'temp_recorded',
-        'administered_by',
-        'notes',
-        'no_show',
-        'no_show_at',
+        'event_type',
+        'event_date',
+        'note',
+        'user_id',
     ];
 
     protected function casts(): array
     {
         return [
             'dose_number' => 'integer',
-            'date_given' => 'date',
-            'temp_recorded' => 'decimal:2',
-            'no_show' => 'boolean',
-            'no_show_at' => 'datetime',
+            'event_date' => 'date',
         ];
     }
 

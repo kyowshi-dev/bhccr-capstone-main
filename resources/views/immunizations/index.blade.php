@@ -4,7 +4,8 @@
 
 @section('content')
 @php
-    $dueDateLabel = \Carbon\Carbon::parse($date)->isToday() ? 'Due today' : 'Due '.\Carbon\Carbon::parse($date)->format('M d');
+    $targetDate = \Carbon\Carbon::parse($date);
+    $dueDateLabel = $targetDate->isToday() ? 'Due next 7 days' : 'Due from '.$targetDate->format('M d');
     $statusBadges = [
         'due' => ['bg' => 'var(--accent-blue-soft)', 'fg' => 'var(--accent-blue)', 'icon' => 'fa-regular fa-calendar', 'label' => 'Due'],
         'overdue' => ['bg' => 'var(--danger-soft)', 'fg' => 'var(--danger)', 'icon' => 'fa-solid fa-circle-exclamation', 'label' => 'Overdue'],
@@ -84,7 +85,7 @@
                 <div class="flex items-end justify-between gap-3">
                     <p class="text-2xl font-display font-semibold leading-none" style="color: var(--accent-blue);">{{ number_format($dueTodayCount) }}</p>
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
-                        <i class="fa-regular fa-calendar" aria-hidden="true"></i> Queue
+                        <i class="fa-regular fa-calendar" aria-hidden="true"></i> children
                     </span>
                 </div>
             </button>
@@ -124,11 +125,11 @@
     @else
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <button type="button" @click="activeTab = 'due'" class="text-left rounded-xl border p-4 lg:p-5 transition hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
-                <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">Due today</p>
+                <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">{{ $dueDateLabel }}</p>
                 <div class="flex items-end justify-between gap-3">
                     <p class="text-2xl font-display font-semibold leading-none" style="color: var(--accent-blue);">{{ number_format($dueTodayCount) }}</p>
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
-                        <i class="fa-regular fa-calendar" aria-hidden="true"></i> Queue
+                        <i class="fa-regular fa-calendar" aria-hidden="true"></i> adults
                     </span>
                 </div>
             </button>
@@ -239,14 +240,11 @@
                                     @php
                                         $queuePatient = $entry['patient'];
                                         $queueVaccine = $entry['vaccine'];
-                                        $noShowAnchor = $queuePatient->immunizationRecords
-                                            ->where('vaccine_id', $queueVaccine->id)
-                                            ->last();
                                     @endphp
                                     <tr class="transition-colors hover:bg-black/[0.02]">
                                         <td class="px-3 lg:px-4 py-3" style="color: var(--ink);">
-                                            <button type="button" class="text-left hover:underline font-medium" style="color: var(--primary);" @click="openPatient({{ $queuePatient->id }}, @js($queuePatient->last_name.', '.$queuePatient->first_name))">
-                                                {{ $queuePatient->last_name }}, {{ $queuePatient->first_name }}
+                                            <button type="button" class="text-left hover:underline font-medium" style="color: var(--primary);" @click="openPatient({{ $queuePatient->id }}, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)))">
+                                                {{ fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix) }}
                                             </button>
                                             <div class="flex items-center gap-2 mt-1.5">
                                                 @include('immunizations.partials._age-chip', ['patient' => $queuePatient])
@@ -271,24 +269,29 @@
                                         </td>
                                         <td class="px-3 lg:px-4 py-3 text-right whitespace-nowrap">
                                             <div class="inline-flex items-center gap-1.5">
-                                                @if ($queueKey === 'no_show' && $noShowAnchor)
-                                                    <form method="POST" action="{{ route('immunizations.no-show', $noShowAnchor->id) }}" @submit.prevent="confirmClearNoShow($event.target, @js($queuePatient->last_name.', '.$queuePatient->first_name))">
+                                                @if ($queueKey === 'no_show')
+                                                    <form method="POST" action="{{ route('immunizations.no-show') }}" @submit.prevent="confirmClearNoShow($event.target, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)))">
                                                         @csrf
                                                         <input type="hidden" name="no_show" value="0">
+                                                        <input type="hidden" name="patient_id" value="{{ $queuePatient->id }}">
+                                                        <input type="hidden" name="vaccine_id" value="{{ $queueVaccine->id }}">
                                                         <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">
                                                             <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Clear
                                                         </button>
                                                     </form>
-                                                @elseif ($noShowAnchor)
-                                                    <form method="POST" action="{{ route('immunizations.no-show', $noShowAnchor->id) }}" @submit.prevent="confirmNoShow($event.target, @js($queuePatient->last_name.', '.$queuePatient->first_name))">
+                                                @else
+                                                    <form method="POST" action="{{ route('immunizations.no-show') }}" @submit.prevent="confirmNoShow($event.target, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)))">
                                                         @csrf
                                                         <input type="hidden" name="no_show" value="1">
+                                                        <input type="hidden" name="patient_id" value="{{ $queuePatient->id }}">
+                                                        <input type="hidden" name="vaccine_id" value="{{ $queueVaccine->id }}">
+                                                        <input type="hidden" name="dose_number" value="{{ $entry['dose_number'] }}">
                                                         <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">
                                                             <i class="fa-solid fa-user-clock" aria-hidden="true"></i> No-show
                                                         </button>
                                                     </form>
                                                 @endif
-                                                <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="openPatient({{ $queuePatient->id }}, @js($queuePatient->last_name.', '.$queuePatient->first_name))">
+                                                <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="openPatient({{ $queuePatient->id }}, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)))">
                                                     <i class="fa-solid fa-syringe" aria-hidden="true"></i> Check-in / Record
                                                 </button>
                                             </div>
@@ -305,7 +308,7 @@
                                                     'no_show' => 'fa-solid fa-user-clock',
                                                 }"
                                                 :title="match ($queueKey) {
-                                                    'due' => 'No patients '.($dueDateLabel === 'Due today' ? 'due today' : 'due on '.$date),
+                                                    'due' => 'No patients '.($targetDate->isToday() ? 'due in the next 7 days' : 'due on or after '.$date),
                                                     'overdue' => 'No overdue patients',
                                                     'out_of_window' => 'No out-of-window cases',
                                                     'no_show' => 'No no-show cases',
@@ -337,10 +340,10 @@
                         <tbody class="divide-y divide-[var(--border)]">
                             @php($today = \Carbon\Carbon::today())
                             @forelse ($recentRecords as $r)
-                                @php($nextDue = $r->next_due_date ? \Carbon\Carbon::parse($r->next_due_date) : null)
+                                @php($nextDue = $r->next_due ? \Carbon\Carbon::parse($r->next_due) : null)
                                 <tr class="transition-colors hover:bg-black/[0.02]">
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 whitespace-nowrap" style="color: var(--ink);">{{ \Carbon\Carbon::parse($r->date_given)->format('M d, Y') }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $r->last_name }}, {{ $r->first_name }}</td>
+                                    <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ fullName($r->last_name, $r->first_name) }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $r->vaccine_name }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink-muted);">{{ $r->dose_number }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell">
@@ -358,9 +361,9 @@
                                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">In progress</span>
                                         @endif
                                     </td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ $r->worker_name ?? '—' }}</td>
+                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ ucwords((string) $r->worker_name) ?: '—' }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
-                                        <button type="button" class="text-sm font-medium hover:underline" style="color: var(--primary);" @click="openPatient({{ (int) $r->patient_id }}, @js($r->last_name.', '.$r->first_name))">
+                                        <button type="button" class="text-sm font-medium hover:underline" style="color: var(--primary);" @click="openPatient({{ (int) $r->patient_id }}, @js(fullName($r->last_name, $r->first_name)))">
                                             Open
                                         </button>
                                     </td>
@@ -387,7 +390,7 @@
                 </div>
                 <div class="inline-flex rounded-xl border p-1" style="border-color: var(--border); background: var(--bg-surface);" role="tablist" aria-label="Queue view">
                     <button type="button" @click="activeTab = 'due'" role="tab" :aria-selected="activeTab === 'due' ? 'true' : 'false'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition" :style="activeTab === 'due' ? 'background: var(--teal-soft); color: var(--primary);' : 'color: var(--ink-muted);'">
-                        Due today
+                        Due next{{ ! $targetDate->isToday() ? ' ('. $targetDate->format('M d') .')' : '' }}
                     </button>
                     <button type="button" @click="activeTab = 'recent'" role="tab" :aria-selected="activeTab === 'recent' ? 'true' : 'false'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition" :style="activeTab === 'recent' ? 'background: var(--teal-soft); color: var(--primary);' : 'color: var(--ink-muted);'">
                         Recent
@@ -410,11 +413,11 @@
                         <tbody class="divide-y divide-[var(--border)]">
                             @php($today = \Carbon\Carbon::today())
                             @forelse ($dueTodayPatients as $p)
-                                @php($dueDate = $p->next_due_date ? \Carbon\Carbon::parse($p->next_due_date) : null)
+                                @php($dueDate = $p->due_date ? \Carbon\Carbon::parse($p->due_date) : null)
                                 <tr class="transition-colors hover:bg-black/[0.02]">
                                     <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">
-                                        <button type="button" class="text-left hover:underline font-medium" style="color: var(--primary);" @click="openPatient({{ (int) $p->patient_id }}, @js($p->last_name.', '.$p->first_name))">
-                                            {{ $p->last_name }}, {{ $p->first_name }}
+                                        <button type="button" class="text-left hover:underline font-medium" style="color: var(--primary);" @click="openPatient({{ (int) $p->patient_id }}, @js(fullName($p->last_name, $p->first_name)))">
+                                            {{ fullName($p->last_name, $p->first_name) }}
                                         </button>
                                     </td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 whitespace-nowrap" style="color: var(--ink);">
@@ -432,7 +435,7 @@
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink-muted);">{{ $p->dose_number }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $p->vaccine_name }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
-                                        <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="openPatient({{ (int) $p->patient_id }}, @js($p->last_name.', '.$p->first_name))">
+                                        <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="openPatient({{ (int) $p->patient_id }}, @js(fullName($p->last_name, $p->first_name)))">
                                             <i class="fa-solid fa-syringe" aria-hidden="true"></i> Check-in / Record
                                         </button>
                                     </td>
@@ -440,7 +443,7 @@
                             @empty
                                 <tr>
                                     <td colspan="5" class="px-3 lg:px-4 py-12 text-center">
-                                        <x-empty-state icon="fa-regular fa-calendar" title="No patients due today"
+                                        <x-empty-state icon="fa-regular fa-calendar" title="No patients in this queue"
                                                        description="Use the search box above to find a patient and record a vaccination dose." />
                                     </td>
                                 </tr>
@@ -467,10 +470,10 @@
                         <tbody class="divide-y divide-[var(--border)]">
                             @php($today = \Carbon\Carbon::today())
                             @forelse ($recentRecords as $r)
-                                @php($nextDue = $r->next_due_date ? \Carbon\Carbon::parse($r->next_due_date) : null)
+                                @php($nextDue = $r->next_due ? \Carbon\Carbon::parse($r->next_due) : null)
                                 <tr class="transition-colors hover:bg-black/[0.02]">
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 whitespace-nowrap" style="color: var(--ink);">{{ \Carbon\Carbon::parse($r->date_given)->format('M d, Y') }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $r->last_name }}, {{ $r->first_name }}</td>
+                                    <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ fullName($r->last_name, $r->first_name) }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $r->vaccine_name }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink-muted);">{{ $r->dose_number }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell">
@@ -488,9 +491,9 @@
                                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">In progress</span>
                                         @endif
                                     </td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ $r->worker_name ?? '—' }}</td>
+                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ ucwords((string) $r->worker_name) ?: '—' }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
-                                        <button type="button" class="text-sm font-medium hover:underline" style="color: var(--primary);" @click="openPatient({{ (int) $r->patient_id }}, @js($r->last_name.', '.$r->first_name))">
+                                        <button type="button" class="text-sm font-medium hover:underline" style="color: var(--primary);" @click="openPatient({{ (int) $r->patient_id }}, @js(fullName($r->last_name, $r->first_name)))">
                                             Open
                                         </button>
                                     </td>
@@ -545,7 +548,7 @@
 <script>
     function immunizationIndex() {
         return {
-            patientRouteTemplate: @json(route('immunizations.patient', ['id' => '__PATIENT_ID__'])),
+            patientRouteTemplate: @json(route('immunizations.patient', ['id' => '__PATIENT_ID__', 'bare' => 1])),
             activeQueue: 'due',
             activeTab: 'due',
             patientModalOpen: false,
@@ -571,7 +574,7 @@
             confirmNoShow(form, patientLabel) {
                 Swal.fire({
                     title: 'Mark as no-show?',
-                    html: `<p class="text-sm">${patientLabel} missed their scheduled dose. The next dose slot will be reserved and the queue updated.</p>`,
+                    html: `<p class="text-sm">${patientLabel} missed their scheduled dose. This is recorded as a missed appointment in their history.</p>`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Yes, mark no-show',
@@ -586,12 +589,12 @@
             confirmClearNoShow(form, patientLabel) {
                 Swal.fire({
                     title: 'Clear no-show?',
-                    html: `<p class="text-sm">${patientLabel} showed up after all. The reserved slot will be released.</p>`,
+                    html: `<p class="text-sm">${patientLabel} showed up after all. The missed appointment stays in history, but the patient returns to the queue.</p>`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Yes, clear',
                     cancelButtonText: 'Cancel',
-                    confirmButtonColor: '#0d4a3c',
+                    confirmButtonColor: 'var(--primary)',
                     cancelButtonColor: '#6b7280',
                     reverseButtons: true,
                 }).then((result) => {
@@ -612,7 +615,11 @@
                 this.loading = true;
                 try {
                     const response = await fetch(`{{ route('search.patients') }}?query=${this.query}`);
-                    this.results = await response.json();
+                    const data = await response.json();
+                    this.results = data.map(item => ({
+                        ...item,
+                        text: item.text.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+                    }));
                 } catch (e) { console.error('Search failed:', e); }
                 this.loading = false;
             },

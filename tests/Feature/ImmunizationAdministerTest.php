@@ -7,6 +7,7 @@ use App\Models\Immunization;
 use App\Models\Patient;
 use App\Models\User;
 use App\Models\Vaccine;
+use App\Services\ChildImmunizationService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -168,7 +169,9 @@ class ImmunizationAdministerTest extends TestCase
             ->where('dose_number', 1)
             ->firstOrFail();
 
-        $this->assertTrue(Carbon::parse($record->next_due_date)->isSameDay(now()->addDays(28)));
+        $nextDue = app(ChildImmunizationService::class)->nextDoseDate($infant, $this->vaccine('PENTA'));
+
+        $this->assertTrue($nextDue?->isSameDay(now()->addDays(28)));
     }
 
     public function test_administer_blocks_second_vaccine_in_same_vaccine_group(): void

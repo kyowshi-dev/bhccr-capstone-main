@@ -73,6 +73,11 @@ class Patient extends Model
         return $this->hasMany(Immunization::class, 'patient_id');
     }
 
+    public function immunizationStatusEvents(): HasMany
+    {
+        return $this->hasMany(ImmunizationStatusEvent::class, 'patient_id');
+    }
+
     public function patientCode(): Attribute
     {
         return Attribute::make(

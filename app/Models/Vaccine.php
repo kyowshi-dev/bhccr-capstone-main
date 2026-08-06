@@ -18,6 +18,7 @@ class Vaccine extends Model
         'group_key',
         'start_after_days',
         'complete_before_days',
+        'repeat_months',
     ];
 
     protected function casts(): array
@@ -26,6 +27,7 @@ class Vaccine extends Model
             'sort_order' => 'integer',
             'start_after_days' => 'integer',
             'complete_before_days' => 'integer',
+            'repeat_months' => 'integer',
         ];
     }
 

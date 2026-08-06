@@ -6,109 +6,59 @@ use App\Http\Requests\AdministerVaccineRequest;
 use App\Http\Requests\MarkNoShowRequest;
 use App\Http\Requests\StoreInfantWithHouseholdRequest;
 use App\Models\Household;
-use App\Models\Immunization;
 use App\Models\Patient;
 use App\Models\Vaccine;
 use App\Models\Zone;
 use App\Services\ChildImmunizationService;
+use App\Services\ImmunizationQueryService;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class ImmunizationController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $this->authorizeImmunizations();
 
         $mode = $this->resolveMode($request);
         $zoneId = $request->filled('zone_id') ? (int) $request->input('zone_id') : null;
         $date = $request->filled('date') ? $request->input('date') : Carbon::today()->toDateString();
-        $today = Carbon::today()->toDateString();
 
         $service = $this->service();
+        $categories = $mode === 'child' ? ['Child', 'Both'] : ['Adult', 'Both'];
+
         $queues = [];
 
-        $recentRecords = DB::table('immunization_records')
-            ->join('patients', 'immunization_records.patient_id', '=', 'patients.id')
-            ->join('vaccines_lookup', 'immunization_records.vaccine_id', '=', 'vaccines_lookup.id')
-            ->leftJoin('health_workers', 'immunization_records.administered_by', '=', 'health_workers.id')
-            ->select(
-                'immunization_records.id',
-                'immunization_records.patient_id',
-                'immunization_records.date_given',
-                'immunization_records.dose_number',
-                'immunization_records.next_due_date',
-                'patients.first_name',
-                'patients.last_name',
-                'vaccines_lookup.vaccine_name',
-                DB::raw($this->dbConcat(['health_workers.first_name', 'health_workers.last_name']).' as worker_name')
-            )
-            ->orderByDesc('immunization_records.date_given')
-            ->limit(20)
-            ->get();
-
-        if ($mode === 'child') {
-            foreach (['due', 'overdue', 'out_of_window', 'no_show'] as $key) {
-                $queues[$key] = $service->queue($key, $zoneId, $key === 'due' ? $date : null);
-            }
-
-            $dueTodayCount = $queues['due']->pluck('patient.id')->unique()->count();
-            $overdueCount = $queues['overdue']->pluck('patient.id')->unique()->count();
-            $outOfWindowCount = $queues['out_of_window']->count();
-            $noShowCount = $queues['no_show']->count();
-
-            $dueTodayPatients = $queues['due']
-                ->map(fn (array $entry) => (object) [
-                    'patient_id' => $entry['patient']->id,
-                    'first_name' => $entry['patient']->first_name,
-                    'last_name' => $entry['patient']->last_name,
-                    'next_due_date' => $entry['due_date']->toDateString(),
-                    'dose_number' => $entry['dose_number'],
-                    'vaccine_name' => $entry['vaccine']->vaccine_name,
-                ])
-                ->values();
-        } else {
-            $dueQueue = $this->legacyDueQueue($zoneId);
-
-            $dueTodayPatients = (clone $dueQueue)
-                ->where('ir.next_due_date', '=', $today)
-                ->limit(50)
-                ->get();
-            $overdueCount = (clone $dueQueue)
-                ->where('ir.next_due_date', '<', $today)
-                ->distinct('patients.id')
-                ->count('patients.id');
-            $dueTodayCount = (clone $dueQueue)
-                ->where('ir.next_due_date', '=', $today)
-                ->distinct('patients.id')
-                ->count('patients.id');
-            $outOfWindowCount = 0;
-            $noShowCount = 0;
+        foreach (['due', 'overdue', 'out_of_window', 'no_show'] as $key) {
+            $queues[$key] = $service->queue($key, $zoneId, $key === 'due' ? $date : null, $categories);
         }
 
-        $infantCutoff = Carbon::today()->subYear()->toDateString();
-        $patientBase = DB::table('patients')->join('households', 'patients.household_id', '=', 'households.id');
+        $dueTodayCount = $queues['due']->map(fn (array $entry) => $entry['patient']->id)->unique()->count();
+        $overdueCount = $queues['overdue']->map(fn (array $entry) => $entry['patient']->id)->unique()->count();
+        $outOfWindowCount = $queues['out_of_window']->count();
+        $noShowCount = $queues['no_show']->count();
 
-        if ($zoneId !== null) {
-            $patientBase->where('households.zone_id', $zoneId);
-        }
+        $dueTodayPatients = $queues['due']
+            ->map(fn (array $entry) => (object) [
+                'patient_id' => $entry['patient']->id,
+                'first_name' => $entry['patient']->first_name,
+                'last_name' => $entry['patient']->last_name,
+                'due_date' => $entry['due_date']?->toDateString(),
+                'dose_number' => $entry['dose_number'],
+                'vaccine_name' => $entry['vaccine']->vaccine_name,
+            ])
+            ->values();
 
-        $infantTotal = (clone $patientBase)
-            ->where('patients.date_of_birth', '>=', $infantCutoff)
-            ->count();
-        $infantWithAnyDose = (clone $patientBase)
-            ->join('immunization_records', 'immunization_records.patient_id', '=', 'patients.id')
-            ->where('patients.date_of_birth', '>=', $infantCutoff)
-            ->distinct('immunization_records.patient_id')
-            ->count('immunization_records.patient_id');
-        $infantCoveragePercent = $infantTotal > 0
-            ? (int) round(($infantWithAnyDose / $infantTotal) * 100)
-            : null;
+        $recentRecords = $this->withNextDue(ImmunizationQueryService::recentRecords());
 
-        $totalGiven = DB::table('immunization_records')->count();
-        $patientsWithRecords = DB::table('immunization_records')->distinct('patient_id')->count('patient_id');
+        $infantStats = ImmunizationQueryService::infantStats($zoneId);
+        ['totalGiven' => $totalGiven, 'patientsWithRecords' => $patientsWithRecords] = ImmunizationQueryService::overallStats();
 
         $zones = Zone::orderBy('zone_number')->get();
 
@@ -124,42 +74,29 @@ class ImmunizationController extends Controller
             'overdueCount' => $overdueCount,
             'outOfWindowCount' => $outOfWindowCount,
             'noShowCount' => $noShowCount,
-            'infantCoveragePercent' => $infantCoveragePercent,
-            'infantTotal' => $infantTotal,
+            'infantCoveragePercent' => $infantStats['infantCoveragePercent'],
+            'infantTotal' => $infantStats['infantTotal'],
             'totalGiven' => $totalGiven,
             'patientsWithRecords' => $patientsWithRecords,
         ]);
     }
 
-    public function forPatient($id)
+    public function forPatient($id): View
     {
         $this->authorizeImmunizations();
 
-        $patient = Patient::with('household')->findOrFail($id);
+        $patient = Patient::with(['household', 'immunizationRecords'])->findOrFail($id);
+
+        if (! auth()->user()->canAccessPatient($patient)) {
+            abort(403, 'This patient is outside your assigned zones.');
+        }
 
         $isChild = $patient->age < 18;
         $allowedCategories = $isChild ? ['Child', 'Both'] : ['Adult', 'Both'];
 
-        $records = DB::table('immunization_records')
-            ->join('vaccines_lookup', 'immunization_records.vaccine_id', '=', 'vaccines_lookup.id')
-            ->leftJoin('health_workers', 'immunization_records.administered_by', '=', 'health_workers.id')
-            ->where('immunization_records.patient_id', $id)
-            ->select(
-                'immunization_records.*',
-                'vaccines_lookup.vaccine_name',
-                'vaccines_lookup.vaccine_code',
-                DB::raw($this->dbConcat(['health_workers.first_name', 'health_workers.last_name']).' as administered_by_name')
-            )
-            ->orderByDesc('immunization_records.date_given')
-            ->get();
-
-        $vaccines = DB::table('vaccines_lookup')
-            ->whereIn('category', $allowedCategories)
-            ->orderBy('sort_order')
-            ->get();
-        $healthWorkers = DB::table('health_workers')
-            ->orderBy('last_name')
-            ->get();
+        $records = ImmunizationQueryService::recordsForPatient($id);
+        $vaccines = ImmunizationQueryService::vaccinesFor($allowedCategories);
+        $healthWorkers = ImmunizationQueryService::healthWorkers();
 
         $recordsByVaccine = $records->groupBy('vaccine_id');
         $schedule = $vaccines->map(function ($vaccine) use ($recordsByVaccine) {
@@ -171,7 +108,6 @@ class ImmunizationController extends Controller
                 'doses_given' => $doses->count(),
                 'latest_date' => $latestDose?->date_given,
                 'latest_dose_number' => $latestDose?->dose_number,
-                'next_due_date' => $latestDose?->next_due_date,
             ];
         });
 
@@ -183,6 +119,10 @@ class ImmunizationController extends Controller
 
         $currentWorkerId = DB::table('health_workers')->where('user_id', auth()->id())->value('id');
 
+        $noShowEvents = $vaccineModels->mapWithKeys(
+            fn (Vaccine $v) => [$v->id => $service->unresolvedMissed($patient, $v)]
+        );
+
         return view('immunizations.patient', [
             'patient' => $patient,
             'records' => $records,
@@ -193,20 +133,27 @@ class ImmunizationController extends Controller
             'statuses' => $statuses,
             'eligibility' => $eligibility,
             'schedulesByVaccine' => $schedulesByVaccine,
+            'noShowEvents' => $noShowEvents,
         ]);
     }
 
-    public function administer(AdministerVaccineRequest $request, $id)
+    public function administer(AdministerVaccineRequest $request, $id): RedirectResponse
     {
         $patient = Patient::findOrFail($id);
+
+        if (! auth()->user()->canAccessPatient($patient)) {
+            abort(403, 'This patient is outside your assigned zones.');
+        }
+
         $vaccine = Vaccine::findOrFail($request->input('vaccine_id'));
 
-        if (! $this->vaccineMatchesPatientAge($patient, $vaccine)) {
+        if (! $this->service()->vaccineMatchesAge($patient, $vaccine)) {
             return back()->withErrors(['vaccine_id' => 'This vaccine is not appropriate for this patient.'])->withInput();
         }
 
         try {
             $record = $this->service()->administer($patient, $vaccine, [
+                'date_given' => $request->input('date_given'),
                 'temp_recorded' => $request->input('temp_recorded'),
                 'notes' => $request->input('notes'),
                 'override_reason' => $request->input('override_reason'),
@@ -216,84 +163,68 @@ class ImmunizationController extends Controller
             return back()->withErrors($e->errors())->withInput();
         }
 
-        $next = $record->next_due_date
-            ? ' Next dose due '.$record->next_due_date->format('M j, Y').'.'
-            : '';
+        $next = '';
+        $nextDue = $this->service()->nextDoseDate($patient, $vaccine);
+
+        if ($nextDue !== null && $nextDue->gt($record->date_given)) {
+            $next = ' Next dose due '.$nextDue->format('M j, Y').'.';
+        }
 
         return redirect()
             ->route('immunizations.patient', $patient->id)
             ->with('success', $vaccine->vaccine_name.' recorded (dose '.$record->dose_number.').'.$next);
     }
 
-    public function enrollInfant(StoreInfantWithHouseholdRequest $request)
+    public function enrollInfant(StoreInfantWithHouseholdRequest $request): RedirectResponse
     {
-        $data = $request->validated();
+        $user = auth()->user();
+        $validated = $request->validated();
 
-        $householdId = $data['household_id'] ?? null;
-
-        if ($householdId === null) {
-            $household = Household::create([
-                'zone_id' => $data['zone_id'],
-                'family_name_head' => $data['family_name_head'],
-                'contact_number' => $data['contact_number'] ?? null,
-            ]);
-            $householdId = $household->id;
+        if ($request->boolean('create_household')) {
+            if ($user->isZoneScoped() && ! in_array((int) $validated['zone_id'], $user->accessibleZoneIds(), true)) {
+                abort(403, 'You cannot enroll an infant outside your assigned zones.');
+            }
+        } elseif (! $user->canAccessHousehold((int) $validated['household_id'])) {
+            abort(403, 'This household is outside your assigned zones.');
         }
 
-        $duplicate = Patient::where('household_id', $householdId)
-            ->where('first_name', $data['first_name'])
-            ->where('last_name', $data['last_name'])
-            ->whereDate('date_of_birth', $data['date_of_birth'])
-            ->exists();
-
-        if ($duplicate) {
-            return back()
-                ->withErrors(['duplicate' => 'An infant with this name and birth date already exists in this household.'])
-                ->withInput();
+        try {
+            $patient = $this->service()->enrollInfant($validated);
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
         }
-
-        $guardian = $data['guardian_name'] ?? '';
-
-        $patient = Patient::create([
-            'household_id' => $householdId,
-            'first_name' => $data['first_name'],
-            'last_name' => $data['last_name'],
-            'middle_name' => $data['middle_name'] ?? null,
-            'suffix' => $data['suffix'] ?? null,
-            'sex' => $data['sex'],
-            'date_of_birth' => $data['date_of_birth'],
-            'birth_weight' => $data['birth_weight'] ?? null,
-            'guardian_name' => $data['guardian_name'] ?? null,
-            'mother_name' => $guardian,
-            'spouse_name' => '',
-            'family_relationship' => 'Son',
-            'residential_address' => '',
-            'civil_status' => 'Single',
-        ]);
 
         return redirect()
             ->route('immunizations.patient', $patient->id)
             ->with('success', 'Infant enrolled ('.$patient->first_name.' '.$patient->last_name.').');
     }
 
-    public function toggleNoShow(MarkNoShowRequest $request, Immunization $record)
+    public function toggleNoShow(MarkNoShowRequest $request): RedirectResponse
     {
-        $mark = $request->boolean('no_show');
+        $validated = $request->validated();
 
-        if ($mark && ! $record->no_show) {
-            $this->service()->markNoShow($record->patient, $record->vaccine);
-            $message = 'Marked as no-show.';
-        } elseif (! $mark && $record->no_show) {
-            $this->service()->clearNoShow($record);
-            $message = 'No-show cleared.';
+        $patient = Patient::findOrFail($validated['patient_id']);
+
+        if (! auth()->user()->canAccessPatient($patient)) {
+            abort(403, 'This patient is outside your assigned zones.');
+        }
+
+        $vaccine = Vaccine::findOrFail($validated['vaccine_id']);
+
+        if ($validated['no_show']) {
+            $this->service()->markNoShow($patient, $vaccine, $validated['dose_number'] ?? null);
+            $message = $patient->first_name.' '.$patient->last_name.' marked as no-show.';
         } else {
-            $message = $record->no_show ? 'Already marked as no-show.' : 'Nothing to clear.';
+            $cleared = $this->service()->clearNoShow($patient, $vaccine);
+            $message = $cleared !== null
+                ? 'No-show cleared; it stays in the patient history.'
+                : 'No unresolved no-show to clear.';
         }
 
         return back()->with('success', $message);
     }
 
-    public function householdMatch(Request $request)
+    public function householdMatch(Request $request): JsonResponse
     {
         $this->authorizeImmunizations();
 
@@ -310,89 +241,23 @@ class ImmunizationController extends Controller
             $query->where('zone_id', $validated['zone_id']);
         }
 
+        if (auth()->user()->isZoneScoped()) {
+            $query->whereIn('zone_id', auth()->user()->accessibleZoneIds());
+        }
+
+        $results = $query->orderBy('family_name_head')->limit(10)->get();
+
         return response()->json(
-            $query->orderBy('family_name_head')->limit(10)->get()
+            $results->map(fn (Household $household) => [
+                'id' => $household->id,
+                'family_name_head' => $household->family_name_head,
+                'zone_id' => $household->zone_id,
+                'zone' => $household->zone !== null
+                    ? ['zone_number' => $household->zone->zone_number]
+                    : null,
+                'patients_count' => $household->patients_count,
+            ])->values()
         );
-    }
-
-    public function store(Request $request)
-    {
-        if (! auth()->check() || ! auth()->user()->hasPermission('immunizations')) {
-            abort(403, 'Unauthorized');
-        }
-
-        $validated = $request->validate([
-            'patient_id' => ['required', 'integer', 'exists:patients,id'],
-            'vaccine_id' => ['required', 'integer', 'exists:vaccines_lookup,id'],
-            'dose_number' => ['required', 'integer', 'min:1', 'max:99'],
-            'date_given' => ['required', 'date', 'before_or_equal:today'],
-            'administered_by' => ['nullable', 'integer', 'exists:health_workers,id'],
-            'next_due_date' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string', 'max:500'],
-        ], [
-            'date_given.before_or_equal' => 'Date given cannot be in the future.',
-        ]);
-
-        $patient = DB::table('patients')->where('id', $validated['patient_id'])->first();
-        $age = Carbon::parse($patient->date_of_birth)->age;
-        $isChild = $age < 18;
-        $allowedCategories = $isChild ? ['Child', 'Both'] : ['Adult', 'Both'];
-
-        $vaccine = DB::table('vaccines_lookup')->where('id', $validated['vaccine_id'])->first();
-        if (! in_array($vaccine->category, $allowedCategories)) {
-            return back()
-                ->withErrors(['vaccine_id' => 'This vaccine is not appropriate for the patient\'s age group.'])
-                ->withInput();
-        }
-
-        DB::table('immunization_records')->insert([
-            'patient_id' => $validated['patient_id'],
-            'vaccine_id' => $validated['vaccine_id'],
-            'dose_number' => $validated['dose_number'],
-            'date_given' => $validated['date_given'],
-            'administered_by' => $validated['administered_by'] ?? null,
-            'next_due_date' => $validated['next_due_date'] ?? null,
-            'notes' => $validated['notes'] ?? null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        return redirect()
-            ->route('immunizations.patient', $validated['patient_id'])
-            ->with('success', 'Immunization record saved.');
-    }
-
-    private function legacyDueQueue(?int $zoneId)
-    {
-        $latestRecordPerPatient = DB::table('immunization_records')
-            ->select('patient_id', DB::raw('MAX(date_given) as latest_date_given'))
-            ->groupBy('patient_id');
-
-        $query = DB::table('immunization_records as ir')
-            ->joinSub($latestRecordPerPatient, 'lr', function ($join) {
-                $join->on('ir.patient_id', '=', 'lr.patient_id')
-                    ->on('ir.date_given', '=', 'lr.latest_date_given');
-            })
-            ->join('patients', 'ir.patient_id', '=', 'patients.id')
-            ->join('vaccines_lookup', 'ir.vaccine_id', '=', 'vaccines_lookup.id')
-            ->select(
-                'patients.id as patient_id',
-                'patients.first_name',
-                'patients.last_name',
-                'ir.next_due_date',
-                'vaccines_lookup.vaccine_name',
-                'ir.dose_number'
-            )
-            ->whereNotNull('ir.next_due_date')
-            ->orderBy('ir.next_due_date')
-            ->orderBy('patients.last_name');
-
-        if ($zoneId !== null) {
-            $query->join('households', 'patients.household_id', '=', 'households.id')
-                ->where('households.zone_id', $zoneId);
-        }
-
-        return $query;
     }
 
     private function authorizeImmunizations(): void
@@ -426,11 +291,32 @@ class ImmunizationController extends Controller
         return $workerId !== null ? (int) $workerId : null;
     }
 
-    private function vaccineMatchesPatientAge(Patient $patient, Vaccine $vaccine): bool
+    /**
+     * Attach a schedule-derived next due date to each recent record row, so the
+     * "Recent" tables can badge up-to-date / due / overdue without a stored column.
+     */
+    private function withNextDue(Collection $records): Collection
     {
-        $isChild = ($patient->age ?? 0) < 18;
-        $allowed = $isChild ? ['Child', 'Both'] : ['Adult', 'Both'];
+        $patientIds = $records->pluck('patient_id')->unique()->all();
+        $vaccineIds = $records->pluck('vaccine_id')->unique()->all();
 
-        return in_array($vaccine->category, $allowed, true);
+        if ($patientIds === [] || $vaccineIds === []) {
+            return $records;
+        }
+
+        $patients = Patient::with('immunizationRecords')->whereIn('id', $patientIds)->get()->keyBy('id');
+        $vaccines = Vaccine::with('schedules')->whereIn('id', $vaccineIds)->get()->keyBy('id');
+        $service = $this->service();
+
+        foreach ($records as $record) {
+            $patient = $patients->get($record->patient_id);
+            $vaccine = $vaccines->get($record->vaccine_id);
+
+            $record->next_due = $patient !== null && $vaccine !== null
+                ? $service->nextDoseDate($patient, $vaccine)?->toDateString()
+                : null;
+        }
+
+        return $records;
     }
 }

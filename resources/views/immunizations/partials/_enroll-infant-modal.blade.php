@@ -1,7 +1,7 @@
 @php
     $enrollHasErrors = $errors->hasAny([
         'first_name', 'middle_name', 'last_name', 'suffix', 'sex',
-        'date_of_birth', 'birth_weight', 'guardian_name',
+        'date_of_birth', 'birth_weight', 'mother_name', 'guardian_name',
         'household_id', 'create_household', 'zone_id', 'family_name_head', 'contact_number', 'duplicate',
     ]);
 @endphp
@@ -145,7 +145,18 @@
                             </div>
 
                             <div>
-                                <label for="enroll_guardian" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Guardian / mother name</label>
+                                <label for="enroll_mother" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Mother's full name</label>
+                                <input id="enroll_mother" name="mother_name" type="text" maxlength="255" value="{{ old('mother_name') }}"
+                                       autocomplete="off"
+                                       class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+                                       style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                                @error('mother_name')
+                                    <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="enroll_guardian" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Guardian (if not the mother)</label>
                                 <input id="enroll_guardian" name="guardian_name" type="text" maxlength="255" value="{{ old('guardian_name') }}"
                                        class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
                                        style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">

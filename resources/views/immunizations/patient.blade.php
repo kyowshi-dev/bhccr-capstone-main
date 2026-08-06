@@ -1,9 +1,10 @@
-@extends('layouts.app')
+@extends(request()->query('bare') ? 'layouts.bare' : 'layouts.app')
 
-@section('title', 'Immunization — ' . $patient->last_name . ', ' . $patient->first_name)
+@section('title', 'Immunization — ' . fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix))
 
 @section('content')
 @php
+    $isBare = request()->query('bare');
     $recordsByVaccine = $records->groupBy('vaccine_id');
     $alertOverdue = collect($schedule)->filter(fn ($i) => ($statuses[$i->vaccine->id] ?? null) === 'overdue')->count();
     $alertOutOfWindow = collect($schedule)->filter(fn ($i) => ($statuses[$i->vaccine->id] ?? null) === 'out_of_window')->count();
@@ -13,12 +14,16 @@
     $ageText = $y !== null ? "{$y}y {$m}m {$d}d" : '—';
 @endphp
 
-<div class="space-y-5 lg:space-y-6">
+<div class="space-y-5 lg:space-y-6" x-data="{}">
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-            <a href="{{ route('patients.show', $patient->id) }}" class="text-sm font-medium hover:underline mb-1 inline-block" style="color: var(--primary);">← Back to patient</a>
+            @if (! $isBare)
+                <a href="{{ route('patients.show', $patient->id) }}" class="text-sm font-medium hover:underline mb-1 inline-block" style="color: var(--primary);">← Back to patient</a>
+            @else
+                <p class="text-xs font-medium mb-1" style="color: var(--ink-muted);">Patient immunization record</p>
+            @endif
             <div class="flex flex-wrap items-center gap-3">
-                <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">Immunization — {{ $patient->last_name }}, {{ $patient->first_name }}</h1>
+                <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">Immunization — {{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }}</h1>
                 @include('immunizations.partials._age-chip', ['patient' => $patient])
             </div>
             <p class="text-sm mt-1" style="color: var(--ink-muted);">
@@ -75,7 +80,7 @@
                                 $nextSchedule = $schedulesByVaccine[$vaccineId] ?? collect();
                                 $nextScheduleRow = $nextSchedule->where('dose_number', $nextDose)->first();
                                 $requiresTemp = (bool) ($nextScheduleRow->requires_temp ?? false);
-                                $noShowRecord = $recordsByVaccine->get($vaccineId, collect())->where('no_show', true)->first();
+                                $noShowEvent = $noShowEvents[$vaccineId] ?? null;
                                 $earliestDate = $elig['earliest_date'] ?? null;
                             @endphp
                             <tr class="transition-colors hover:bg-black/[0.02]">
@@ -118,10 +123,12 @@
                                         </span>
                                     @else
                                         <div class="inline-flex items-center gap-1.5">
-                                            @if ($status === 'no_show' && $noShowRecord)
-                                                <form method="POST" action="{{ route('immunizations.no-show', $noShowRecord->id) }}" @submit.prevent="confirmClearNoShow($event.target)">
+                                            @if ($status === 'no_show' && $noShowEvent)
+                                                <form method="POST" action="{{ route('immunizations.no-show') }}" @submit.prevent="confirmClearNoShow($event.target)">
                                                     @csrf
                                                     <input type="hidden" name="no_show" value="0">
+                                                    <input type="hidden" name="patient_id" value="{{ $patient->id }}">
+                                                    <input type="hidden" name="vaccine_id" value="{{ $vaccineId }}">
                                                     <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">
                                                         Clear no-show
                                                     </button>
@@ -203,12 +210,12 @@
     function confirmClearNoShow(form) {
         Swal.fire({
             title: 'Clear no-show?',
-            text: 'The reserved dose slot will be released and the patient returns to the queue.',
+            text: 'The missed appointment stays in the patient history; the patient returns to the queue.',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Yes, clear',
             cancelButtonText: 'Cancel',
-            confirmButtonColor: '#0d4a3c',
+            confirmButtonColor: 'var(--primary)',
             cancelButtonColor: '#6b7280',
             reverseButtons: true,
         }).then((result) => {
