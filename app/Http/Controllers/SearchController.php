@@ -5,11 +5,26 @@ namespace App\Http\Controllers;
 use App\Helpers\PatientCode;
 use App\Services\IcdApiService;
 use Carbon\Carbon;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SearchController extends Controller
 {
+    /**
+     * Zone scoping helper for patient queries.
+     */
+    private function scopePatientQuery(Builder $query): Builder
+    {
+        $user = auth()->user();
+
+        if ($user !== null && $user->isZoneScoped()) {
+            $query->whereIn('household_id', $user->accessibleHouseholdIds());
+        }
+
+        return $query;
+    }
+
     /**
      * Search for Patients (by Name)
      */
@@ -23,7 +38,7 @@ class SearchController extends Controller
 
         // Search by Last Name OR First Name
         // We limit to 10 results for speed
-        $patients = DB::table('patients')
+        $patients = $this->scopePatientQuery(DB::table('patients'))
             ->where(function ($qb) use ($query) {
                 $qb->where('last_name', 'LIKE', "{$query}%")
                     ->orWhere('first_name', 'LIKE', "{$query}%");
@@ -131,6 +146,10 @@ class SearchController extends Controller
 
         $households = DB::table('households')
             ->join('zones', 'households.zone_id', '=', 'zones.id')
+            ->when(
+                auth()->user()?->isZoneScoped(),
+                fn ($query) => $query->whereIn('households.zone_id', auth()->user()->accessibleZoneIds())
+            )
             ->where(function ($qb) use ($query) {
                 $qb->where('households.family_name_head', 'LIKE', "%{$query}%")
                     ->orWhere('zones.zone_number', 'LIKE', "%{$query}%")

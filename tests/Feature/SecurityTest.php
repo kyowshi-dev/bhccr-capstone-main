@@ -137,7 +137,16 @@ class SecurityTest extends TestCase
     {
         $bhw = $this->createUserWithPermissions(['household', 'patients', 'consultations', 'reports']);
 
-        DB::table('zones')->insert(['id' => 1, 'zone_number' => '1']);
+        DB::table('health_workers')->insert([
+            'user_id' => $bhw->id,
+            'first_name' => 'Test',
+            'last_name' => 'BHW',
+            'role' => 'BHW',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('zones')->insert(['id' => 1, 'zone_number' => '1', 'assigned_worker_id' => 1]);
         $household = DB::table('households')->insertGetId([
             'zone_id' => 1,
             'family_name_head' => 'Test Family',
@@ -183,7 +192,7 @@ class SecurityTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        DB::table('zones')->insert(['id' => 1, 'zone_number' => '1']);
+        DB::table('zones')->insert(['id' => 1, 'zone_number' => '1', 'assigned_worker_id' => 1]);
         $household = DB::table('households')->insertGetId([
             'zone_id' => 1,
             'family_name_head' => 'Test',
@@ -429,7 +438,16 @@ class SecurityTest extends TestCase
         $bhw = $this->createUserWithPermissions(['household']);
         $this->actingAs($bhw);
 
-        DB::table('zones')->insert(['id' => 1, 'zone_number' => '1']);
+        DB::table('health_workers')->insert([
+            'user_id' => $bhw->id,
+            'first_name' => 'Test',
+            'last_name' => 'BHW',
+            'role' => 'BHW',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('zones')->insert(['id' => 1, 'zone_number' => '1', 'assigned_worker_id' => 1]);
         DB::table('households')->insert([
             'zone_id' => 1,
             'family_name_head' => 'Test Family',

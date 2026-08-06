@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Traits\LogsActivity;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -103,5 +104,105 @@ class User extends Authenticatable
         return Cache::remember("user_permissions_{$this->id}", 3600, function () {
             return $this->permissions->pluck('name')->toArray();
         });
+    }
+
+    // ------------------------------------------------------------------
+    // Zone-based data scoping (least privilege)
+    //
+    // Facility-level staff (Admin, Doctor, Nurse, Midwife) see all
+    // records. Zone-assigned workers (BHW) holding the `household`
+    // permission are restricted to patients, consultations, households
+    // and reports within the zones assigned to their health worker
+    // profile. `household` implies zone-level duty; `users` implies
+    // administrator (unrestricted).
+    // ------------------------------------------------------------------
+
+    public function isZoneScoped(): bool
+    {
+        return $this->hasPermission('household') && ! $this->isAdmin();
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function accessibleZoneIds(): array
+    {
+        return $this->healthWorker?->zones()->pluck('zones.id')->all() ?? [];
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function accessibleHouseholdIds(): array
+    {
+        return Household::query()
+            ->whereIn('zone_id', $this->accessibleZoneIds())
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function accessiblePatientIds(): array
+    {
+        return Patient::query()
+            ->whereIn('household_id', $this->accessibleHouseholdIds())
+            ->pluck('id')
+            ->all();
+    }
+
+    public function canAccessPatient(Patient $patient): bool
+    {
+        return ! $this->isZoneScoped()
+            || in_array($patient->household_id, $this->accessibleHouseholdIds(), true);
+    }
+
+    public function canAccessConsultation(Consultation $consultation): bool
+    {
+        return ! $this->isZoneScoped()
+            || in_array($consultation->patient_id, $this->accessiblePatientIds(), true);
+    }
+
+    public function canAccessHousehold(int $householdId): bool
+    {
+        return ! $this->isZoneScoped()
+            || in_array($householdId, $this->accessibleHouseholdIds(), true);
+    }
+
+    /**
+     * Restrict an Eloquent Patient query to this user's assigned zones.
+     */
+    public function scopeAccessiblePatients(Builder $query): Builder
+    {
+        if (! $this->isZoneScoped()) {
+            return $query;
+        }
+
+        return $query->whereIn('patients.household_id', $this->accessibleHouseholdIds());
+    }
+
+    /**
+     * Restrict an Eloquent Consultation query to this user's assigned zones.
+     */
+    public function scopeAccessibleConsultations(Builder $query): Builder
+    {
+        if (! $this->isZoneScoped()) {
+            return $query;
+        }
+
+        return $query->whereIn('consultations.patient_id', $this->accessiblePatientIds());
+    }
+
+    /**
+     * Restrict an Eloquent Household query to this user's assigned zones.
+     */
+    public function scopeAccessibleHouseholds(Builder $query): Builder
+    {
+        if (! $this->isZoneScoped()) {
+            return $query;
+        }
+
+        return $query->whereIn('households.zone_id', $this->accessibleZoneIds());
     }
 }

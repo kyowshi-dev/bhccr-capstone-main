@@ -20,7 +20,7 @@ class PatientPolicy
      */
     public function view(User $user, Patient $patient): bool
     {
-        return $user->hasPermission('patients');
+        return $user->hasPermission('patients') && $user->canAccessPatient($patient);
     }
 
     /**
@@ -36,7 +36,7 @@ class PatientPolicy
      */
     public function update(User $user, Patient $patient): bool
     {
-        return $user->hasPermission('patients');
+        return $user->hasPermission('patients') && $user->canAccessPatient($patient);
     }
 
     /**
@@ -44,7 +44,7 @@ class PatientPolicy
      */
     public function delete(User $user, Patient $patient): bool
     {
-        return $user->hasPermission('patients');
+        return $user->hasPermission('patients') && $user->canAccessPatient($patient);
     }
 
     /**

@@ -28,8 +28,17 @@ class HouseholdCreateTest extends TestCase
     {
         $user = $this->createUserWithPermissions(['household']);
 
-        DB::table('zones')->insert(['id' => 1, 'zone_number' => '1']);
-        DB::table('zones')->insert(['id' => 2, 'zone_number' => '2']);
+        $workerId = DB::table('health_workers')->insertGetId([
+            'user_id' => $user->id,
+            'first_name' => 'Test',
+            'last_name' => 'BHW',
+            'role' => 'BHW',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('zones')->insert(['id' => 1, 'zone_number' => '1', 'assigned_worker_id' => $workerId]);
+        DB::table('zones')->insert(['id' => 2, 'zone_number' => '2', 'assigned_worker_id' => $workerId]);
 
         return $user;
     }
