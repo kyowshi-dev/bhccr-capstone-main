@@ -4,13 +4,13 @@
 
 @section('content')
 <div class="auth-card animate-in opacity-0">
-    <div class="text-center mb-6">
+    <div class="text-center mb-7">
         <div class="flex items-center justify-center gap-3">
-            <div class="logo-mark" style="width: 56px; height: 56px; border-radius: 14px;">
+            <div class="logo-mark shadow-[0_4px_14px_rgba(13,74,60,0.25)]" style="width: 60px; height: 60px; border-radius: 16px;">
                 <img src="{{ asset('img/logo.svg') }}" alt="Santa Ana logo">
             </div>
             <div class="text-left">
-                <h1 class="font-extrabold auth-title leading-snug mb-0">Barangay Health Center Information System</h1>
+                <h1 class="font-extrabold auth-title leading-snug mb-1">Barangay Health Center Information System</h1>
                 <p class="muted-xs leading-tight">Sta. Ana Health Center</p>
             </div>
         </div>
@@ -20,7 +20,7 @@
     <form action="{{ route('login.process') }}" method="POST" id="login-form">
         <input type="hidden" name="_token" id="csrf-token-input" value="{{ csrf_token() }}" autocomplete="off">
 
-        @if (session('error') || session('session_expired'))
+        @if (session('error') || session('session_expired') || request()->has('session_expired'))
             <div class="mb-4 p-3 text-sm border-l-4 bg-danger-soft" style="border-left-color: var(--danger); color: var(--danger);">
                 <p class="font-medium text-sm">{{ session('error', 'Your session has expired. Please sign in again.') }}</p>
             </div>

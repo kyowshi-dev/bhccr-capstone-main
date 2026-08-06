@@ -86,12 +86,4 @@ class ProfileController extends Controller
             ->route('profile.settings')
             ->with('success', 'Session timeout updated successfully.');
     }
-
-    public function sessionStatus()
-    {
-        return response()->json([
-            'active' => auth()->check(),
-            'user' => auth()->user()?->only(['id', 'username', 'email']),
-        ]);
-    }
 }

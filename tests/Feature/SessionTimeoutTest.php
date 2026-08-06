@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Models\ApplicationSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Tests\Concerns\AssignsRolesAndPermissions;
 use Tests\TestCase;
 
@@ -36,38 +36,91 @@ class SessionTimeoutTest extends TestCase
         $this->assertEquals('30', ApplicationSetting::get('session_timeout'));
     }
 
-    public function test_session_expires_after_timeout(): void
+    public function test_session_status_reports_active_for_authenticated_session(): void
     {
-        $this->markTestSkipped('Session expiration test needs database setup fix');
+        $user = User::factory()->create(['is_active' => true]);
 
-        // Set session timeout to 1 minute
-        ApplicationSetting::set('session_timeout', 1);
-
-        // Refresh the application to reload config
-        $this->refreshApplication();
-
-        $user = User::query()->create([
-            'username' => 'testuser',
-            'email' => 'test@example.com',
-            'password' => Hash::make('password'),
-            'is_active' => true,
+        $this->post('/login', [
+            'username' => $user->username,
+            'password' => 'password',
         ]);
 
-        // Login
-        $this->actingAs($user);
-
-        // Get current session
         $sessionId = session()->getId();
 
-        // Manually update last_activity to be 2 minutes ago
-        DB::table('sessions')->where('id', $sessionId)->update([
-            'last_activity' => now()->subMinutes(2)->timestamp,
+        // Reset the guard so it is resolved again from the session store.
+        Auth::forgetGuards();
+
+        $response = $this->withCookie(config('session.cookie'), $sessionId)
+            ->getJson(route('session.status'));
+
+        $response->assertOk()
+            ->assertJsonPath('active', true)
+            ->assertJsonPath('user.id', $user->id);
+    }
+
+    public function test_session_status_reports_inactive_for_anonymous_session(): void
+    {
+        $this->getJson(route('session.status'))
+            ->assertOk()
+            ->assertJsonPath('active', false)
+            ->assertJsonPath('user', null);
+    }
+
+    public function test_session_expires_after_timeout(): void
+    {
+        // Order matters: set the lifetime BEFORE ApplicationSetting::set(),
+        // because setting a value triggers LogsActivity -> Auth::id(), which
+        // resolves the session store (and freezes the DB handler's lifetime).
+        config(['session.lifetime' => 1]);
+        ApplicationSetting::set('session_timeout', 1);
+
+        $user = User::factory()->create(['is_active' => true]);
+
+        $this->post('/login', [
+            'username' => $user->username,
+            'password' => 'password',
         ]);
 
-        // Try to access a protected page
-        $response = $this->get(route('dashboard'));
+        $sessionId = session()->getId();
 
-        // Should be redirected to login because session expired
-        $response->assertRedirect(route('login'));
+        // Simulate a session that has been idle longer than the configured lifetime.
+        DB::table('sessions')->where('id', $sessionId)->update([
+            'last_activity' => now()->subMinutes(5)->timestamp,
+        ]);
+
+        // Drop cached auth/session state so it is rebuilt from the store (which
+        // reads last_activity from the sessions table on every request).
+        Auth::forgetGuards();
+        session()->flush();
+
+        // The public session-status endpoint reports the expiry as JSON — never
+        // as an HTML redirect — so the frontend can render the modal deterministically.
+        $this->getJson(route('session.status'))
+            ->assertOk()
+            ->assertJsonPath('active', false)
+            ->assertJsonPath('lifetime_minutes', 1);
+
+        // Protected pages redirect to the login page once the session is expired.
+        $this->get(route('dashboard'))->assertRedirect(route('login'));
+    }
+
+    public function test_session_heartbeat_reports_ok(): void
+    {
+        $user = User::factory()->create(['is_active' => true]);
+
+        $this->actingAs($user)
+            ->getJson(route('session.heartbeat'))
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+    }
+
+    public function test_session_status_lifetime_is_clamped_to_at_least_five_minutes(): void
+    {
+        ApplicationSetting::set('session_timeout', 0);
+
+        $this->refreshApplication();
+        $this->artisan('migrate');
+
+        $this->assertGreaterThanOrEqual(5, (int) config('session.lifetime'));
     }
 }

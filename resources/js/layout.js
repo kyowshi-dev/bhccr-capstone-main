@@ -643,33 +643,121 @@
         });
 
         // Session timeout check
-        setInterval(function() {
-            fetch(window.BHCIS.routes.sessionStatus, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.active) {
-                    Swal.fire({
-                        title: 'Session Expired',
-                        text: 'Your session has expired due to inactivity. You will be redirected to the login page.',
-                        icon: 'warning',
-                        confirmButtonText: 'OK',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                    }).then(() => {
-                        window.location.href = '/login';
-                    });
+        (function () {
+            if (!window.BHCIS || !window.BHCIS.routes) return;
+
+            var statusUrl = window.BHCIS.routes.sessionStatus;
+            var heartbeatUrl = window.BHCIS.routes.sessionHeartbeat;
+            var loginUrl = window.BHCIS.routes.login;
+            var lifetimeMs = (parseInt(window.BHCIS.sessionLifetimeMinutes, 10) || 120) * 60 * 1000;
+            var HEARTBEAT_INTERVAL = 60 * 1000; // refresh the server idle clock at most once/min of activity
+            var CHECK_INTERVAL = 30 * 1000;     // idle re-evaluation cadence
+            var lastActivityAt = Date.now();
+            var lastHeartbeatAt = 0;
+            var expiryShown = false;
+            var checking = false;
+
+            function sendHeartbeat() {
+                if (expiryShown || typeof heartbeatUrl !== 'string') return;
+                lastHeartbeatAt = Date.now();
+                fetch(heartbeatUrl, {
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                }).catch(function () {
+                    // The session may already be gone; the status check handles it.
+                });
+            }
+
+            function markActivity() {
+                lastActivityAt = Date.now();
+                if (Date.now() - lastHeartbeatAt >= HEARTBEAT_INTERVAL) {
+                    sendHeartbeat();
                 }
-            })
-            .catch(error => {
-                console.error('Session check failed:', error);
+            }
+
+            ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(function (event) {
+                document.addEventListener(event, markActivity, { passive: true });
             });
-        }, 30000); // Check every 30 seconds
+
+            function showSessionExpired() {
+                if (expiryShown) return;
+                expiryShown = true;
+
+                function redirectToLogin() {
+                    window.location.href = loginUrl + (loginUrl.indexOf('?') !== -1 ? '&' : '?') + 'session_expired=1';
+                }
+
+                if (typeof Swal === 'undefined') {
+                    redirectToLogin();
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Session Expired',
+                    text: 'Your session has expired due to inactivity. You will be redirected to the login page.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                }).then(redirectToLogin);
+            }
+
+            function checkSessionStatus() {
+                if (checking || expiryShown || typeof statusUrl !== 'string') return;
+                checking = true;
+
+                fetch(statusUrl, {
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('Session status check failed: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data && data.active === false) {
+                        showSessionExpired();
+                        return;
+                    }
+                    // Session still alive on the server (e.g. active in another tab):
+                    // restart our idle countdown so we re-check after a full timeout.
+                    lastActivityAt = Date.now();
+                })
+                .catch(function () {
+                    // Transient failure; retried on the next tick.
+                })
+                .then(function () {
+                    checking = false;
+                });
+            }
+
+            function tick() {
+                if (expiryShown) return;
+                if (Date.now() - lastActivityAt >= lifetimeMs) {
+                    checkSessionStatus();
+                }
+            }
+
+            // Re-evaluate immediately when the tab becomes visible again, so a
+            // restored/refreshed tab catches an expired session right away.
+            document.addEventListener('visibilitychange', function () {
+                if (!document.hidden) {
+                    tick();
+                }
+            });
+            window.addEventListener('focus', tick);
+
+            setInterval(tick, CHECK_INTERVAL);
+            setTimeout(checkSessionStatus, 1500);
+        })();
 
         if (window.BHCIS.canPollLiveRequests) {
         (function() {
