@@ -195,7 +195,7 @@ class AuditLoggingTest extends TestCase
         $user = $this->createUserWithPermissions(['medicines']);
         $this->actingAs($user);
 
-        $csv = "name,generic_name\nParacetamol,Acetaminophen\nAmoxicillin,Amoxicillin\n";
+        $csv = "name,form\nParacetamol,Tablet\nAmoxicillin,Capsule\n";
 
         $this->post(route('medicines.import'), [
             'csv_file' => UploadedFile::fake()->createWithContent('medicines.csv', $csv),

@@ -203,4 +203,74 @@ class ImmunizationAdministerTest extends TestCase
             'temp_recorded' => '36.5',
         ])->assertSessionHasErrors('dose_number');
     }
+
+    public function test_mark_done_records_overdue_dose_as_today_without_date_or_temp(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $infant = $this->makeInfant(now()->subDays(100));
+        $pentA = $this->vaccine('PENTA');
+
+        $this->post(route('immunizations.mark-done', [$infant->id, $pentA->id]))
+            ->assertRedirect(route('immunizations.index'))
+            ->assertSessionHasNoErrors();
+
+        $record = Immunization::where('patient_id', $infant->id)
+            ->where('vaccine_id', $pentA->id)
+            ->firstOrFail();
+
+        $this->assertSame(1, $record->dose_number);
+        $this->assertTrue($record->date_given->isSameDay(now()));
+        $this->assertNull($record->temp_recorded);
+        $this->assertStringContainsString('administered elsewhere', (string) $record->notes);
+    }
+
+    public function test_mark_done_still_rejects_too_early_dose(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $infant = $this->makeInfant(now()->subDays(30));
+
+        $this->post(route('immunizations.mark-done', [$infant->id, $this->vaccine('PENTA')->id]))
+            ->assertSessionHasErrors('date_given');
+
+        $this->assertDatabaseMissing('immunization_records', [
+            'patient_id' => $infant->id,
+            'vaccine_id' => $this->vaccine('PENTA')->id,
+        ]);
+    }
+
+    public function test_mark_done_is_permission_gated(): void
+    {
+        $this->actingAs($this->createUserWithPermissions([]));
+        $infant = $this->makeInfant(now()->subDays(100));
+
+        $this->post(route('immunizations.mark-done', [$infant->id, $this->vaccine('PENTA')->id]))
+            ->assertForbidden();
+    }
+
+    public function test_mark_done_removes_no_show_placeholder_for_that_dose(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $infant = $this->makeInfant(now()->subDays(100));
+        $pentA = $this->vaccine('PENTA');
+
+        Immunization::create([
+            'patient_id' => $infant->id,
+            'vaccine_id' => $pentA->id,
+            'dose_number' => 1,
+            'date_given' => now()->toDateString(),
+            'no_show' => true,
+            'no_show_at' => now(),
+        ]);
+
+        $this->post(route('immunizations.mark-done', [$infant->id, $pentA->id]))
+            ->assertRedirect(route('immunizations.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('immunization_records', [
+            'patient_id' => $infant->id,
+            'vaccine_id' => $pentA->id,
+            'dose_number' => 1,
+            'no_show' => 0,
+        ]);
+    }
 }

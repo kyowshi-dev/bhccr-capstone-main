@@ -112,6 +112,39 @@ class DashboardRoutingTest extends TestCase
             ->assertSee('Nurse Dashboard');
     }
 
+    public function test_admin_dashboard_on_duty_staff_excludes_disabled_users(): void
+    {
+        $admin = $this->createUserWithPermissions([]);
+        $activeUser = User::factory()->create(['is_active' => true]);
+        $disabledUser = User::factory()->create(['is_active' => false]);
+
+        DB::table('health_workers')->insert([
+            [
+                'user_id' => $activeUser->id,
+                'first_name' => 'Active',
+                'last_name' => 'Doctor',
+                'role' => 'Doctor',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'user_id' => $disabledUser->id,
+                'first_name' => 'Hidden',
+                'last_name' => 'Nurse',
+                'role' => 'Nurse',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('On-duty staff')
+            ->assertSee('Active Doctor')
+            ->assertDontSee('Hidden Nurse');
+    }
+
     public function test_role_permissions_gate_dashboard_handout_panels(): void
     {
         $roleId = DB::table('user_roles')->where('role_name', 'BHW')->value('id');

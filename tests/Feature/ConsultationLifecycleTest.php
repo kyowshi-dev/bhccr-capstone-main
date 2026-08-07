@@ -108,6 +108,129 @@ class ConsultationLifecycleTest extends TestCase
         );
     }
 
+    public function test_bhw_intake_leaves_attending_doctor_empty(): void
+    {
+        [$bhw, $patientId] = $this->createClinicalFixture('BHW');
+
+        $this->actingAs($bhw)->post("/patients/{$patientId}/consultations", [
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'Checkup',
+            'purpose_of_visit' => 'General checkup',
+            'chief_complaint' => 'Fever',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 37.5,
+            'weight' => 60,
+            'height' => 165,
+        ])->assertRedirect(route('patients.show', $patientId));
+
+        $consultationId = (int) DB::table('consultations')->where('patient_id', $patientId)->value('id');
+
+        $this->assertSame(
+            null,
+            DB::table('consultations')->where('id', $consultationId)->value('attending_doctor_id')
+        );
+    }
+
+    public function test_doctor_diagnosis_records_licensed_staff_as_attending_doctor(): void
+    {
+        [$bhw, $patientId] = $this->createClinicalFixture('BHW');
+        $nurse = $this->createWorkerUser('Nurse');
+        $doctor = $this->createWorkerUser('Doctor');
+
+        $this->actingAs($bhw)->post("/patients/{$patientId}/consultations", [
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'Checkup',
+            'purpose_of_visit' => 'General checkup',
+            'chief_complaint' => 'Fever',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 37.5,
+            'weight' => 60,
+            'height' => 165,
+        ]);
+
+        $consultationId = (int) DB::table('consultations')->where('patient_id', $patientId)->value('id');
+
+        $this->actingAs($nurse)->post("/consultations/{$consultationId}/acknowledge-intake");
+
+        $doctorWorkerId = (int) DB::table('health_workers')->where('user_id', $doctor->id)->value('id');
+        $diagnosisId = DB::table('diagnosis_lookup')->insertGetId([
+            'diagnosis_code' => 'J06.9',
+            'diagnosis_name' => 'Acute upper respiratory infection',
+        ]);
+
+        $this->actingAs($doctor)->post("/consultations/{$consultationId}/diagnosis", [
+            'diagnosis_id' => $diagnosisId,
+            'remarks' => 'Rest and fluids',
+        ])->assertRedirect();
+
+        $this->assertSame(
+            $doctorWorkerId,
+            (int) DB::table('consultations')->where('id', $consultationId)->value('attending_doctor_id')
+        );
+    }
+
+    public function test_bhw_intake_never_overwrites_attending_doctor(): void
+    {
+        [$bhw, $patientId] = $this->createClinicalFixture('BHW');
+        $doctor = $this->createWorkerUser('Doctor');
+        $bhwWorkerId = (int) DB::table('health_workers')->where('user_id', $bhw->id)->value('id');
+
+        $consultationId = DB::table('consultations')->insertGetId([
+            'patient_id' => $patientId,
+            'worker_id' => $bhwWorkerId,
+            'status' => 'doctor_review',
+            'attending_doctor_id' => DB::table('health_workers')->where('user_id', $doctor->id)->value('id'),
+            'nature_of_visit' => 'Checkup',
+            'mode_of_transaction' => 'Walk-in',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('vitals')->insert([
+            'consultation_id' => $consultationId,
+            'phase' => 'triage',
+            'captured_by' => $bhwWorkerId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($bhw)->post("/consultations/{$consultationId}/refer", [
+            'referred_to' => 'RHU Tagoloan',
+            'pertinent_history' => 'Ongoing care',
+        ])->assertForbidden();
+
+        $this->assertSame(
+            (int) DB::table('health_workers')->where('user_id', $doctor->id)->value('id'),
+            (int) DB::table('consultations')->where('id', $consultationId)->value('attending_doctor_id')
+        );
+    }
+
+    public function test_consultations_index_renders_attending_doctor_name(): void
+    {
+        [$bhw, $patientId] = $this->createClinicalFixture('BHW');
+        $doctor = $this->createWorkerUser('Doctor');
+        $doctorWorkerId = (int) DB::table('health_workers')->where('user_id', $doctor->id)->value('id');
+        $bhwWorkerId = (int) DB::table('health_workers')->where('user_id', $bhw->id)->value('id');
+
+        $consultationId = DB::table('consultations')->insertGetId([
+            'patient_id' => $patientId,
+            'worker_id' => $bhwWorkerId,
+            'attending_doctor_id' => $doctorWorkerId,
+            'status' => 'completed',
+            'nature_of_visit' => 'Checkup',
+            'mode_of_transaction' => 'Walk-in',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($bhw)
+            ->get(route('consultations.index'))
+            ->assertOk()
+            ->assertSee('Doctor');
+    }
+
     /**
      * @return array{0: User, 1: int}
      */
