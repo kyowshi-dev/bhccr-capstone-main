@@ -8,6 +8,7 @@ Laravel 12 app: **BHCIS System Sta. Ana** — Barangay Health Center Information
 - `composer run test` — `config:clear` + `php artisan test` (PHPUnit; do NOT use Pest, convert any Pest tests)
 - Single test: `php artisan test --compact --filter=testName`
 - `vendor/bin/pint --dirty` before finalizing any PHP changes (never use `--test`)
+- `composer run phpstan` (or `vendor/bin/phpstan analyse --no-progress --memory-limit=1G`) once as a final verification gate after PHP changes — same pattern as running tests; do NOT iterate on it interactively
 - `npm run build` — required after blade/js changes; ViteException → run this or `composer run dev`
 - `composer setup` — full fresh setup (composer install, .env, key, migrate, npm build)
 
