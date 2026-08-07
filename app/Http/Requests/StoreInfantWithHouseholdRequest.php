@@ -27,7 +27,7 @@ class StoreInfantWithHouseholdRequest extends FormRequest
 
         return [
             // Household attach or create
-            'household_id' => ['nullable', $isCreating ? 'nullable' : 'required', 'integer', 'exists:households,id'],
+            'household_id' => $isCreating ? ['nullable', 'integer', 'exists:households,id'] : ['required', 'integer', 'exists:households,id'],
             'create_household' => ['nullable', 'boolean'],
             'zone_id' => ['nullable', 'required_if:create_household,1', 'integer', 'exists:zones,id'],
             'family_name_head' => ['nullable', 'required_if:create_household,1', 'string', 'max:255'],

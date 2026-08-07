@@ -12,7 +12,7 @@ class FinalizeConsultationRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, array<int, string>>
      */
     public function rules(): array
     {

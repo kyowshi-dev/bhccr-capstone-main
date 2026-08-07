@@ -12,7 +12,7 @@ class ReferralRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, array<int, string>>
      */
     public function rules(): array
     {
@@ -21,7 +21,7 @@ class ReferralRequest extends FormRequest
             'referral_reasons' => ['nullable', 'array'],
             'referral_reasons.*' => ['string'],
             'referral_reason_details' => ['nullable', 'string', 'max:1000'],
-            'pertinent_history' => ['required', 'nullable', 'string'],
+            'pertinent_history' => ['required', 'string'],
             'actions_taken' => ['nullable', 'string'],
         ];
     }
