@@ -63,7 +63,8 @@ final class PatientService
             $householdId = $createdHousehold->id;
         }
 
-        $zoneNumber = Household::with('zone')->find($householdId)?->zone?->zone_number ?? '';
+        $zone = Household::with('zone')->find($householdId)?->zone;
+        $zoneNumber = $zone ? $zone->zone_number : '';
 
         $residentialAddress = trim($zoneNumber).' Sta. Ana, Tagoloan';
 

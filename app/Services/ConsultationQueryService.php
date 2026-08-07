@@ -25,12 +25,15 @@ final class ConsultationQueryService
         $query = Consultation::query()
             ->join('patients', 'consultations.patient_id', '=', 'patients.id')
             ->join('health_workers', 'consultations.worker_id', '=', 'health_workers.id')
+            ->leftJoin('health_workers as attending_doctor', 'consultations.attending_doctor_id', '=', 'attending_doctor.id')
             ->select(
                 'consultations.*',
                 'patients.first_name as patient_first_name',
                 'patients.last_name as patient_last_name',
                 'health_workers.first_name as worker_first_name',
-                'health_workers.last_name as worker_last_name'
+                'health_workers.last_name as worker_last_name',
+                'attending_doctor.first_name as attending_doctor_first_name',
+                'attending_doctor.last_name as attending_doctor_last_name'
             );
 
         if ($user !== null) {
@@ -79,13 +82,13 @@ final class ConsultationQueryService
 
         if (! empty($filters['date_from'])) {
             $parsed = Carbon::createFromFormat('d/m/Y', trim((string) $filters['date_from']));
-            if ($parsed !== false) {
+            if ($parsed) {
                 $query->where('consultations.created_at', '>=', $parsed->copy()->startOfDay());
             }
         }
         if (! empty($filters['date_to'])) {
             $parsed = Carbon::createFromFormat('d/m/Y', trim((string) $filters['date_to']));
-            if ($parsed !== false) {
+            if ($parsed) {
                 $query->where('consultations.created_at', '<=', $parsed->copy()->endOfDay());
             }
         }

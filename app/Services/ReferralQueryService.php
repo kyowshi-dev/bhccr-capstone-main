@@ -52,8 +52,8 @@ final class ReferralQueryService
     public static function statusCounts(?User $user = null): Collection
     {
         $query = DB::table('outward_referrals')
-            ->select('status', DB::raw('count(*) as total'))
-            ->groupBy('status');
+            ->select('outward_referrals.status', DB::raw('count(*) as total'))
+            ->groupBy('outward_referrals.status');
 
         if ($user !== null && $user->isZoneScoped()) {
             $query->join('consultations', 'outward_referrals.consultation_id', '=', 'consultations.id')
@@ -67,7 +67,7 @@ final class ReferralQueryService
     {
         $total = DB::table('outward_referrals');
         $thisWeek = DB::table('outward_referrals')
-            ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+            ->whereBetween('outward_referrals.created_at', [now()->startOfWeek(), now()->endOfWeek()]);
 
         if ($user !== null && $user->isZoneScoped()) {
             $total->join('consultations', 'outward_referrals.consultation_id', '=', 'consultations.id')

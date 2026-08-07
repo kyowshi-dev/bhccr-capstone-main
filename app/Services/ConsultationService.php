@@ -104,6 +104,8 @@ final class ConsultationService
             'updated_at' => now(),
         ]);
 
+        self::promoteAttendingDoctor($consultation, $worker);
+
         if (self::maybeAutoComplete((int) $consultation->id)) {
             return true;
         }
@@ -130,6 +132,8 @@ final class ConsultationService
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        self::promoteAttendingDoctor($consultation, $worker);
 
         if (self::maybeAutoComplete((int) $consultation->id)) {
             return true;
@@ -185,7 +189,28 @@ final class ConsultationService
             ->where('id', $consultation->id)
             ->update(['status' => $status, 'updated_at' => now()]);
 
+        self::promoteAttendingDoctor($consultation, $worker);
+
         return $status;
+    }
+
+    /**
+     * Record the acting licensed worker as the attending doctor for the
+     * consultation whenever clinical work is done by a Doctor or Nurse.
+     * BHW/midwife-initiated intake never overwrites it.
+     */
+    private static function promoteAttendingDoctor(Consultation $consultation, HealthWorker $worker): void
+    {
+        if (! in_array(strtolower((string) $worker->role), ['doctor', 'nurse'], true)) {
+            return;
+        }
+
+        DB::table('consultations')
+            ->where('id', $consultation->id)
+            ->update([
+                'attending_doctor_id' => $worker->id,
+                'updated_at' => now(),
+            ]);
     }
 
     public static function maybeAutoComplete(int $consultationId): bool

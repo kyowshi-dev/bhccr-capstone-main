@@ -17,31 +17,21 @@ final class MedicineService
         return $medicine;
     }
 
-    public static function create(array $validated, bool $isActive): void
+    public static function create(array $validated): void
     {
         DB::table('medicines_lookup')->insert([
             'name' => $validated['name'],
-            'generic_name' => $validated['generic_name'] ?? null,
-            'strength' => $validated['strength'] ?? null,
             'form' => $validated['form'] ?? null,
-            'manufacturer' => $validated['manufacturer'] ?? null,
-            'expiration_date' => $validated['expiration_date'] ?? null,
-            'is_active' => $isActive,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
     }
 
-    public static function update(int $id, array $validated, bool $isActive): void
+    public static function update(int $id, array $validated): void
     {
         DB::table('medicines_lookup')->where('id', $id)->update([
             'name' => $validated['name'],
-            'generic_name' => $validated['generic_name'] ?? null,
-            'strength' => $validated['strength'] ?? null,
             'form' => $validated['form'] ?? null,
-            'manufacturer' => $validated['manufacturer'] ?? null,
-            'expiration_date' => $validated['expiration_date'] ?? null,
-            'is_active' => $isActive,
             'updated_at' => now(),
         ]);
     }

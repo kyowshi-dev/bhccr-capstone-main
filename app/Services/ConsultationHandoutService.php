@@ -3,6 +3,10 @@
 namespace App\Services;
 
 use App\Models\Consultation;
+use App\Models\FamilyPlanningClient;
+use App\Models\Immunization;
+use App\Models\PostnatalRecord;
+use App\Models\Pregnancy;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -31,6 +35,16 @@ final class ConsultationHandoutService
                 'zones.zone_number'
             )
             ->first();
+
+        // philhealth_no is encrypted at rest; this query-builder read bypasses the
+        // model cast, so decrypt it manually for the handout (defensive for legacy rows).
+        if ($patient && filled($patient->philhealth_no ?? null)) {
+            try {
+                $patient->philhealth_no = decrypt($patient->philhealth_no);
+            } catch (\Throwable) {
+                // Leave as-is if the value is not a valid encrypted payload.
+            }
+        }
 
         $vitals = DB::table('vitals')
             ->where('consultation_id', $consultation->id)
@@ -63,7 +77,16 @@ final class ConsultationHandoutService
         $zoneLabel = $patient?->zone_number ? 'Zone '.$patient->zone_number : null;
 
         $consultationAt = Carbon::parse($consultation->updated_at ?? $consultation->created_at);
-        $attendingProvider = trim(($consultation->worker_first_name ?? '').' '.($consultation->worker_last_name ?? '')) ?: null;
+        $attendingProvider = trim(
+            ($consultation->attending_doctor_first_name ?? $consultation->worker_first_name ?? '').' '
+            .($consultation->attending_doctor_last_name ?? $consultation->worker_last_name ?? '')
+        ) ?: null;
+
+        $pregnancy = Pregnancy::with('visits')->where('patient_id', $consultation->patient_id)->latest('id')->first();
+        $prenatalVisits = $pregnancy ? $pregnancy->visits : collect();
+        $postnatalRecord = PostnatalRecord::where('patient_id', $consultation->patient_id)->latest('id')->first();
+        $fpClient = FamilyPlanningClient::where('patient_id', $consultation->patient_id)->where('is_active', true)->latest('id')->first();
+        $immunizations = Immunization::with('vaccine')->where('patient_id', $consultation->patient_id)->orderBy('date_given')->get();
 
         return [
             'consultation' => $consultation,
@@ -76,6 +99,11 @@ final class ConsultationHandoutService
             'zoneLabel' => $zoneLabel,
             'consultationAt' => $consultationAt,
             'attendingProvider' => $attendingProvider,
+            'pregnancy' => $pregnancy,
+            'prenatalVisits' => $prenatalVisits,
+            'postnatalRecord' => $postnatalRecord,
+            'fpClient' => $fpClient,
+            'immunizations' => $immunizations,
         ];
     }
 }

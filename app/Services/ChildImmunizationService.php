@@ -244,14 +244,15 @@ class ChildImmunizationService
 
         if ($schedule->requires_temp) {
             $temp = $data['temp_recorded'] ?? null;
+            $administeredElsewhere = (bool) ($data['administered_elsewhere'] ?? false);
 
-            if ($temp === null || $temp === '') {
+            if (! $administeredElsewhere && ($temp === null || $temp === '')) {
                 throw ValidationException::withMessages([
                     'temp_recorded' => 'Temperature recording is required for this vaccine.',
                 ]);
             }
 
-            if (! is_numeric($temp) || (float) $temp < 30 || (float) $temp > 45) {
+            if ($temp !== null && $temp !== '' && (! is_numeric($temp) || (float) $temp < 30 || (float) $temp > 45)) {
                 throw ValidationException::withMessages([
                     'temp_recorded' => 'Temperature must be a number between 30 and 45.',
                 ]);
@@ -419,9 +420,9 @@ class ChildImmunizationService
      * missed; everything earlier than the target is "overdue".
      *
      * @param  list<string>  $categories
-     * @return Collection<int, array{patient: Patient, vaccine: Vaccine, status: string, dose_number: int, due_date: Carbon|null}>
+     * @return \Illuminate\Support\Collection<int, array{patient: Patient, vaccine: Vaccine, status: string, dose_number: int, due_date: Carbon}>
      */
-    public function queue(string $mode, ?int $zoneId = null, ?string $date = null, array $categories = ['Child', 'Both']): Collection
+    public function queue(string $mode, ?int $zoneId = null, ?string $date = null, array $categories = ['Child', 'Both']): \Illuminate\Support\Collection
     {
         $query = Patient::query()->whereHas('household');
 
@@ -489,7 +490,7 @@ class ChildImmunizationService
             }
         }
 
-        return new Collection($entries);
+        return collect($entries);
     }
 
     private function assertNoGroupConflict(Patient $patient, Vaccine $vaccine): void
@@ -507,8 +508,8 @@ class ChildImmunizationService
         }
 
         $conflict = $patient->immunizationRecords()
+            ->whereReal()
             ->whereIn('vaccine_id', $conflictingIds)
-            ->where('no_show', false)
             ->exists();
 
         if ($conflict) {

@@ -14,6 +14,7 @@ final class ImmunizationQueryService
     public static function recentRecords(int $limit = 20): Collection
     {
         return DB::table('immunization_records')
+            ->where('immunization_records.no_show', false)
             ->join('patients', 'immunization_records.patient_id', '=', 'patients.id')
             ->join('vaccines_lookup', 'immunization_records.vaccine_id', '=', 'vaccines_lookup.id')
             ->leftJoin('health_workers', 'immunization_records.administered_by', '=', 'health_workers.id')
@@ -52,6 +53,7 @@ final class ImmunizationQueryService
             ->count();
         $infantWithAnyDose = (clone $patientBase)
             ->join('immunization_records', 'immunization_records.patient_id', '=', 'patients.id')
+            ->where('immunization_records.no_show', false)
             ->where('patients.date_of_birth', '>=', $infantCutoff)
             ->distinct('immunization_records.patient_id')
             ->count('immunization_records.patient_id');
@@ -71,14 +73,15 @@ final class ImmunizationQueryService
     public static function overallStats(): array
     {
         return [
-            'totalGiven' => DB::table('immunization_records')->count(),
-            'patientsWithRecords' => DB::table('immunization_records')->distinct('patient_id')->count('patient_id'),
+            'totalGiven' => DB::table('immunization_records')->where('no_show', false)->count(),
+            'patientsWithRecords' => DB::table('immunization_records')->where('no_show', false)->distinct('patient_id')->count('patient_id'),
         ];
     }
 
     public static function recordsForPatient(int $patientId): Collection
     {
         return DB::table('immunization_records')
+            ->where('immunization_records.no_show', false)
             ->join('vaccines_lookup', 'immunization_records.vaccine_id', '=', 'vaccines_lookup.id')
             ->leftJoin('health_workers', 'immunization_records.administered_by', '=', 'health_workers.id')
             ->where('immunization_records.patient_id', $patientId)
