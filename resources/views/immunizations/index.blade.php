@@ -186,6 +186,9 @@
         <div x-show="query.length > 1 && results.length === 0 && !loading" x-cloak class="mt-2 text-xs" style="display: none; color: var(--ink-muted);">
             No patient found. <a href="{{ route('patients.create') }}" class="font-semibold" style="color: var(--primary);">Register a new patient</a>.
         </div>
+        <div x-show="loading" x-cloak class="mt-2 text-xs" style="display: none; color: var(--ink-muted);">
+            Searching...
+        </div>
     </div>
 
     @if ($mode === 'child')
@@ -291,7 +294,13 @@
                                                         </button>
                                                     </form>
                                                 @endif
-                                                <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="openPatient({{ $queuePatient->id }}, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)))">
+                                                <form method="POST" action="{{ route('immunizations.mark-done', [$queuePatient->id, $queueVaccine->id]) }}" @submit.prevent="confirmMarkDone($event.target, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)), @js($queueVaccine->vaccine_name), @js($entry['dose_number']))">
+                                                    @csrf
+                                                    <button type="submit" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);">
+                                                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Mark Done
+                                                    </button>
+                                                </form>
+                                                <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink);" @click="openPatient({{ $queuePatient->id }}, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)))">
                                                     <i class="fa-solid fa-syringe" aria-hidden="true"></i> Check-in / Record
                                                 </button>
                                             </div>
@@ -535,8 +544,14 @@
                         Close
                     </button>
                 </div>
-                <div class="flex-1 overflow-hidden">
-                    <iframe :src="patientModalUrl" class="w-full h-full" style="background: var(--bg-page);" title="Patient immunizations"></iframe>
+                <div class="flex-1 overflow-hidden relative">
+                    <div x-show="patientModalOpen" class="absolute inset-0 flex items-center justify-center" style="background: var(--bg-page); z-index: 1;">
+                        <div class="text-center">
+                            <div class="animate-spin inline-block w-8 h-8 border-2 border-current border-t-transparent rounded-full mb-2" style="color: var(--primary);" role="status" aria-label="Loading"></div>
+                            <p class="text-xs" style="color: var(--ink-muted);">Loading patient records...</p>
+                        </div>
+                    </div>
+                    <iframe :src="patientModalUrl" class="w-full h-full relative" style="background: var(--bg-page); z-index: 0;" title="Patient immunizations" @load="$el.previousElementSibling && ($el.previousElementSibling.style.display = 'none')"></iframe>
                 </div>
             </div>
         </div>
@@ -580,6 +595,21 @@
                     confirmButtonText: 'Yes, mark no-show',
                     cancelButtonText: 'Cancel',
                     confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#6b7280',
+                    reverseButtons: true,
+                }).then((result) => {
+                    if (result.isConfirmed) form.submit();
+                });
+            },
+            confirmMarkDone(form, patientLabel, vaccineLabel, doseNumber) {
+                Swal.fire({
+                    title: 'Mark as done?',
+                    html: `<p class="text-sm">${vaccineLabel} (dose ${doseNumber}) for <strong>${patientLabel}</strong> was given — e.g. at a hospital or another facility. The date is recorded as <strong>today</strong> unless an actual date is entered on the patient page.</p>`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, mark done',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: 'var(--primary)',
                     cancelButtonColor: '#6b7280',
                     reverseButtons: true,
                 }).then((result) => {

@@ -59,23 +59,23 @@
                         @error('current_password')<p class="mt-1 text-xs" style="color: var(--danger);">{{ $message }}</p>@enderror
                     </div>
                     
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <div class="bg-amber-soft border border-amber/30 rounded-lg p-3">
                         <div class="flex">
                             <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-amber" viewBox="0 0 20 20" fill="currentColor">
+                                <svg class="h-5 w-5" style="color: var(--amber);" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <h3 class="text-sm font-medium text-amber">Important Warning</h3>
-                                <div class="mt-2 text-sm text-amber">
+                                <h3 class="text-sm font-medium" style="color: var(--amber);">Important Warning</h3>
+                                <div class="mt-2 text-sm" style="color: var(--amber);">
                                     <p>Importing a backup will completely replace all current data. A backup of the current database will be created automatically before import.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <button type="submit" class="px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md bg-red-600 hover:bg-red-700" onclick="return confirm('Are you sure you want to import this backup? This will replace all current data.')">
+                    <button type="submit" class="px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md" style="background: var(--danger);" onclick="event.preventDefault(); Swal.fire({title: 'Import database backup?', text: 'This will replace all current data. A backup of the current database will be saved automatically.', icon: 'warning', showCancelButton: true, confirmButtonColor: 'var(--danger)', cancelButtonColor: '#6b7280', confirmButtonText: 'Import', cancelButtonText: 'Cancel'}).then(result => { if (result.isConfirmed) this.closest('form').submit(); });">
                         Import Database Backup
                     </button>
                 </div>

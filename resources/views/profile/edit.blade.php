@@ -38,7 +38,7 @@
                     <div class="h-24 w-24 rounded-full flex items-center justify-center text-2xl font-semibold flex-shrink-0"
                          style="background: var(--teal-soft); color: var(--primary);" id="photoPreview">
                         @if($user->profile_photo_path)
-                            <img src="{{ Storage::url($user->profile_photo_path) }}" alt="{{ $user->username }}" class="h-24 w-24 rounded-full object-cover">
+                            <img src="/storage/{{ $user->profile_photo_path }}" alt="{{ $user->username }}" class="h-24 w-24 rounded-full object-cover">
                         @else
                             {{ mb_strtoupper(mb_substr($user->username, 0, 1)) }}
                         @endif

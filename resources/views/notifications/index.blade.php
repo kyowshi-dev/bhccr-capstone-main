@@ -6,8 +6,8 @@
     <div class="space-y-4">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-ink">Notifications</h1>
-                <p class="text-sm text-ink-muted mt-1">Manage your notifications and alerts</p>
+                <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">Notifications</h1>
+                <p class="text-sm mt-1" style="color: var(--ink-muted);">Manage your notifications and alerts</p>
             </div>
             @if ($notifications->total() > 0)
                 <div class="flex gap-2">
@@ -20,7 +20,7 @@
                     </form>
                     <form action="{{ route('notifications.destroy-all') }}" method="POST" class="inline">
                         @csrf
-                        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border border-border hover:bg-black/5" onclick="return confirm('Are you sure? This will delete all notifications.');">
+                        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border border-border hover:bg-black/5" onclick="event.preventDefault(); Swal.fire({title: 'Clear all notifications?', text: 'This will permanently delete all notifications.', icon: 'warning', showCancelButton: true, confirmButtonColor: 'var(--danger)', cancelButtonColor: '#6b7280', confirmButtonText: 'Clear All', cancelButtonText: 'Cancel'}).then(result => { if (result.isConfirmed) this.closest('form').submit(); });">
                             <i class="fa-solid fa-trash text-ink mr-2" aria-hidden="true"></i>
                             Clear All
                         </button>

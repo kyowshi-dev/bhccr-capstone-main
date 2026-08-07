@@ -75,7 +75,7 @@
                                 $vaccineId = $item->vaccine->id;
                                 $status = $statuses[$vaccineId] ?? 'waiting';
                                 $elig = $eligibility[$vaccineId] ?? ['state' => 'waiting', 'earliest_date' => null, 'requires_override' => false];
-                                $givenCount = $recordsByVaccine->get($vaccineId, collect())->where('no_show', false)->count();
+                                $givenCount = $recordsByVaccine->get($vaccineId, collect())->count();
                                 $nextDose = $givenCount + 1;
                                 $nextSchedule = $schedulesByVaccine[$vaccineId] ?? collect();
                                 $nextScheduleRow = $nextSchedule->where('dose_number', $nextDose)->first();

@@ -403,9 +403,9 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap justify-end gap-2 lg:gap-3">
-            <a href="{{ route('patients.index') }}" class="px-4 lg:px-6 py-2 rounded-xl border border-border -600 hover:bg-[var(--primary-light)] text-xs lg:text-sm font-medium">Cancel</a>
-            <button type="submit" class="px-5 lg:px-6 py-2 lg:py-2.5 rounded-xl bg-[var(--primary)] text-white font-semibold text-xs lg:text-sm shadow-md hover:bg-[var(--primary-light)] transition">
+        <div class="sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-3 border-t flex flex-wrap justify-end gap-2 lg:gap-3 bg-surface/95 backdrop-blur" style="border-color: var(--border);">
+            <a href="{{ route('patients.index') }}" class="px-4 lg:px-6 py-2 rounded-xl border border-border text-xs lg:text-sm font-medium" style="color: var(--ink-muted);">Cancel</a>
+            <button type="submit" class="px-5 lg:px-6 py-2 lg:py-2.5 rounded-xl text-white font-semibold text-xs lg:text-sm shadow-md transition" style="background: var(--primary);">
                 Save Patient Record
             </button>
         </div>

@@ -5,15 +5,15 @@
 @section('content')
 @php
     $statusBadgeStyles = [
-        'pending' => 'background:#f3f4f6;color:#374151;border:1px solid #d1d5db;',
-        'completed' => 'background:#dcfce7;color:#166534;border:1px solid #86efac;',
-        'no_show' => 'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;',
-        'cancelled' => 'background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;',
+        'pending' => 'background:var(--bg-surface);color:var(--ink-muted);border:1px solid var(--border);',
+        'completed' => 'background:var(--teal-soft);color:var(--primary);border:1px solid var(--border);',
+        'no_show' => 'background:var(--danger-soft);color:var(--danger);border:1px solid var(--border);',
+        'cancelled' => 'background:var(--bg-surface-elevated);color:var(--ink-subtle);border:1px solid var(--border);',
     ];
 @endphp
 <div class="space-y-5 lg:space-y-6 animate-in opacity-0">
     @if (session('success'))
-        <div class="rounded-xl border px-4 py-3 text-sm" style="background: #ecfdf5; border-color: #86efac; color: #166534;">
+        <div class="rounded-xl border px-4 py-3 text-sm" style="background: var(--teal-soft); border-color: var(--border); color: var(--primary);">
             {{ session('success') }}
         </div>
     @endif
@@ -33,17 +33,17 @@
             <p class="text-xs uppercase tracking-wide font-semibold" style="color: var(--ink-muted);">This week</p>
             <p class="mt-2 font-display text-2xl lg:text-3xl font-semibold" style="color: var(--ink);">{{ $thisWeekReferrals }}</p>
         </div>
-        <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border); border-left: 4px solid #22c55e;">
+        <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border); border-left: 4px solid var(--primary);">
             <p class="text-xs uppercase tracking-wide font-semibold" style="color: var(--ink-muted);">Completed</p>
-            <p class="mt-2 font-display text-2xl lg:text-3xl font-semibold" style="color: #166534;">{{ $statusCounts['completed'] ?? 0 }}</p>
+            <p class="mt-2 font-display text-2xl lg:text-3xl font-semibold" style="color: var(--primary);">{{ $statusCounts['completed'] ?? 0 }}</p>
         </div>
         <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border); border-left: 4px solid var(--danger);">
             <p class="text-xs uppercase tracking-wide font-semibold" style="color: var(--ink-muted);">No-show</p>
-            <p class="mt-2 font-display text-2xl lg:text-3xl font-semibold" style="color: #991b1b;">{{ $statusCounts['no_show'] ?? 0 }}</p>
+            <p class="mt-2 font-display text-2xl lg:text-3xl font-semibold" style="color: var(--danger);">{{ $statusCounts['no_show'] ?? 0 }}</p>
         </div>
-        <div class="rounded-xl border p-4 lg:p-5 col-span-2 md:col-span-1" style="background: var(--bg-surface); border-color: var(--border); border-left: 4px solid #9ca3af;">
+        <div class="rounded-xl border p-4 lg:p-5 col-span-2 md:col-span-1" style="background: var(--bg-surface); border-color: var(--border); border-left: 4px solid var(--ink-subtle);">
             <p class="text-xs uppercase tracking-wide font-semibold" style="color: var(--ink-muted);">Cancelled</p>
-            <p class="mt-2 font-display text-2xl lg:text-3xl font-semibold" style="color: #6b7280;">{{ $statusCounts['cancelled'] ?? 0 }}</p>
+            <p class="mt-2 font-display text-2xl lg:text-3xl font-semibold" style="color: var(--ink-subtle);">{{ $statusCounts['cancelled'] ?? 0 }}</p>
         </div>
     </div>
 
@@ -136,7 +136,8 @@
                 </div>
             </div>
         @empty
-            <div class="rounded-xl border p-6 text-center" style="background: var(--bg-surface); border-color: var(--border);">
+            <div class="rounded-xl border p-10 text-center" style="background: var(--bg-surface); border-color: var(--border);">
+                <div class="flex justify-center mb-3"><i class="fa-solid fa-arrow-up-right-from-square text-3xl" style="color: var(--ink-subtle);" aria-hidden="true"></i></div>
                 <p class="font-semibold" style="color: var(--ink);">No referrals found</p>
                 <p class="mt-2 text-sm" style="color: var(--ink-muted);">Create an outward referral from the consultation modal to see it appear here.</p>
             </div>

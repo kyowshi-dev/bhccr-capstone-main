@@ -97,6 +97,33 @@
             </div>
 
             <div class="mt-4 lg:mt-6 pt-3 lg:pt-4 border-t">
+                <h4 class="text-xs font-bold text-ink-subtle uppercase mb-2">Maternal Care</h4>
+                @if (auth()->user()?->hasPermission('maternal'))
+                    @if ($activePregnancy = $patient->pregnancies()->where('status', 'active')->orderByDesc('lmp')->first())
+                        <p class="text-xs lg:text-sm text-ink-muted mb-1">
+                            Active pregnancy · EDC <span class="font-semibold" style="color: var(--ink);">{{ $activePregnancy->edc?->format('M d, Y') }}</span>
+                        </p>
+                        <p class="text-xs lg:text-sm text-ink-muted mb-2">
+                            {{ $activePregnancy->visits()->count() }} prenatal visit(s) recorded.
+                        </p>
+                    @else
+                        <p class="text-xs lg:text-sm text-ink-muted mb-2">No active pregnancy recorded.</p>
+                    @endif
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ route('maternal.prenatal.patient', $patient->id) }}" class="inline-flex items-center justify-center flex-1 px-3 py-2 rounded-lg text-xs lg:text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 transition">
+                            <i class="fa-solid fa-baby-carriage mr-1.5" aria-hidden="true"></i> Prenatal
+                        </a>
+                        <a href="{{ route('maternal.postnatal.patient', $patient->id) }}" class="inline-flex items-center justify-center flex-1 px-3 py-2 rounded-lg text-xs lg:text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 transition">
+                            <i class="fa-solid fa-child-reaching mr-1.5" aria-hidden="true"></i> Postnatal
+                        </a>
+                        <a href="{{ route('maternal.family-planning.patient', $patient->id) }}" class="inline-flex items-center justify-center flex-1 px-3 py-2 rounded-lg text-xs lg:text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 transition">
+                            <i class="fa-solid fa-hand-holding-heart mr-1.5" aria-hidden="true"></i> Family Planning
+                        </a>
+                    </div>
+                @endif
+            </div>
+
+            <div class="mt-4 lg:mt-6 pt-3 lg:pt-4 border-t">
                 <h4 class="text-xs font-bold text-ink-subtle uppercase mb-2">Immunization</h4>
                 <p class="text-xs lg:text-sm text-ink-muted mb-2">{{ $immunizationCount }} dose(s) recorded.</p>
                 <a href="{{ route('immunizations.patient', $patient->id) }}" class="inline-flex items-center justify-center w-full px-3 py-2 rounded-lg text-xs lg:text-sm font-medium bg-teal-50 text-teal-700 hover:bg-teal-100 transition">

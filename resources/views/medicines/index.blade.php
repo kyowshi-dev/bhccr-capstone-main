@@ -36,8 +36,7 @@
             </ul>
         </div>
     @endif
-
-
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
         <div class="lg:col-span-2">
             <div class="rounded-xl border overflow-hidden" style="background: var(--bg-surface-elevated); border-color: var(--border);">
                 <form id="bulk-delete-form" action="{{ route('medicines.bulk-delete') }}" method="POST" onsubmit="return confirmBulkDelete();">
@@ -56,10 +55,7 @@
                                 <tr>
                                     <th class="w-10 px-2 py-2 lg:py-3 text-left" style="color: var(--ink-muted);"><input type="checkbox" id="select-all" class="align-middle"></th>
                                     <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium" style="color: var(--ink-muted);">Name</th>
-                                    
                                     <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden xl:table-cell" style="color: var(--ink-muted);">Form</th>
-                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden xl:table-cell" style="color: var(--ink-muted);">Manufacturer</th>
-                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden lg:table-cell" style="color: var(--ink-muted);">Expiration</th>
                                     <th class="px-3 lg:px-4 py-2 lg:py-3 text-right text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);"></th>
                                 </tr>
                             </thead>
@@ -69,19 +65,6 @@
                                         <td class="w-10 px-2 py-2 lg:py-3 text-center" style="color: var(--ink);"><input type="checkbox" name="ids[]" value="{{ $medicine->id }}" class="row-checkbox align-middle"></td>
                                         <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $medicine->name ?? '—' }}</td>
                                         <td class="px-3 lg:px-4 py-2 lg:py-3 hidden xl:table-cell" style="color: var(--ink-muted);">{{ $medicine->form ?? '—' }}</td>
-                                        <td class="px-3 lg:px-4 py-2 lg:py-3 hidden xl:table-cell" style="color: var(--ink-muted);">{{ $medicine->manufacturer ?? '—' }}</td>
-                                        <td class="px-3 lg:px-4 py-2 lg:py-3 hidden lg:table-cell" style="color: var(--ink-muted);">
-                                            @if ($medicine->expiration_date)
-                                                {{ \Carbon\Carbon::parse($medicine->expiration_date)->format('M d, Y') }}
-                                                @if (\Carbon\Carbon::parse($medicine->expiration_date)->isPast())
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-danger-soft text-danger w-fit ml-2">
-                                                        Expired
-                                                    </span>
-                                                @endif
-                                            @else
-                                                —
-                                            @endif
-                                        </td>
                                         <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
                                             <a href="{{ route('medicines.show', $medicine->id) }}" class="text-sm font-medium hover:underline" style="color: var(--primary);">View</a>
                                             <span class="mx-2" style="color: var(--ink-muted);">·</span>
@@ -111,9 +94,9 @@
         </div>
 
         <div>
-            <div class="rounded-xl border p-5 lg:p-6" style="background: var(--bg-surface); border-color: var(--border); margin-top: 10vh;">
+            <div class="rounded-xl border p-5 lg:p-6" style="background: var(--bg-surface); border-color: var(--border);">
                 <h2 class="font-display font-semibold text-lg mb-4" style="color: var(--ink);">Import CSV</h2>
-                <p class="text-sm mb-4" style="color: var(--ink-muted);">Upload a CSV file to bulk import medicines. The file should have columns: name (required), generic_name, strength, form, manufacturer, expiration_date, is_active.</p>
+                <p class="text-sm mb-4" style="color: var(--ink-muted);">Upload a CSV file to bulk import medicines. The file should have columns: name (required), form.</p>
                 
                 <form action="{{ route('medicines.import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                     @csrf
@@ -131,9 +114,9 @@
                     <details class="text-sm">
                         <summary class="cursor-pointer font-medium" style="color: var(--ink-muted);">CSV Format Example</summary>
                         <div class="mt-2 p-3 rounded-lg" style="background: var(--bg-surface-elevated); border: 1px solid var(--border);">
-                            <pre class="text-xs" style="color: var(--ink-muted);">name,generic_name,strength,form,manufacturer,expiration_date,is_active
-Paracetamol 500mg Tablet,Paracetamol,500mg,Tablet,Acme Pharma,2025-12-31,1
-Amoxicillin 500mg Capsule,Amoxicillin,500mg,Capsule,BioMed Ltd,2024-06-15,1</pre>
+                            <pre class="text-xs" style="color: var(--ink-muted);">name,form
+Paracetamol 500mg Tablet,Tablet
+Amoxicillin 500mg Capsule,Capsule</pre>
                         </div>
                     </details>
                 </div>
@@ -170,10 +153,22 @@ Amoxicillin 500mg Capsule,Amoxicillin,500mg,Capsule,BioMed Ltd,2024-06-15,1</pre
                 window.confirmBulkDelete = function(){
                     const checked = document.querySelectorAll('input[name="ids[]"]:checked').length;
                     if(checked === 0){
-                        alert('Please select at least one medicine to delete.');
+                        Swal.fire({title: 'No selection', text: 'Please select at least one medicine to delete.', icon: 'warning', confirmButtonColor: 'var(--primary)'});
                         return false;
                     }
-                    return confirm('Delete selected medicines? This action cannot be undone.');
+                    Swal.fire({
+                        title: 'Delete selected medicines?',
+                        text: 'This action cannot be undone.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: 'var(--danger)',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Delete',
+                        cancelButtonText: 'Cancel',
+                    }).then((result) => {
+                        if (result.isConfirmed) document.getElementById('bulk-delete-form').submit();
+                    });
+                    return false;
                 }
             })();
         </script>

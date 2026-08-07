@@ -55,7 +55,7 @@
 
                         <div>
                             <label for="administer_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
-                                Date given <span style="color: var(--danger);">*</span>
+                                Date given <span class="font-normal" style="color: var(--ink-subtle);">(optional — today if blank)</span>
                             </label>
                             <input id="administer_date" name="date_given" type="date" max="{{ now()->toDateString() }}"
                                    value="{{ old('date_given', now()->toDateString()) }}"

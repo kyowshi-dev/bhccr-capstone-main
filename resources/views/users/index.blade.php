@@ -24,7 +24,7 @@
 
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-            <h1 class="text-2xl lg:text-3xl font-extrabold" style="color: var(--ink);">User Management</h1>
+            <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">User Management</h1>
             <p class="text-xs lg:text-sm text-ink-muted mt-1">
                 View and manage all registered users in the system.
             </p>

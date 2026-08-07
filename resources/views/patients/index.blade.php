@@ -38,6 +38,7 @@
     <div class="rounded-xl" x-data="patientSearch()">
         <div class="relative">
             <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none" style="color: var(--ink-subtle);">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
             </span>
             <input type="text" x-model="query" @input.debounce.300ms="search()"
                    placeholder="Search"
@@ -60,6 +61,9 @@
         <div x-show="query.length > 1 && results.length === 0 && !loading" class="mt-3 rounded-lg border p-6 text-center" style="display: none; border-color: var(--border); background: var(--bg-surface);">
             <p class="text-sm font-medium mt-2" style="color: var(--ink);">No results found</p>
             <p class="text-xs mt-1" style="color: var(--ink-muted);">Try a different search term or patient ID</p>
+        </div>
+        <div x-show="loading" class="mt-3 rounded-lg border p-4 text-center" style="display: none; border-color: var(--border); background: var(--bg-surface);">
+            <p class="text-sm" style="color: var(--ink-muted);">Searching...</p>
         </div>
     </div>
 

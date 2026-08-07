@@ -89,15 +89,22 @@
              style="background: var(--teal-soft); color: var(--primary);">
             <i class="fa-solid fa-person-pregnant text-xl" aria-hidden="true"></i>
         </div>
-        <p class="mt-3 text-sm font-medium" style="color: var(--ink);">Maternal tracking is coming soon</p>
+        <p class="mt-3 text-sm font-medium" style="color: var(--ink);">Maternal care module</p>
         <p class="text-xs mt-1 mx-auto max-w-md" style="color: var(--ink-muted);">
-            Pre-natal and post-natal records will appear here once the maternal module is released. You can still update patient records in the meantime.
+            Manage prenatal, postnatal, and family planning records for every registered mother in the barangay.
         </p>
-        @if (auth()->user()?->hasPermission('patients'))
-            <a href="{{ route('patients.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold text-white transition hover:opacity-90 mt-4" style="background: var(--primary);">
-                <i class="fa-solid fa-users" aria-hidden="true"></i>
-                View patient records
-            </a>
+        @if (auth()->user()?->hasPermission('maternal'))
+            <div class="flex flex-wrap items-center justify-center gap-2 mt-4">
+                <a href="{{ route('maternal.prenatal.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold text-white transition hover:opacity-90" style="background: var(--primary);">
+                    <i class="fa-solid fa-baby-carriage" aria-hidden="true"></i> Prenatal
+                </a>
+                <a href="{{ route('maternal.postnatal.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold text-white transition hover:opacity-90" style="background: var(--primary);">
+                    <i class="fa-solid fa-child-reaching" aria-hidden="true"></i> Postnatal
+                </a>
+                <a href="{{ route('maternal.family-planning.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold text-white transition hover:opacity-90" style="background: var(--primary);">
+                    <i class="fa-solid fa-hand-holding-heart" aria-hidden="true"></i> Family Planning
+                </a>
+            </div>
         @endif
     </div>
 

@@ -85,7 +85,7 @@
                             style="border-color: var(--border); background: var(--bg-surface);">
                         <option value="">All zones</option>
                         @foreach ($zones as $zone)
-                            <option value={{ $zone_id == $zone->id ? 'selected' : '' }}>
+                            <option value="{{ $zone->id }}" {{ $zone_id == $zone->id ? 'selected' : '' }}>
                                 {{ $zone->zone_number }}
                             </option>
                         @endforeach
@@ -262,10 +262,10 @@
 </div>
 
 <!-- Zone Reassignment Modal -->
-<div id="zoneModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+<div id="zoneModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="zoneModalTitle">
     <div class="bg-surface rounded-xl shadow-lg p-6 max-w-md w-full mx-4"
          style="background: var(--bg-surface-elevated);">
-        <h2 class="text-lg font-semibold mb-4" style="color: var(--ink);">Reassign Zone</h2>
+        <h2 id="zoneModalTitle" class="text-lg font-semibold mb-4" style="color: var(--ink);">Reassign Zone</h2>
         <form id="zoneReassignForm" method="POST" action="{{ route('households.update-zone') }}">
             @csrf
             <div class="mb-4">
@@ -324,7 +324,7 @@ function clearSelection() {
 function submitBulkAction(formId) {
     const checkboxes = document.querySelectorAll('.household-checkbox:checked');
     if (checkboxes.length === 0) {
-        alert('Please select at least one household.');
+        Swal.fire({title: 'No selection', text: 'Please select at least one household.', icon: 'warning', confirmButtonColor: 'var(--primary)'});
         return;
     }
     
@@ -358,7 +358,7 @@ function submitBulkAction(formId) {
 function openZoneModal() {
     const checkboxes = document.querySelectorAll('.household-checkbox:checked');
     if (checkboxes.length === 0) {
-        alert('Please select at least one household.');
+        Swal.fire({title: 'No selection', text: 'Please select at least one household.', icon: 'warning', confirmButtonColor: 'var(--primary)'});
         return;
     }
 
@@ -385,6 +385,14 @@ window.addEventListener('click', function(event) {
     const modal = document.getElementById('zoneModal');
     if (event.target === modal) {
         closeZoneModal();
+    }
+});
+window.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('zoneModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            closeZoneModal();
+        }
     }
 });
 </script>
