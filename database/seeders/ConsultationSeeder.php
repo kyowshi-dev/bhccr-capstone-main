@@ -2,99 +2,163 @@
 
 namespace Database\Seeders;
 
-use App\Models\Consultation;
-use App\Models\Patient;
+use App\Enums\ConsultationStatus;
 use App\Models\HealthWorker;
+use App\Models\Patient;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class ConsultationSeeder extends Seeder
 {
     public function run(): void
     {
-        $statuses = ['triage', 'nurse_review', 'doctor_review', 'in_progress', 'completed', 'referred'];
-        $modeOfTransaction = ['Walk-in', 'Referral', 'Scheduled', 'Emergency'];
-        $chiefComplaints = [
-            'Cough and Cold',
-            'Fever',
-            'Headache',
-            'Stomach Pain',
-            'Dizziness',
-            'High Blood Pressure',
-            'Wound/Injury',
-            'Prenatal Checkup',
-            'Immunization',
-        ];
-
-        // Get all patients and health workers
-        $patients = Patient::all();
+        $patients = Patient::query()->orderBy('id')->get();
         $healthWorkers = HealthWorker::all();
 
         if ($patients->isEmpty() || $healthWorkers->isEmpty()) {
-            $this->command->warn('Please run PatientSeeder and ensure health workers exist before running ConsultationSeeder.');
+            $this->command?->warn('Please run PatientSeeder and ensure health workers exist before running ConsultationSeeder.');
+
             return;
         }
 
+        $nurse = $healthWorkers->firstWhere('role', 'Nurse') ?? $healthWorkers->first();
+        $doctor = $healthWorkers->firstWhere('role', 'Doctor') ?? $healthWorkers->first();
+        $encoder = $healthWorkers->firstWhere('role', 'BHW') ?? $nurse;
+
+        $chiefComplaints = [
+            'Ubo ug sip-on',
+            'Sakit sa tiyan',
+            'Sakit sa ulo',
+            'Hilanat',
+            'Sakit sa lutahan',
+            'Pasmo',
+            'High blood',
+            'Diabetes follow-up',
+        ];
+        $modeOfTransaction = ['Walk-in', 'Visited', 'Referral'];
+
         $consultations = [];
+        $referredIndexes = [];
 
-        // Create 2-3 consultations per patient
-        foreach ($patients as $patient) {
-            $consultationCount = rand(1, 3);
+        // Exact status distribution across the whole seed set:
+        // 1 nurse_review, 1 doctor_review, 1 referred, everything else completed.
+        $firstConsultationStatuses = array_fill(0, $patients->count(), ConsultationStatus::Completed->value);
+        $firstConsultationStatuses[0] = ConsultationStatus::NurseReview->value;
+        $firstConsultationStatuses[1] = ConsultationStatus::DoctorReview->value;
+        $firstConsultationStatuses[2] = ConsultationStatus::Referred->value;
 
-            for ($i = 0; $i < $consultationCount; $i++) {
-                $status = $statuses[array_rand($statuses)];
-                $complaint = $chiefComplaints[array_rand($chiefComplaints)];
-                $worker = $healthWorkers->random();
+        foreach ($patients as $index => $patient) {
+            $statuses = [
+                $firstConsultationStatuses[$index],
+                ConsultationStatus::Completed->value,
+            ];
 
-                // Get chief complaint ID
-                $consultationData = [
-                    'patient_id' => $patient->id,
-                    'worker_id' => $worker->id,
-                    'status' => $status,
-                    'is_locked' => $status === 'completed' ? rand(0, 1) : false,
-                    'complaint_text' => $complaint,
-                    'nature_of_visit' => rand(0, 1) ? 'Follow-up' : 'Initial Consultation',
-                    'created_at' => Carbon::now()->subDays(rand(1, 180)),
-                    'updated_at' => Carbon::now()->subDays(rand(0, 180)),
-                ];
-
-                // Add optional fields only if they exist in the database
-                if (Schema::hasColumn('consultations', 'notes')) {
-                    $consultationData['notes'] = rand(0, 1) ? 'Patient presented with symptoms. Advised to return for follow-up.' : null;
+            foreach ($statuses as $status) {
+                if ($status === ConsultationStatus::Referred->value) {
+                    $referredIndexes[] = count($consultations);
                 }
 
-                if (Schema::hasColumn('consultations', 'mode_of_transaction')) {
-                    $consultationData['mode_of_transaction'] = $modeOfTransaction[array_rand($modeOfTransaction)];
-                }
-
-                if (Schema::hasColumn('consultations', 'referred_from')) {
-                    $consultationData['referred_from'] = $consultationData['mode_of_transaction'] === 'Referral' ? 'Barangay Health Center' : null;
-                }
-
-                if (Schema::hasColumn('consultations', 'refer_to_higher_facility')) {
-                    $consultationData['refer_to_higher_facility'] = $status === 'referred' ? rand(0, 1) : false;
-                }
-
-                if (Schema::hasColumn('consultations', 'referred_to')) {
-                    $consultationData['referred_to'] = $status === 'referred' ? 'County Hospital' : null;
-                }
-
-                if (Schema::hasColumn('consultations', 'referral_reason')) {
-                    $consultationData['referral_reason'] = $status === 'referred' ? 'Need for specialist consultation' : null;
-                }
-
-                $consultations[] = $consultationData;
+                $consultations[] = $this->consultationPayload(
+                    $patient,
+                    $encoder,
+                    $nurse,
+                    $doctor,
+                    $status,
+                    $chiefComplaints,
+                    $modeOfTransaction,
+                );
             }
         }
 
-        // Insert in chunks to avoid memory issues
-        $chunks = array_chunk($consultations, 500);
-        foreach ($chunks as $chunk) {
-            DB::table('consultations')->insert($chunk);
+        $this->insertConsultationsWithReferrals($consultations, $referredIndexes);
+
+        $this->command?->info('Consultations seeded successfully: '.count($consultations).' records created.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function consultationPayload(
+        Patient $patient,
+        HealthWorker $encoder,
+        HealthWorker $nurse,
+        HealthWorker $doctor,
+        string $status,
+        array $chiefComplaints,
+        array $modeOfTransaction,
+    ): array {
+        $createdAt = Carbon::now()->subDays(rand(1, 180));
+        $nurseValidated = in_array($status, [
+            ConsultationStatus::DoctorReview->value,
+            ConsultationStatus::Completed->value,
+            ConsultationStatus::Referred->value,
+        ], true);
+
+        $data = [
+            'patient_id' => $patient->id,
+            'status' => $status,
+            'nurse_validated_at' => $nurseValidated ? $createdAt->copy()->addMinutes(rand(30, 240)) : null,
+            'nurse_validated_by' => $nurseValidated ? $nurse->id : null,
+            'attending_doctor_id' => in_array($status, [
+                ConsultationStatus::Completed->value,
+                ConsultationStatus::Referred->value,
+            ], true) ? $doctor->id : null,
+            'is_locked' => in_array($status, [
+                ConsultationStatus::Completed->value,
+                ConsultationStatus::Referred->value,
+            ], true),
+            'complaint_text' => $chiefComplaints[array_rand($chiefComplaints)],
+            'nature_of_visit' => rand(0, 1) ? 'Follow-up' : 'Initial Consultation',
+            'notes' => 'Patient presented with symptoms. Advised on home care and follow-up.',
+            'mode_of_transaction' => $status === ConsultationStatus::Referred->value
+                ? 'Referral'
+                : $modeOfTransaction[array_rand($modeOfTransaction)],
+            'created_at' => $createdAt,
+            'updated_at' => $createdAt->copy()->addMinutes(rand(0, 60)),
+        ];
+
+        // The worker who handled the intake differs per stage of the workflow:
+        // nurse handles consultations awaiting review, the BHW encoder handles the rest.
+        $data['worker_id'] = in_array($status, [
+            ConsultationStatus::NurseReview->value,
+            ConsultationStatus::DoctorReview->value,
+        ], true) ? $nurse->id : $encoder->id;
+
+        if ($status === ConsultationStatus::Referred->value) {
+            $data['referred_from'] = 'Barangay Health Center';
         }
 
-        $this->command->info('Consultations seeded successfully: ' . count($consultations) . ' records created.');
+        return $data;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $consultations
+     * @param  list<int>  $referredIndexes  Flat consultation indexes that need an outward referral
+     */
+    private function insertConsultationsWithReferrals(array $consultations, array $referredIndexes): void
+    {
+        $referred = array_flip($referredIndexes);
+
+        foreach ($consultations as $index => $row) {
+            $consultationId = DB::table('consultations')->insertGetId($row);
+
+            if (! isset($referred[$index])) {
+                continue;
+            }
+
+            $createdAt = $row['created_at'];
+            DB::table('outward_referrals')->insert([
+                'consultation_id' => $consultationId,
+                'destination_facility' => 'Tagoloan District Hospital',
+                'pertinent_history' => $row['notes'] ?? $row['complaint_text'],
+                'actions_taken' => 'Initial assessment and supportive care given.',
+                'specific_details' => 'Referred for specialist consultation.',
+                'status' => 'pending',
+                'created_at' => $createdAt,
+                'updated_at' => $createdAt,
+            ]);
+        }
     }
 }

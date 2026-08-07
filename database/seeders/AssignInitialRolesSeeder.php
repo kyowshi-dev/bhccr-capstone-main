@@ -16,13 +16,11 @@ class AssignInitialRolesSeeder extends Seeder
     public function run(): void
     {
         $rolePermissionMap = [
-            'Admin' => Permission::pluck('name')->toArray(),
+            'Admin' => Permission::query()->pluck('name')->toArray(),
             'Doctor' => ['patients', 'consultations', 'medicines', 'print_handouts', 'dashboard_handouts_clinical'],
-            'Nurse' => ['patients', 'consultations', 'medicines', 'print_handouts', 'dashboard_handouts_clinical'],
+            'Nurse' => ['patients', 'consultations', 'medicines', 'immunizations', 'print_handouts', 'dashboard_handouts_clinical'],
             'Midwife' => ['patients', 'consultations', 'immunizations', 'reports', 'print_handouts', 'dashboard_handouts_clinical', 'dashboard_handouts_midwife'],
             'BHW' => ['household', 'patients', 'consultations', 'reports', 'print_handouts', 'dashboard_handouts_bhw'],
-            'BNS' => ['patients', 'immunizations', 'reports'],
-            'User' => [],
         ];
 
         foreach ($rolePermissionMap as $roleName => $permissionNames) {
@@ -32,7 +30,12 @@ class AssignInitialRolesSeeder extends Seeder
                 continue;
             }
 
-            $role->permissions()->sync(Permission::whereIn('name', $permissionNames)->pluck('id'));
+            $permissionIds = Permission::query()
+                ->whereIn('name', $permissionNames, 'and', false)
+                ->pluck('id')
+                ->all();
+
+            $role->permissions()->sync($permissionIds);
         }
     }
 }

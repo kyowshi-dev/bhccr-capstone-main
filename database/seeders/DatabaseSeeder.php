@@ -17,8 +17,8 @@ class DatabaseSeeder extends Seeder
             ['id' => 3, 'role_name' => 'Midwife'], // Midwife
             ['id' => 4, 'role_name' => 'BHW'],     // Encoder
             ['id' => 5, 'role_name' => 'BNS'],     // Nutrition Scholar
-            ['role_name' => 'Doctor'],
-            ['role_name' => 'User'],
+            ['id' => 6, 'role_name' => 'Doctor'],
+            ['id' => 7, 'role_name' => 'User'],
         ];
         DB::table('user_roles')->insertOrIgnore($roles);
 
@@ -90,13 +90,13 @@ class DatabaseSeeder extends Seeder
         // 10. ICD-10 diagnosis codes (optional: copy icd102019syst_codes.sql to storage/app/ or set BHCIS_ICD_SQL_PATH)
         $this->call(IcdDiagnosisSeeder::class);
 
-        // 11. Sample Audit Logs
-        $this->call(AuditLogSeeder::class);
-
-        // 12. PATIENTS
+        // 11. PATIENTS
         $this->call(PatientSeeder::class);
 
-        // 13. CONSULTATIONS
+        // 12. CONSULTATIONS + Outward Referrals
         $this->call(ConsultationSeeder::class);
+
+        // 13. Sample Audit Logs (references the real users, patients, and consultations seeded above)
+        $this->call(AuditLogSeeder::class);
     }
 }
