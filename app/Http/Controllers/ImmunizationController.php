@@ -49,7 +49,7 @@ class ImmunizationController extends Controller
                 'patient_id' => $entry['patient']->id,
                 'first_name' => $entry['patient']->first_name,
                 'last_name' => $entry['patient']->last_name,
-                'due_date' => $entry['due_date']?->toDateString(),
+                'due_date' => $entry['due_date']->toDateString(),
                 'dose_number' => $entry['dose_number'],
                 'vaccine_name' => $entry['vaccine']->vaccine_name,
             ])
@@ -175,6 +175,41 @@ class ImmunizationController extends Controller
             ->with('success', $vaccine->vaccine_name.' recorded (dose '.$record->dose_number.').'.$next);
     }
 
+    /**
+     * Quick "Mark as done" for patients who received the dose elsewhere
+     * (hospital, another facility). Records with today's date when the
+     * actual date is unknown.
+     */
+    public function markGiven($id, Vaccine $vaccine): RedirectResponse
+    {
+        $patient = Patient::findOrFail($id);
+
+        if (! auth()->user()->canAccessPatient($patient)) {
+            abort(403, 'This patient is outside your assigned zones.');
+        }
+
+        if (! $this->service()->vaccineMatchesAge($patient, $vaccine)) {
+            return back()->withErrors(['vaccine_id' => 'This vaccine is not appropriate for this patient.']);
+        }
+
+        try {
+            $record = $this->service()->administer($patient, $vaccine, [
+                'date_given' => null,
+                'temp_recorded' => null,
+                'notes' => 'Marked as done — administered elsewhere',
+                'override_reason' => null,
+                'administered_elsewhere' => true,
+                'administered_by' => $this->currentWorkerId(),
+            ]);
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
+        }
+
+        return redirect()
+            ->route('immunizations.index')
+            ->with('success', $vaccine->vaccine_name.' (dose '.$record->dose_number.') marked as done — recorded as '.$record->date_given->format('M j, Y').'.');
+    }
+
     public function enrollInfant(StoreInfantWithHouseholdRequest $request): RedirectResponse
     {
         $user = auth()->user();
@@ -252,9 +287,7 @@ class ImmunizationController extends Controller
                 'id' => $household->id,
                 'family_name_head' => $household->family_name_head,
                 'zone_id' => $household->zone_id,
-                'zone' => $household->zone !== null
-                    ? ['zone_number' => $household->zone->zone_number]
-                    : null,
+                'zone' => ['zone_number' => $household->zone->zone_number],
                 'patients_count' => $household->patients_count,
             ])->values()
         );

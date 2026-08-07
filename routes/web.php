@@ -3,11 +3,14 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FamilyPlanningController;
 use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\ImmunizationController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\PostnatalController;
+use App\Http\Controllers\PrenatalController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReportController;
@@ -200,6 +203,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/patients/{id}/immunizations/administer', [ImmunizationController::class, 'administer'])
         ->middleware('permission:immunizations')
         ->name('immunizations.administer');
+    Route::post('/patients/{id}/immunizations/{vaccine}/mark-done', [ImmunizationController::class, 'markGiven'])
+        ->middleware('permission:immunizations')
+        ->name('immunizations.mark-done');
     Route::post('/immunizations/infants', [ImmunizationController::class, 'enrollInfant'])
         ->middleware('permission:immunizations')
         ->name('immunizations.enroll-infant');
@@ -209,6 +215,70 @@ Route::middleware('auth')->group(function () {
     Route::get('/immunizations/household-match', [ImmunizationController::class, 'householdMatch'])
         ->middleware('permission:immunizations', 'throttle:60,1')
         ->name('immunizations.household-match');
+
+    // 5a. MATERNAL CARE (Family Planning / Prenatal / Postnatal)
+    Route::get('/maternal/family-planning', [FamilyPlanningController::class, 'index'])
+        ->middleware('permission:maternal')
+        ->name('maternal.family-planning.index');
+    Route::get('/patients/{patient}/family-planning', [FamilyPlanningController::class, 'patient'])
+        ->middleware('permission:maternal')
+        ->name('maternal.family-planning.patient');
+    Route::post('/patients/{patient}/family-planning', [FamilyPlanningController::class, 'store'])
+        ->middleware('permission:maternal')
+        ->name('maternal.family-planning.store');
+    Route::put('/maternal/family-planning/{client}', [FamilyPlanningController::class, 'update'])
+        ->middleware('permission:maternal')
+        ->name('maternal.family-planning.update');
+    Route::post('/maternal/family-planning/{client}/visits', [FamilyPlanningController::class, 'addVisit'])
+        ->middleware('permission:maternal')
+        ->name('maternal.family-planning.visits.store');
+    Route::get('/maternal/family-planning/{client}/print', [FamilyPlanningController::class, 'print'])
+        ->middleware('permission:maternal')
+        ->name('maternal.family-planning.print');
+
+    Route::get('/maternal/prenatal', [PrenatalController::class, 'index'])
+        ->middleware('permission:maternal')
+        ->name('maternal.prenatal.index');
+    Route::get('/patients/{patient}/prenatal', [PrenatalController::class, 'patient'])
+        ->middleware('permission:maternal')
+        ->name('maternal.prenatal.patient');
+    Route::post('/patients/{patient}/pregnancies', [PrenatalController::class, 'store'])
+        ->middleware('permission:maternal')
+        ->name('maternal.pregnancies.store');
+    Route::put('/patients/{patient}/maternal-profile', [PrenatalController::class, 'updateProfile'])
+        ->middleware('permission:maternal')
+        ->name('maternal.profile.update');
+    Route::put('/pregnancies/{pregnancy}', [PrenatalController::class, 'updatePregnancy'])
+        ->middleware('permission:maternal')
+        ->name('maternal.pregnancies.update');
+    Route::post('/pregnancies/{pregnancy}/visits', [PrenatalController::class, 'addVisit'])
+        ->middleware('permission:maternal')
+        ->name('maternal.prenatal.visits.store');
+    Route::put('/prenatal-visits/{visit}', [PrenatalController::class, 'updateVisit'])
+        ->middleware('permission:maternal')
+        ->name('maternal.prenatal.visits.update');
+    Route::get('/pregnancies/{pregnancy}/print', [PrenatalController::class, 'print'])
+        ->middleware('permission:maternal')
+        ->name('maternal.pregnancies.print');
+
+    Route::get('/maternal/postnatal', [PostnatalController::class, 'index'])
+        ->middleware('permission:maternal')
+        ->name('maternal.postnatal.index');
+    Route::get('/patients/{patient}/postnatal', [PostnatalController::class, 'patient'])
+        ->middleware('permission:maternal')
+        ->name('maternal.postnatal.patient');
+    Route::post('/patients/{patient}/postnatal', [PostnatalController::class, 'store'])
+        ->middleware('permission:maternal')
+        ->name('maternal.postnatal.store');
+    Route::put('/postnatal/{postnatal}', [PostnatalController::class, 'update'])
+        ->middleware('permission:maternal')
+        ->name('maternal.postnatal.update');
+    Route::post('/postnatal/{postnatal}/complete-visit', [PostnatalController::class, 'completePostpartumVisit'])
+        ->middleware('permission:maternal')
+        ->name('maternal.postnatal.complete-visit');
+    Route::get('/postnatal/{postnatal}/print', [PostnatalController::class, 'print'])
+        ->middleware('permission:maternal')
+        ->name('maternal.postnatal.print');
 
     // 6. REPORTS (FHSIS)
     Route::get('/reports', [ReportController::class, 'index'])

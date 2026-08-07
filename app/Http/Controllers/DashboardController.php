@@ -6,6 +6,7 @@ use App\Enums\ConsultationStatus;
 use App\Helpers\PatientCode;
 use App\Models\User;
 use App\Services\DashboardQueryService;
+use App\Services\MaternalQueryService;
 use Asantibanez\LivewireCharts\Models\LineChartModel;
 use Asantibanez\LivewireCharts\Models\PieChartModel;
 use Carbon\Carbon;
@@ -21,7 +22,8 @@ class DashboardController extends Controller
         $user = auth()->user();
         $today = Carbon::today();
 
-        $roleName = strtolower(trim((string) ($user->role?->role_name ?? $this->healthWorkerRole($user->id) ?? '')));
+        $role = $user->role;
+        $roleName = strtolower(trim((string) ($role ? $role->role_name : ($this->healthWorkerRole($user->id) ?? ''))));
 
         return match ($roleName) {
             'bhw' => $this->bhwDashboard($request, $user, $today),
@@ -97,8 +99,14 @@ class DashboardController extends Controller
     {
         $handoutData = $this->handoutData($request, $user, 'midwife', limit: 8, defaultToToday: true);
 
+        $maternalQuery = app(MaternalQueryService::class);
+
         return view('dashboard_midwife', [
             'showResultsReady' => $user->canViewDashboardHandouts('midwife'),
+            'prenatalRegistrants' => $maternalQuery->prenatalRegistrants(),
+            'dueThisMonth' => $maternalQuery->dueThisMonth($today),
+            'postnatalDue' => $maternalQuery->postnatalDue($today),
+            'highRiskReferrals' => $maternalQuery->highRiskReferrals(),
             ...$handoutData,
         ]);
     }
@@ -262,11 +270,15 @@ class DashboardController extends Controller
             }
         }
 
-        $doctorsOnDuty = DB::table('health_workers')->count();
+        $activeWorkers = DB::table('health_workers')
+            ->join('users', 'health_workers.user_id', '=', 'users.id')
+            ->where('users.is_active', true);
 
-        $onDutyStaff = DB::table('health_workers')
-            ->select('first_name', 'last_name', 'role')
-            ->orderBy('last_name')
+        $doctorsOnDuty = (clone $activeWorkers)->count();
+
+        $onDutyStaff = (clone $activeWorkers)
+            ->select('health_workers.first_name', 'health_workers.last_name', 'health_workers.role')
+            ->orderBy('health_workers.last_name')
             ->limit(5)
             ->get()
             ->map(function ($row) {

@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Spatie\LaravelPdf\Enums\Format;
 use Spatie\LaravelPdf\Facades\Pdf;
-use Symfony\Component\HttpFoundation\Response;
+use Spatie\LaravelPdf\PdfBuilder;
 
 class ConsultationController extends Controller
 {
@@ -104,8 +104,6 @@ class ConsultationController extends Controller
     {
         $this->guardPatientAccess($patient);
 
-        $patient->age = Carbon::parse($patient->date_of_birth)->age;
-
         $previousVitals = DB::table('vitals')
             ->join('consultations', 'vitals.consultation_id', '=', 'consultations.id')
             ->where('consultations.patient_id', $patient->id)
@@ -153,11 +151,7 @@ class ConsultationController extends Controller
         $this->authorizePermission('consultations');
         $this->guardConsultationAccess($consultation);
 
-        $patient = DB::table('patients')->find($consultation->patient_id);
-
-        if ($patient) {
-            $patient->age = Carbon::parse($patient->date_of_birth)->age;
-        }
+        $patient = Patient::query()->find($consultation->patient_id);
 
         $allVitals = Vitals::query()
             ->where('vitals.consultation_id', $consultation->id)
@@ -186,7 +180,8 @@ class ConsultationController extends Controller
             ];
         }
 
-        $currentUserRole = strtolower((string) (auth()->user()->healthWorker?->role ?? ''));
+        $healthWorker = auth()->user()->healthWorker;
+        $currentUserRole = strtolower((string) ($healthWorker ? $healthWorker->role : ''));
 
         $canReferExternally = in_array($currentUserRole, ['doctor', 'nurse'], true);
         $canAcknowledgeIntake = $currentUserRole === 'nurse';
@@ -286,7 +281,7 @@ class ConsultationController extends Controller
         return view('consultations.handout', ConsultationHandoutService::data($consultation));
     }
 
-    public function downloadHandoutPdf(Consultation $consultation): Response
+    public function downloadHandoutPdf(Consultation $consultation): PdfBuilder
     {
         $this->guardHandoutAccess($consultation);
 
@@ -378,10 +373,6 @@ class ConsultationController extends Controller
         $this->guardConsultationAccess($consultation);
 
         $context = ReferralService::context($consultation);
-
-        if ($context === null) {
-            abort(404, 'Patient not found');
-        }
 
         return response()->json($context);
     }

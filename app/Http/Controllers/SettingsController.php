@@ -7,9 +7,10 @@ use App\Models\User;
 use App\Services\BackupService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SettingsController extends Controller
 {
@@ -56,7 +57,7 @@ class SettingsController extends Controller
         return view('settings.backups', BackupService::databaseInfo());
     }
 
-    public function exportBackup(Request $request): Response|RedirectResponse
+    public function exportBackup(Request $request): RedirectResponse|BinaryFileResponse|StreamedResponse
     {
         $this->confirmCurrentPassword($request);
 
