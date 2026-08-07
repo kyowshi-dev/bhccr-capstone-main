@@ -7,6 +7,34 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
 
+/**
+ * @property int $id
+ * @property int|null $user_id
+ * @property string $action
+ * @property string $table_name
+ * @property int|null $record_id
+ * @property array<array-key, mixed>|null $old_values
+ * @property array<array-key, mixed>|null $new_values
+ * @property string|null $ip_address
+ * @property \Illuminate\Support\Carbon $created_at
+ * @property-read string $formatted_activity
+ * @property-read User|null $user
+ *
+ * @method static Builder<static>|AuditLog newModelQuery()
+ * @method static Builder<static>|AuditLog newQuery()
+ * @method static Builder<static>|AuditLog query()
+ * @method static Builder<static>|AuditLog whereAction($value)
+ * @method static Builder<static>|AuditLog whereCreatedAt($value)
+ * @method static Builder<static>|AuditLog whereId($value)
+ * @method static Builder<static>|AuditLog whereIpAddress($value)
+ * @method static Builder<static>|AuditLog whereNewValues($value)
+ * @method static Builder<static>|AuditLog whereOldValues($value)
+ * @method static Builder<static>|AuditLog whereRecordId($value)
+ * @method static Builder<static>|AuditLog whereTableName($value)
+ * @method static Builder<static>|AuditLog whereUserId($value)
+ *
+ * @mixin \Eloquent
+ */
 class AuditLog extends Model
 {
     use Prunable;

@@ -2,13 +2,42 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Traits\LogsActivity;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $consultation_id
+ * @property string $destination_facility
+ * @property string $pertinent_history
+ * @property string|null $actions_taken
+ * @property string|null $specific_details
+ * @property string $status
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Consultation $consultation
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral whereActionsTaken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral whereConsultationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral whereDestinationFacility($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral wherePertinentHistory($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral whereSpecificDetails($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OutwardReferral whereUpdatedAt($value)
+ *
+ * @mixin \Eloquent
+ */
 class OutwardReferral extends Model
 {
     use LogsActivity;
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_COMPLETED = 'completed';

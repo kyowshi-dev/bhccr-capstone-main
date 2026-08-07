@@ -5,7 +5,44 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $consultation_id
+ * @property string $phase
+ * @property int|null $captured_by
+ * @property string|null $bp_systolic
+ * @property string|null $bp_diastolic
+ * @property numeric|null $weight_kg
+ * @property numeric|null $height_cm
+ * @property numeric|null $temperature_c
+ * @property numeric|null $bmi
+ * @property string|null $notes
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Consultation $consultation
+ * @property-read mixed $summary
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereBmi($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereBpDiastolic($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereBpSystolic($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereCapturedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereConsultationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereHeightCm($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals wherePhase($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereTemperatureC($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vitals whereWeightKg($value)
+ *
+ * @mixin \Eloquent
+ */
 class Vitals extends Model
 {
     protected $fillable = [

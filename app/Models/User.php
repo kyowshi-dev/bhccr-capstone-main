@@ -11,9 +11,51 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Notifications\DatabaseNotificationCollection;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * @property int $id
+ * @property string $username
+ * @property string $password
+ * @property string|null $remember_token
+ * @property bool $is_active
+ * @property int|null $role_id
+ * @property string|null $profile_photo_path
+ * @property string|null $bio
+ * @property string|null $email
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read HealthWorker|null $healthWorker
+ * @property-read DatabaseNotificationCollection<int, DatabaseNotification> $notifications
+ * @property-read int|null $notifications_count
+ * @property-read mixed $permissions
+ * @property-read Role|null $role
+ *
+ * @method static Builder<static>|User accessibleConsultations()
+ * @method static Builder<static>|User accessibleHouseholds()
+ * @method static Builder<static>|User accessiblePatients()
+ * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
+ * @method static Builder<static>|User newModelQuery()
+ * @method static Builder<static>|User newQuery()
+ * @method static Builder<static>|User query()
+ * @method static Builder<static>|User whereBio($value)
+ * @method static Builder<static>|User whereCreatedAt($value)
+ * @method static Builder<static>|User whereEmail($value)
+ * @method static Builder<static>|User whereId($value)
+ * @method static Builder<static>|User whereIsActive($value)
+ * @method static Builder<static>|User wherePassword($value)
+ * @method static Builder<static>|User whereProfilePhotoPath($value)
+ * @method static Builder<static>|User whereRememberToken($value)
+ * @method static Builder<static>|User whereRoleId($value)
+ * @method static Builder<static>|User whereUpdatedAt($value)
+ * @method static Builder<static>|User whereUsername($value)
+ *
+ * @mixin \Eloquent
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -53,13 +95,18 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
     public function permissions(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->role?->permissions ?? collect(),
+            get: function () {
+                $role = $this->role;
+
+                return $role ? $role->permissions : collect();
+            },
         );
     }
 

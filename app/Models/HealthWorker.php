@@ -4,10 +4,42 @@ namespace App\Models;
 
 use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property string $first_name
+ * @property string $last_name
+ * @property string $role
+ * @property string|null $contact_number
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Consultation> $consultations
+ * @property-read int|null $consultations_count
+ * @property-read mixed $name
+ * @property-read User $user
+ * @property-read Collection<int, Zone> $zones
+ * @property-read int|null $zones_count
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|HealthWorker newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|HealthWorker newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|HealthWorker query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|HealthWorker whereContactNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|HealthWorker whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|HealthWorker whereFirstName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|HealthWorker whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|HealthWorker whereLastName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|HealthWorker whereRole($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|HealthWorker whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|HealthWorker whereUserId($value)
+ *
+ * @mixin \Eloquent
+ */
 class HealthWorker extends Model
 {
     use LogsActivity;
