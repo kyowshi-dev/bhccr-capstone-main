@@ -1,13 +1,13 @@
 {{--
     Shared DOH / iClinicSys form header.
     $formTitle — e.g. PATIENT ENROLMENT RECORD
-    $serialDigits — number of digit boxes for Family Serial Number (4 or 12)
+    $serialDigits — number of digit boxes for Family Serial Number (default 5)
 --}}
 @php
     $formTitle ??= 'FORM';
-    $serialDigits = (int) ($serialDigits ?? 4);
+    $serialDigits = (int) ($serialDigits ?? 5);
     $serialChars = array_fill(0, $serialDigits, '');
-    $facilityChars = array_fill(0, 4, '');
+    $facilityChars = array_fill(0, $serialDigits, '');
 
     $logoPath = public_path('img/Department_of_Health_(DOH)_PHL.svg.webp');
     if (! file_exists($logoPath)) {
@@ -41,8 +41,8 @@
         <td style="padding:0; width:48%;">
             <table class="form-table nested-table" style="border:0; width:100%; border-collapse:collapse;">
                 <tr>
-                    <td class="label-cell" style="width:65%; text-align:center;">Family Serial Number</td>
-                    <td class="label-cell" style="width:35%; text-align:center;">Facility Code</td>
+                    <td class="label-cell" style="width:50%; text-align:center;">Family Serial Number</td>
+                    <td class="label-cell" style="width:50%; text-align:center;">Facility Code</td>
                 </tr>
                 <tr>
                     <td style="padding:0;">

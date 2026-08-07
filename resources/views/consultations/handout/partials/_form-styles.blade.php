@@ -1,7 +1,7 @@
 <style>
     @page {
-        size: A4 portrait;
-        margin: 6mm;
+        size: 8.5in 13in;
+        margin: 0.5in;
     }
 
     * {
@@ -38,6 +38,7 @@
 
     .iclinic-form {
         width: 100%;
+        min-height: 12in;
         border: 2px solid #000;
         font-family: Arial, Helvetica, sans-serif;
         font-size: 8pt;

@@ -10,7 +10,7 @@
     </style>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="preview-body text-black" x-data="{ showEnrollment: true, showItr: true }">
+<body class="preview-body text-black" x-data="{ showEnrollment: true, showItr: true, showItr2: true }">
     <div class="no-print sticky top-0 z-10 border-b border-gray-300 bg-white px-4 py-3" style="font-family: system-ui, sans-serif;">
         <div style="max-width:760px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between;">
             <div>
@@ -28,6 +28,10 @@
                 <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#374151;cursor:pointer;">
                     <input type="checkbox" x-model="showItr">
                     Form 2 — Individual Treatment Record
+                </label>
+                <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#374151;cursor:pointer;">
+                    <input type="checkbox" x-model="showItr2">
+                    Form 2 (Page 2) — ITR 2
                 </label>
                 <a href="{{ route('consultations.handout.pdf', ['consultation' => $consultation->id]) }}"
                    target="_blank" rel="noopener"
@@ -64,6 +68,16 @@
                 'age' => $age,
                 'consultationAt' => $consultationAt,
                 'attendingProvider' => $attendingProvider,
+            ])
+        </div>
+
+        <div class="iclinic-sheet" x-show="showItr2" x-cloak>
+            @include('consultations.handout.partials.itr2', [
+                'pregnancy' => $pregnancy,
+                'prenatalVisits' => $prenatalVisits,
+                'postnatalRecord' => $postnatalRecord,
+                'fpClient' => $fpClient,
+                'immunizations' => $immunizations,
             ])
         </div>
     </main>

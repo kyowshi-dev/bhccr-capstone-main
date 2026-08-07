@@ -57,8 +57,7 @@
 <section class="iclinic-form" aria-label="Individual Treatment Record">
     @include('consultations.handout.partials._doh-header', [
         'formTitle' => 'INDIVIDUAL TREATMENT RECORD',
-        'serialDigits' => 12,
-        'patient' => $patient,
+        'serialDigits' => 5,
     ])
 
     <table class="form-table" style="border-top:0;">
@@ -159,7 +158,7 @@
                                 </tr>
                             </table>
                         </td>
-                        <td class="padding:0;">
+                        <td style="padding:0;">
                             <table class="form-table" style="border:0; width:100%;">
                                 <tr>
                                     <td class="label-cell" style="width:45%; border:0; border-right:1px solid #000;">Temperature</td>

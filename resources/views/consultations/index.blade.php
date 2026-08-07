@@ -248,7 +248,7 @@
                                     <div class="font-semibold" style="color: var(--ink);">{{ fullName($consultation->patient_last_name, $consultation->patient_first_name) }}</div>
                                     <div class="text-xs mt-1" style="color: var(--ink-muted);">{{ \App\Helpers\PatientCode::format((int) $consultation->patient_id) }}</div>
                                 </td>
-                                <td class="px-4 py-4 text-sm" style="color: var(--ink);">{{ fullName($consultation->worker_last_name, $consultation->worker_first_name) }}</td>
+                                <td class="px-4 py-4 text-sm" style="color: var(--ink);">{{ fullName($consultation->attending_doctor_last_name ?? $consultation->worker_last_name, $consultation->attending_doctor_first_name ?? $consultation->worker_first_name) }}</td>
                                 <td class="px-4 py-4 text-sm" style="color: var(--ink);">
                                     @if (!empty($diagnoses))
                                         <div class="flex flex-wrap gap-2">

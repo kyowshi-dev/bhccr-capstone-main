@@ -25,5 +25,15 @@
             'attendingProvider' => $attendingProvider,
         ])
     </div>
+
+    <div class="iclinic-sheet">
+        @include('consultations.handout.partials.itr2', [
+            'pregnancy' => $pregnancy,
+            'prenatalVisits' => $prenatalVisits,
+            'postnatalRecord' => $postnatalRecord,
+            'fpClient' => $fpClient,
+            'immunizations' => $immunizations,
+        ])
+    </div>
 </body>
 </html>

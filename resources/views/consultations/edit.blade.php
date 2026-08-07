@@ -247,7 +247,7 @@ function addDiagnosis() {
     const remarks = document.getElementById('diagnosisRemarks').value.trim();
     
     if (!name) {
-        alert('Please enter a diagnosis name');
+        Swal.fire({title: 'Missing diagnosis', text: 'Please enter a diagnosis name.', icon: 'warning', confirmButtonColor: 'var(--primary)'});
         return;
     }
     
@@ -286,7 +286,7 @@ function addPrescription() {
     const quantity = document.getElementById('quantity').value.trim();
     
     if (!medicineName) {
-        alert('Please enter a medicine name');
+        Swal.fire({title: 'Missing medicine', text: 'Please enter a medicine name.', icon: 'warning', confirmButtonColor: 'var(--primary)'});
         return;
     }
     
@@ -343,8 +343,17 @@ function checkIfEmpty(listId) {
 
 // Delete diagnosis
 function deleteDiagnosis(id) {
-    if (confirm('Are you sure you want to delete this diagnosis?')) {
-        // Make a DELETE request
+    Swal.fire({
+        title: 'Delete diagnosis?',
+        text: 'This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+    }).then((result) => {
+        if (!result.isConfirmed) return;
         fetch(`{{ route('consultations.diagnosis.delete', ['consultation' => $consultation->id, 'diagnosisId' => '__DID__']) }}`.replace('__DID__', id), {
             method: 'DELETE',
             headers: {
@@ -356,17 +365,26 @@ function deleteDiagnosis(id) {
             if (response.ok) {
                 location.reload();
             } else {
-                alert('Failed to delete diagnosis');
+                Swal.fire({title: 'Error', text: 'Failed to delete diagnosis.', icon: 'error', confirmButtonColor: 'var(--primary)'});
             }
         })
-        .catch(() => alert('Error deleting diagnosis'));
-    }
+        .catch(() => Swal.fire({title: 'Error', text: 'Error deleting diagnosis.', icon: 'error', confirmButtonColor: 'var(--primary)'}));
+    });
 }
 
 // Delete prescription
 function deletePrescription(id) {
-    if (confirm('Are you sure you want to delete this prescription?')) {
-        // Make a DELETE request
+    Swal.fire({
+        title: 'Delete prescription?',
+        text: 'This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+    }).then((result) => {
+        if (!result.isConfirmed) return;
         fetch(`{{ route('consultations.prescription.delete', ['consultation' => $consultation->id, 'prescriptionId' => '__PID__']) }}`.replace('__PID__', id), {
             method: 'DELETE',
             headers: {
@@ -378,11 +396,11 @@ function deletePrescription(id) {
             if (response.ok) {
                 location.reload();
             } else {
-                alert('Failed to delete prescription');
+                Swal.fire({title: 'Error', text: 'Failed to delete prescription.', icon: 'error', confirmButtonColor: 'var(--primary)'});
             }
         })
-        .catch(() => alert('Error deleting prescription'));
-    }
+        .catch(() => Swal.fire({title: 'Error', text: 'Error deleting prescription.', icon: 'error', confirmButtonColor: 'var(--primary)'}));
+    });
 }
 
 // Close modals on background click
