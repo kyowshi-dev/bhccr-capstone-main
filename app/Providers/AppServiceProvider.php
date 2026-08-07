@@ -49,11 +49,14 @@ class AppServiceProvider extends ServiceProvider
         Route::bind('consultation', function (string $value) {
             return Consultation::query()
                 ->leftJoin('health_workers', 'consultations.worker_id', '=', 'health_workers.id')
+                ->leftJoin('health_workers as attending_doctor', 'consultations.attending_doctor_id', '=', 'attending_doctor.id')
                 ->where('consultations.id', $value)
                 ->select(
                     'consultations.*',
                     'health_workers.first_name as worker_first_name',
-                    'health_workers.last_name as worker_last_name'
+                    'health_workers.last_name as worker_last_name',
+                    'attending_doctor.first_name as attending_doctor_first_name',
+                    'attending_doctor.last_name as attending_doctor_last_name'
                 )
                 ->firstOrFail();
         });
