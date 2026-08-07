@@ -87,7 +87,7 @@
         }
     </style>
 </head>
-<body class="auth-body antialiased overflow-hidden">
+<body class="auth-body antialiased">
     <div class="relative z-10 w-full px-4">
         @yield('content')
     </div>

@@ -50,7 +50,7 @@
 
             <div class="px-5 pt-3 pb-1">
                 <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] px-2.5 py-1 rounded-full border border-white/15 text-white/80 bg-white/5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
+                    <span class="h-1.5 w-1.5 rounded-full" style="background: var(--primary);"></span>
                     Sta. Ana Health Center
                 </span>
             </div>
@@ -61,12 +61,14 @@
                      servicesOpen: false, 
                      managementOpen: false, 
                      adminOpen: false,
+                     maternalOpen: false,
                      initDropdowns() {
                          const current = window.location.pathname;
                          this.recordsOpen = ['patient', 'household'].some(r => current.includes(r));
                          this.servicesOpen = ['consultation', 'immunization', 'referral'].some(r => current.includes(r));
                          this.managementOpen = ['medicine', 'report'].some(r => current.includes(r));
                          this.adminOpen = current.includes('user');
+                         this.maternalOpen = current.includes('maternal');
                      }
                  }" 
                  x-init="initDropdowns()">
@@ -78,7 +80,7 @@
                     $swalError = "Swal.fire({title: 'Unauthorized', text: 'Please contact the administrator if you believe this is a mistake.', icon: 'error'}); return false;";
                 @endphp
 
-                <a href="{{ route('dashboard') }}" aria-current="{{ $currentUrl === route('dashboard') ? 'page' : 'false' }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
+                <a href="{{ route('dashboard') }}" aria-current="{{ $currentUrl === route('dashboard') ? 'page' : 'false' }}" aria-label="Dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
                     <i class="fa-solid fa-house text-base opacity-70" aria-hidden="true"></i>
                     <span>Dashboard</span>
                 </a>
@@ -110,6 +112,17 @@
                                         :permission="$authUser->hasPermission('consultations')"
                                         :swal-error="$swalError" />
                 </x-layouts.nav-group>
+
+                @if ($authUser && $authUser->hasPermission('maternal'))
+                    <x-layouts.nav-group state="maternalOpen" label="Maternal Care" icon="fa-solid fa-person-pregnant">
+                        <x-layouts.nav-link url="{{ route('maternal.prenatal.index') }}" label="Prenatal" icon="fa-solid fa-baby-carriage"
+                                            :active="str_starts_with($currentUrl, route('maternal.prenatal.index'))" />
+                        <x-layouts.nav-link url="{{ route('maternal.postnatal.index') }}" label="Postnatal" icon="fa-solid fa-child-reaching"
+                                            :active="str_starts_with($currentUrl, route('maternal.postnatal.index'))" />
+                        <x-layouts.nav-link url="{{ route('maternal.family-planning.index') }}" label="Family Planning" icon="fa-solid fa-hand-holding-heart"
+                                            :active="str_starts_with($currentUrl, route('maternal.family-planning.index'))" />
+                    </x-layouts.nav-group>
+                @endif
 
                 <div class="border-t border-white/10 my-2"></div>
 
