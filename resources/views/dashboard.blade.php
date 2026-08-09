@@ -78,13 +78,13 @@
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </span>
             <div class="min-w-0 flex-1">
-                <p class="kpi-card__label truncate" style="color: {{ $overdueImmunizations > 0 ? 'var(--danger)' : 'var(--ink-muted)' }};">Immunization Alerts</p>
+                <p class="kpi-card__label truncate" style="color: {{ $overdueImmunizations > 0 ? 'var(--danger)' : 'var(--ink-muted)' }};">Overdue Immunizations</p>
                 @if ($overdueImmunizations === 0)
                     <p class="kpi-card__value">0</p>
                     <p class="text-[10px] truncate mt-0.5" style="color: var(--ink-muted);">On track</p>
                 @else
                     <p class="kpi-card__value" style="color: var(--danger);">{{ $overdueImmunizations }}</p>
-                    <a href="{{ route('immunizations.index') }}" class="text-[10px] font-bold truncate block mt-0.5" style="color: var(--danger);">View chart</a>
+                    <a href="{{ route('immunizations.index') }}" class="text-[10px] font-bold truncate block mt-0.5" style="color: var(--danger);">View immunizations</a>
                 @endif
             </div>
         </div>

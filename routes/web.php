@@ -206,6 +206,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/patients/{id}/immunizations/{vaccine}/mark-done', [ImmunizationController::class, 'markGiven'])
         ->middleware('permission:immunizations')
         ->name('immunizations.mark-done');
+    Route::post('/patients/{patient}/immunizations/enroll', [ImmunizationController::class, 'enroll'])
+        ->middleware('permission:immunizations')
+        ->name('immunizations.enroll');
     Route::post('/immunizations/infants', [ImmunizationController::class, 'enrollInfant'])
         ->middleware('permission:immunizations')
         ->name('immunizations.enroll-infant');

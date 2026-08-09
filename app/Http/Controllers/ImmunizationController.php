@@ -35,13 +35,12 @@ class ImmunizationController extends Controller
 
         $queues = [];
 
-        foreach (['due', 'overdue', 'out_of_window', 'no_show'] as $key) {
+        foreach (['due', 'overdue', 'no_show'] as $key) {
             $queues[$key] = $service->queue($key, $zoneId, $key === 'due' ? $date : null, $categories);
         }
 
         $dueTodayCount = $queues['due']->map(fn (array $entry) => $entry['patient']->id)->unique()->count();
         $overdueCount = $queues['overdue']->map(fn (array $entry) => $entry['patient']->id)->unique()->count();
-        $outOfWindowCount = $queues['out_of_window']->count();
         $noShowCount = $queues['no_show']->count();
 
         $dueTodayPatients = $queues['due']
@@ -72,7 +71,6 @@ class ImmunizationController extends Controller
             'dueTodayPatients' => $dueTodayPatients,
             'dueTodayCount' => $dueTodayCount,
             'overdueCount' => $overdueCount,
-            'outOfWindowCount' => $outOfWindowCount,
             'noShowCount' => $noShowCount,
             'infantCoveragePercent' => $infantStats['infantCoveragePercent'],
             'infantTotal' => $infantStats['infantTotal'],
@@ -134,6 +132,7 @@ class ImmunizationController extends Controller
             'eligibility' => $eligibility,
             'schedulesByVaccine' => $schedulesByVaccine,
             'noShowEvents' => $noShowEvents,
+            'isImmunizationEnrolled' => $patient->is_immunization_enrolled,
         ]);
     }
 
@@ -257,6 +256,19 @@ class ImmunizationController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    public function enroll(Patient $patient): RedirectResponse
+    {
+        $this->authorizeImmunizations();
+
+        if (! auth()->user()->canAccessPatient($patient)) {
+            abort(403, 'This patient is outside your assigned zones.');
+        }
+
+        $this->service()->enrollPatient($patient);
+
+        return back()->with('success', $patient->first_name.' '.$patient->last_name.' enrolled in immunization program.');
     }
 
     public function householdMatch(Request $request): JsonResponse

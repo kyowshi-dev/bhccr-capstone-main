@@ -28,6 +28,8 @@ class ChildImmunizationService
 
     public const DUE_WINDOW_DAYS = 7;
 
+    public const OVERDUE_LOOKBACK_DAYS = 730;
+
     /**
      * Per-request cache of each patient's immunization records, keyed by
      * patient id, so status computation does not re-query per (patient, vaccine).
@@ -42,6 +44,13 @@ class ChildImmunizationService
      * @var array<int, Collection<int, ImmunizationStatusEvent>>
      */
     private array $eventsCache = [];
+
+    /**
+     * Per-request cache of vaccine ids grouped by group_key.
+     *
+     * @var array<string, \Illuminate\Support\Collection<int, int>>
+     */
+    private array $groupMemberCache = [];
 
     /**
      * @return array{years: int, months: int, days: int}
@@ -60,6 +69,10 @@ class ChildImmunizationService
     public function statusFor(Patient $patient, Vaccine $vaccine): string
     {
         $records = $this->recordsFor($patient, $vaccine);
+
+        if ($this->siblingGroupSatisfied($patient, $vaccine)) {
+            return self::STATUS_COMPLETED;
+        }
 
         if ($this->unresolvedMissed($patient, $vaccine) !== null) {
             return self::STATUS_NO_SHOW;
@@ -102,6 +115,10 @@ class ChildImmunizationService
             $schedules->isEmpty()
             || ($vaccine->repeat_months === null && $records->where('no_show', false)->count() >= $schedules->count())
         ) {
+            return ['state' => self::STATUS_COMPLETED, 'earliest_date' => null, 'requires_override' => false];
+        }
+
+        if ($this->siblingGroupSatisfied($patient, $vaccine)) {
             return ['state' => self::STATUS_COMPLETED, 'earliest_date' => null, 'requires_override' => false];
         }
 
@@ -409,11 +426,27 @@ class ChildImmunizationService
             'family_relationship' => $relationship,
             'residential_address' => $this->zoneAddress($householdId),
             'civil_status' => 'Single',
+            'is_immunization_enrolled' => true,
         ]);
     }
 
     /**
-     * Index queues: due / overdue / out_of_window / no_show.
+     * Enroll an existing patient in the immunization program.
+     */
+    public function enrollPatient(Patient $patient): Patient
+    {
+        $patient->is_immunization_enrolled = true;
+        $patient->save();
+
+        return $patient;
+    }
+
+    /**
+     * Index queues: due / overdue / no_show.
+     *
+     * The overdue queue includes out-of-window patients (merged for
+     * workflow simplicity). The clinical distinction is preserved at
+     * administration time via the override-reason gate.
      *
      * The "due" queue uses a rolling window (DUE_WINDOW_DAYS from the target
      * date) so children who became eligible between session days are not
@@ -424,7 +457,7 @@ class ChildImmunizationService
      */
     public function queue(string $mode, ?int $zoneId = null, ?string $date = null, array $categories = ['Child', 'Both']): \Illuminate\Support\Collection
     {
-        $query = Patient::query()->whereHas('household');
+        $query = Patient::query()->whereHas('household')->where('is_immunization_enrolled', true);
 
         if ($zoneId !== null) {
             $query->whereHas('household', fn ($q) => $q->where('zone_id', $zoneId));
@@ -476,8 +509,23 @@ class ChildImmunizationService
                     continue;
                 }
 
-                if ($status !== $mode || ($mode === self::STATUS_OVERDUE && ! $earliest->lt($target))) {
+                $matchesMode = $mode === self::STATUS_OVERDUE
+                    ? in_array($status, [self::STATUS_OVERDUE, self::STATUS_OUT_OF_WINDOW], true)
+                    : $status === $mode;
+
+                if (! $matchesMode || ($mode === self::STATUS_OVERDUE && ! $earliest->lt($target))) {
                     continue;
+                }
+
+                if ($mode === self::STATUS_OVERDUE) {
+                    $dosesGiven = $patient->immunizationRecords
+                        ->where('vaccine_id', $vaccine->id)
+                        ->where('no_show', false)
+                        ->count();
+
+                    if ($dosesGiven === 0 && $earliest->lt($target->copy()->subDays(self::OVERDUE_LOOKBACK_DAYS))) {
+                        continue;
+                    }
                 }
 
                 $entries[] = [
@@ -517,6 +565,33 @@ class ChildImmunizationService
                 'vaccine_id' => 'This patient has already received another vaccine in the same group ('.$vaccine->group_key.').',
             ]);
         }
+    }
+
+    /**
+     * Whether another vaccine in the same group has already been administered.
+     *
+     * When one alternative (e.g. Hepa B birth dose versus late dose versus
+     * catch-up) has been given, the group is considered fulfilled, so the other
+     * group members must not surface as overdue/waiting anymore.
+     */
+    private function siblingGroupSatisfied(Patient $patient, Vaccine $vaccine): bool
+    {
+        if ($vaccine->group_key === null) {
+            return false;
+        }
+
+        $groupMembers = $this->groupMemberCache[$vaccine->group_key] ??= Vaccine::where('group_key', $vaccine->group_key)->pluck('id');
+
+        $siblingIds = $groupMembers->filter(fn ($id) => $id !== $vaccine->id);
+
+        if ($siblingIds->isEmpty()) {
+            return false;
+        }
+
+        return $this->patientRecords($patient)
+            ->whereIn('vaccine_id', $siblingIds)
+            ->where('no_show', false)
+            ->isNotEmpty();
     }
 
     private function isOutOfWindow(Patient $patient, Vaccine $vaccine): bool

@@ -62,6 +62,8 @@ final class DashboardQueryService
     {
         $patients = Patient::query()
             ->whereHas('household')
+            ->where('is_immunization_enrolled', true)
+            ->whereHas('immunizationRecords', fn ($q) => $q->where('no_show', false))
             ->with('immunizationRecords')
             ->get();
 

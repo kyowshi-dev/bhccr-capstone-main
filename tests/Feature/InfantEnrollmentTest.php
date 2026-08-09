@@ -78,6 +78,7 @@ class InfantEnrollmentTest extends TestCase
             'last_name' => 'Dela Cruz',
             'guardian_name' => 'Maria Dela Cruz',
             'birth_weight' => '3.20',
+            'is_immunization_enrolled' => true,
         ]);
     }
 
@@ -97,7 +98,22 @@ class InfantEnrollmentTest extends TestCase
             'first_name' => 'Baby',
             'last_name' => 'Dela Cruz',
             'guardian_name' => 'Maria Dela Cruz',
+            'is_immunization_enrolled' => true,
         ]);
+    }
+
+    public function test_enroll_infant_sets_immunization_flag(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $this->zone(1);
+        $household = Household::create(['zone_id' => 1, 'family_name_head' => 'Dela Cruz']);
+
+        $response = $this->post(route('immunizations.enroll-infant'), $this->infantPayload([
+            'household_id' => $household->id,
+        ]))->assertRedirect();
+
+        $patientId = Patient::where('household_id', $household->id)->first()->id;
+        $this->assertSame(1, (int) DB::table('patients')->where('id', $patientId)->value('is_immunization_enrolled'));
     }
 
     public function test_enroll_requires_either_household_or_create_branch(): void

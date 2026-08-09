@@ -55,6 +55,7 @@ class ImmunizationAdministerTest extends TestCase
             'spouse_name' => '',
             'family_relationship' => 'Son',
             'residential_address' => 'Zone 1 Sta. Ana',
+            'is_immunization_enrolled' => true,
         ]);
     }
 

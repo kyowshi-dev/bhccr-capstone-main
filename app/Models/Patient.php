@@ -6,6 +6,7 @@ use App\Casts\EncryptedString;
 use App\Helpers\PatientCode;
 use App\Services\ChildImmunizationService;
 use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +32,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $employment_status
  * @property bool $has_4ps
  * @property bool $has_nhts
+ * @property-read string $initials
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property string $mother_name
@@ -129,6 +131,7 @@ class Patient extends Model
         'is_pcb_member',
         'has_4ps',
         'has_nhts',
+        'is_immunization_enrolled',
     ];
 
     public const FAMILY_RELATIONSHIP_OPTIONS = ['Father', 'Son', 'Mother', 'Daughter', 'Others'];
@@ -144,6 +147,7 @@ class Patient extends Model
             'birth_weight' => 'decimal:2',
             'has_4ps' => 'boolean',
             'has_nhts' => 'boolean',
+            'is_immunization_enrolled' => 'boolean',
             // PhilHealth number is a national ID — encrypt at rest (RA 10173 / HIPAA).
             // EncryptedString tolerates legacy plaintext left by outdated DB imports.
             'philhealth_no' => EncryptedString::class,
@@ -177,7 +181,11 @@ class Patient extends Model
 
     public function activePregnancy(): HasOne
     {
-        return $this->hasOne(Pregnancy::class)->where('status', Pregnancy::STATUS_ACTIVE);
+        return $this->hasOne(Pregnancy::class)
+            ->ofMany(
+                ['lmp' => 'max'],
+                fn (Builder $query) => $query->where('status', Pregnancy::STATUS_ACTIVE),
+            );
     }
 
     public function fpClient(): HasOne
@@ -204,6 +212,13 @@ class Patient extends Model
     {
         return Attribute::make(
             get: fn () => PatientCode::format($this->id),
+        );
+    }
+
+    public function initials(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => substr($this->first_name, 0, 1).substr($this->last_name, 0, 1),
         );
     }
 

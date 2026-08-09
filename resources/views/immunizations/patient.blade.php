@@ -6,8 +6,7 @@
 @php
     $isBare = request()->query('bare');
     $recordsByVaccine = $records->groupBy('vaccine_id');
-    $alertOverdue = collect($schedule)->filter(fn ($i) => ($statuses[$i->vaccine->id] ?? null) === 'overdue')->count();
-    $alertOutOfWindow = collect($schedule)->filter(fn ($i) => ($statuses[$i->vaccine->id] ?? null) === 'out_of_window')->count();
+    $alertOverdue = collect($schedule)->filter(fn ($i) => ($statuses[$i->vaccine->id] ?? null) === 'overdue' || ($statuses[$i->vaccine->id] ?? null) === 'out_of_window')->count();
     $alertNoShow = collect($schedule)->filter(fn ($i) => ($statuses[$i->vaccine->id] ?? null) === 'no_show')->count();
     $purok = $patient->household?->zone?->zone_number ?? 'No purok';
     [$y, $m, $d] = $patient->ageDetail !== null ? array_pad($patient->ageDetail, 3, 0) : [null, null, null];
@@ -41,17 +40,28 @@
         </div>
     @endif
 
+    @if (! $isImmunizationEnrolled)
+        <div class="rounded-xl border px-4 py-3 text-sm" style="background: var(--accent-blue-soft); border-color: var(--accent-blue); color: var(--accent-blue);">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <i class="fa-solid fa-info-circle mr-1.5" aria-hidden="true"></i>
+                    This patient is not enrolled in the immunization program. Enroll to track their vaccination schedule.
+                </div>
+                <form method="POST" action="{{ route('immunizations.enroll', $patient->id) }}">
+                    @csrf
+                    <button type="submit" class="inline-flex items-center justify-center px-4 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--accent-blue);">
+                        <i class="fa-solid fa-syringe mr-1.5" aria-hidden="true"></i> Enroll in immunization
+                    </button>
+                </form>
+            </div>
+        </div>
+    @endif
+
     @if ($alertOverdue > 0 || $alertNoShow > 0)
         <div class="rounded-xl border px-4 py-3 text-sm" style="background: var(--danger-soft); border-color: var(--danger); color: var(--danger);">
             <i class="fa-solid fa-circle-exclamation mr-1.5" aria-hidden="true"></i>
             @if ($alertOverdue > 0){{ $alertOverdue }} vaccine{{ $alertOverdue === 1 ? '' : 's' }} overdue.@endif
             @if ($alertNoShow > 0)@if ($alertOverdue > 0) @endif{{ $alertNoShow }} marked no-show — follow up.@endif
-        </div>
-    @endif
-    @if ($alertOutOfWindow > 0)
-        <div class="rounded-xl border px-4 py-3 text-sm" style="background: var(--amber-soft); border-color: var(--amber); color: var(--amber);">
-            <i class="fa-solid fa-clock mr-1.5" aria-hidden="true"></i>
-            {{ $alertOutOfWindow }} vaccine{{ $alertOutOfWindow === 1 ? '' : 's' }} outside the recommended age window — an override reason will be required.
         </div>
     @endif
 

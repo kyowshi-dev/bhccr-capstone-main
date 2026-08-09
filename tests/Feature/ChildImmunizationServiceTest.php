@@ -48,6 +48,7 @@ class ChildImmunizationServiceTest extends TestCase
             'spouse_name' => 'Juan',
             'family_relationship' => 'Son',
             'residential_address' => 'Zone 1 Sta. Ana, Tagoloan',
+            'is_immunization_enrolled' => true,
         ]);
     }
 
@@ -303,6 +304,43 @@ class ChildImmunizationServiceTest extends TestCase
         $record = $this->service->administer($patient, $this->vaccine('HEPA_B_CATCHUP'), ['temp_recorded' => '36.5']);
 
         $this->assertSame(1, $record->dose_number);
+    }
+
+    public function test_giving_birth_dose_marks_sibling_hep_b_variants_completed(): void
+    {
+        $patient = $this->makePatient(now()->subDays(100));
+
+        $this->service->administer($patient, $this->vaccine('HEPA_B_24H'), ['temp_recorded' => '36.5']);
+
+        $this->assertSame('completed', $this->service->statusFor($patient, $this->vaccine('HEPA_B_GT24')));
+        $this->assertSame('completed', $this->service->statusFor($patient, $this->vaccine('HEPA_B_CATCHUP')));
+    }
+
+    public function test_giving_birth_dose_clears_hep_b_variants_from_overdue_queue(): void
+    {
+        $patient = $this->makePatient(now()->subDays(100));
+
+        $hepCodes = ['HEPA_B_24H', 'HEPA_B_GT24', 'HEPA_B_CATCHUP'];
+
+        $overdueBefore = $this->service->queue('overdue')
+            ->filter(fn (array $entry) => in_array($entry['vaccine']->vaccine_code, $hepCodes, true));
+        $this->assertNotEmpty($overdueBefore);
+
+        $this->service->administer($patient, $this->vaccine('HEPA_B_24H'), ['temp_recorded' => '36.5']);
+
+        $overdueAfter = $this->service->queue('overdue')
+            ->filter(fn (array $entry) => in_array($entry['vaccine']->vaccine_code, $hepCodes, true));
+        $this->assertTrue($overdueAfter->isEmpty());
+    }
+
+    public function test_giving_late_dose_marks_sibling_hep_b_variants_completed(): void
+    {
+        $patient = $this->makePatient(now()->subDays(100));
+
+        $this->service->administer($patient, $this->vaccine('HEPA_B_GT24'), ['temp_recorded' => '36.5']);
+
+        $this->assertSame('completed', $this->service->statusFor($patient, $this->vaccine('HEPA_B_24H')));
+        $this->assertSame('completed', $this->service->statusFor($patient, $this->vaccine('HEPA_B_CATCHUP')));
     }
 
     public function test_mark_no_show_appends_missed_event_and_clear_resolves_it(): void

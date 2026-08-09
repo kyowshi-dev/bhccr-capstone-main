@@ -9,7 +9,6 @@
     $statusBadges = [
         'due' => ['bg' => 'var(--accent-blue-soft)', 'fg' => 'var(--accent-blue)', 'icon' => 'fa-regular fa-calendar', 'label' => 'Due'],
         'overdue' => ['bg' => 'var(--danger-soft)', 'fg' => 'var(--danger)', 'icon' => 'fa-solid fa-circle-exclamation', 'label' => 'Overdue'],
-        'out_of_window' => ['bg' => 'var(--amber-soft)', 'fg' => 'var(--amber)', 'icon' => 'fa-solid fa-clock', 'label' => 'Out of window'],
         'no_show' => ['bg' => 'var(--danger-soft)', 'fg' => 'var(--danger)', 'icon' => 'fa-solid fa-user-clock', 'label' => 'No-show'],
     ];
 @endphp
@@ -79,7 +78,7 @@
     </div>
 
     @if ($mode === 'child')
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <button type="button" @click="activeQueue = 'due'" class="text-left rounded-xl border p-4 lg:p-5 transition hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
                 <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">{{ $dueDateLabel }}</p>
                 <div class="flex items-end justify-between gap-3">
@@ -96,16 +95,6 @@
                     <p class="text-2xl font-display font-semibold leading-none" style="color: var(--danger);">{{ number_format($overdueCount) }}</p>
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
                         <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Priority
-                    </span>
-                </div>
-            </button>
-
-            <button type="button" @click="activeQueue = 'out_of_window'" class="text-left rounded-xl border p-4 lg:p-5 transition hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
-                <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">Out of age window</p>
-                <div class="flex items-end justify-between gap-3">
-                    <p class="text-2xl font-display font-semibold leading-none" style="color: var(--amber);">{{ number_format($outOfWindowCount) }}</p>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--amber-soft); color: var(--amber);">
-                        <i class="fa-solid fa-clock" aria-hidden="true"></i> Override
                     </span>
                 </div>
             </button>
@@ -207,10 +196,6 @@
                         Overdue
                         <span class="ml-1 opacity-70">{{ number_format($overdueCount) }}</span>
                     </button>
-                    <button type="button" @click="activeQueue = 'out_of_window'" role="tab" :aria-selected="activeQueue === 'out_of_window' ? 'true' : 'false'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition" :style="activeQueue === 'out_of_window' ? 'background: var(--amber-soft); color: var(--amber);' : 'color: var(--ink-muted);'">
-                        Out of window
-                        <span class="ml-1 opacity-70">{{ number_format($outOfWindowCount) }}</span>
-                    </button>
                     <button type="button" @click="activeQueue = 'no_show'" role="tab" :aria-selected="activeQueue === 'no_show' ? 'true' : 'false'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition" :style="activeQueue === 'no_show' ? 'background: var(--danger-soft); color: var(--danger);' : 'color: var(--ink-muted);'">
                         No-show
                         <span class="ml-1 opacity-70">{{ number_format($noShowCount) }}</span>
@@ -221,7 +206,7 @@
                 </div>
             </div>
 
-            @foreach (['due', 'overdue', 'out_of_window', 'no_show'] as $queueKey)
+            @foreach (['due', 'overdue', 'no_show'] as $queueKey)
                 @php
                     $badge = $statusBadges[$queueKey];
                 @endphp
@@ -313,13 +298,11 @@
                                                 :icon="match ($queueKey) {
                                                     'due' => 'fa-regular fa-calendar',
                                                     'overdue' => 'fa-solid fa-circle-check',
-                                                    'out_of_window' => 'fa-solid fa-clock',
                                                     'no_show' => 'fa-solid fa-user-clock',
                                                 }"
                                                 :title="match ($queueKey) {
                                                     'due' => 'No patients '.($targetDate->isToday() ? 'due in the next 7 days' : 'due on or after '.$date),
                                                     'overdue' => 'No overdue patients',
-                                                    'out_of_window' => 'No out-of-window cases',
                                                     'no_show' => 'No no-show cases',
                                                 }"
                                                 description="This queue is clear. New entries appear here as the schedule rolls." />
