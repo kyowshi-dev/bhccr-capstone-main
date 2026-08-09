@@ -18,12 +18,12 @@ class RegisterPregnancyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'gravidity' => ['required', 'integer', 'min:1', 'max:25'],
-            'parity' => ['required', 'integer', 'min:0', 'max:25'],
-            'term' => ['required', 'integer', 'min:0', 'max:25'],
-            'preterm' => ['required', 'integer', 'min:0', 'max:25'],
-            'livebirth' => ['required', 'integer', 'min:0', 'max:25'],
-            'abortion' => ['required', 'integer', 'min:0', 'max:25'],
+            'gravidity' => ['nullable', 'integer', 'min:0', 'max:25'],
+            'parity' => ['nullable', 'integer', 'min:0', 'max:25'],
+            'term' => ['nullable', 'integer', 'min:0', 'max:25'],
+            'preterm' => ['nullable', 'integer', 'min:0', 'max:25'],
+            'livebirth' => ['nullable', 'integer', 'min:0', 'max:25'],
+            'abortion' => ['nullable', 'integer', 'min:0', 'max:25'],
             'lmp' => ['required', 'date', 'before_or_equal:today'],
             'edc' => ['nullable', 'date'],
             'aog_weeks' => ['nullable', 'integer', 'min:0', 'max:45'],
@@ -32,6 +32,8 @@ class RegisterPregnancyRequest extends FormRequest
             'tt_date' => ['nullable', 'date', 'before_or_equal:today'],
             'iron_taken' => ['nullable', 'boolean'],
             'others' => ['nullable', 'string', 'max:500'],
+            'risk_flags' => ['nullable', 'array'],
+            'risk_flags.*' => ['string', 'in:age_under_18,age_over_35,hypertension,diabetes,previous_csection,multiple_gestation,previous_stillbirth,others'],
         ];
     }
 }

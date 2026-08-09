@@ -13,15 +13,12 @@ class SearchController extends Controller
 {
     /**
      * Zone scoping helper for patient queries.
+     *
+     * BHWs are allowed to search all patients, not just those
+     * in their assigned puroks/zones.
      */
     private function scopePatientQuery(Builder $query): Builder
     {
-        $user = auth()->user();
-
-        if ($user !== null && $user->isZoneScoped()) {
-            $query->whereIn('household_id', $user->accessibleHouseholdIds());
-        }
-
         return $query;
     }
 
@@ -50,8 +47,16 @@ class SearchController extends Controller
             ->limit(10)
             ->get();
 
+        $patientIds = $patients->pluck('id')->toArray();
+
+        $activePregnancyIds = DB::table('pregnancies')
+            ->whereIn('patient_id', $patientIds)
+            ->where('status', 'active')
+            ->pluck('patient_id')
+            ->toArray();
+
         // Format the results for the frontend
-        $results = $patients->map(function ($patient) {
+        $results = $patients->map(function ($patient) use ($activePregnancyIds) {
             $ptCode = PatientCode::format((int) $patient->id);
             $age = null;
             if (! empty($patient->date_of_birth)) {
@@ -62,6 +67,7 @@ class SearchController extends Controller
                 'id' => $patient->id,
                 'text' => trim((string) $patient->last_name).', '.trim((string) $patient->first_name), // What shows in the dropdown
                 'subtext' => $ptCode.' | '.trim((string) $patient->sex).($age !== null ? ' | '.$age.' y/o' : '').' | '.$patient->date_of_birth, // Extra info
+                'has_active_pregnancy' => in_array($patient->id, $activePregnancyIds, true),
             ];
         });
 

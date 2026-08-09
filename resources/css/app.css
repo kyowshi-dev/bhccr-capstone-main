@@ -497,3 +497,8 @@ textarea:focus-visible,
 body.modal-open {
     overflow: hidden;
 }
+
+/* Hide Alpine-managed content until it has booted (prevents modal flashes) */
+[x-cloak] {
+    display: none !important;
+}

@@ -99,7 +99,10 @@ class DatabaseSeeder extends Seeder
         // 10. CONSULTATIONS + outward referrals
         $this->call(ConsultationSeeder::class);
 
-        // 11. Sample audit logs
+        // 11. Sample postnatal record (with prior prenatal record)
+        $this->call(PostnatalRecordSeeder::class);
+
+        // 12. Sample audit logs
         $this->call(AuditLogSeeder::class);
     }
 }

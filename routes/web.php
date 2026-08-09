@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FamilyPlanningController;
 use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\ImmunizationController;
+use App\Http\Controllers\MaternalQuickActionController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PatientController;
@@ -14,9 +15,7 @@ use App\Http\Controllers\PrenatalController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\RoleManagementController;
 use App\Http\Controllers\SearchController;
-use App\Http\Controllers\SessionController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ZoneController;
@@ -239,6 +238,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/maternal/family-planning/{client}/print', [FamilyPlanningController::class, 'print'])
         ->middleware('permission:maternal')
         ->name('maternal.family-planning.print');
+
+    Route::post('/maternal/quick/{patient}', [MaternalQuickActionController::class, 'store'])
+        ->middleware('permission:maternal')
+        ->middleware('throttle:60,1')
+        ->name('maternal.quick.store');
 
     Route::get('/maternal/prenatal', [PrenatalController::class, 'index'])
         ->middleware('permission:maternal')

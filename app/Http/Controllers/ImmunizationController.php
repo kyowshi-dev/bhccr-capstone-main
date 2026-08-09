@@ -85,10 +85,6 @@ class ImmunizationController extends Controller
 
         $patient = Patient::with(['household', 'immunizationRecords'])->findOrFail($id);
 
-        if (! auth()->user()->canAccessPatient($patient)) {
-            abort(403, 'This patient is outside your assigned zones.');
-        }
-
         $isChild = $patient->age < 18;
         $allowedCategories = $isChild ? ['Child', 'Both'] : ['Adult', 'Both'];
 
@@ -140,10 +136,6 @@ class ImmunizationController extends Controller
     {
         $patient = Patient::findOrFail($id);
 
-        if (! auth()->user()->canAccessPatient($patient)) {
-            abort(403, 'This patient is outside your assigned zones.');
-        }
-
         $vaccine = Vaccine::findOrFail($request->input('vaccine_id'));
 
         if (! $this->service()->vaccineMatchesAge($patient, $vaccine)) {
@@ -182,10 +174,6 @@ class ImmunizationController extends Controller
     public function markGiven($id, Vaccine $vaccine): RedirectResponse
     {
         $patient = Patient::findOrFail($id);
-
-        if (! auth()->user()->canAccessPatient($patient)) {
-            abort(403, 'This patient is outside your assigned zones.');
-        }
 
         if (! $this->service()->vaccineMatchesAge($patient, $vaccine)) {
             return back()->withErrors(['vaccine_id' => 'This vaccine is not appropriate for this patient.']);
@@ -239,10 +227,6 @@ class ImmunizationController extends Controller
 
         $patient = Patient::findOrFail($validated['patient_id']);
 
-        if (! auth()->user()->canAccessPatient($patient)) {
-            abort(403, 'This patient is outside your assigned zones.');
-        }
-
         $vaccine = Vaccine::findOrFail($validated['vaccine_id']);
 
         if ($validated['no_show']) {
@@ -261,10 +245,6 @@ class ImmunizationController extends Controller
     public function enroll(Patient $patient): RedirectResponse
     {
         $this->authorizeImmunizations();
-
-        if (! auth()->user()->canAccessPatient($patient)) {
-            abort(403, 'This patient is outside your assigned zones.');
-        }
 
         $this->service()->enrollPatient($patient);
 

@@ -90,6 +90,7 @@ class Pregnancy extends Model
         'tt_date',
         'iron_taken',
         'others',
+        'risk_flags',
         'recorded_by',
     ];
 
@@ -101,6 +102,7 @@ class Pregnancy extends Model
             'edc' => 'date',
             'tt_date' => 'date',
             'iron_taken' => 'boolean',
+            'risk_flags' => 'array',
         ];
     }
 

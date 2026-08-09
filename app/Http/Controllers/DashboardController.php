@@ -100,6 +100,7 @@ class DashboardController extends Controller
         $handoutData = $this->handoutData($request, $user, 'midwife', limit: 8, defaultToToday: true);
 
         $maternalQuery = app(MaternalQueryService::class);
+        $actionQueue = $maternalQuery->actionQueue($today);
 
         return view('dashboard_midwife', [
             'showResultsReady' => $user->canViewDashboardHandouts('midwife'),
@@ -107,6 +108,8 @@ class DashboardController extends Controller
             'dueThisMonth' => $maternalQuery->dueThisMonth($today),
             'postnatalDue' => $maternalQuery->postnatalDue($today),
             'highRiskReferrals' => $maternalQuery->highRiskReferrals(),
+            'actionQueue' => $actionQueue,
+            'watchlist' => $maternalQuery->watchlist(),
             ...$handoutData,
         ]);
     }

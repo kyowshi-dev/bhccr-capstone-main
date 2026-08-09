@@ -20,7 +20,7 @@ class PatientPolicy
      */
     public function view(User $user, Patient $patient): bool
     {
-        return $user->hasPermission('patients') && $user->canAccessPatient($patient);
+        return $user->hasPermission('patients');
     }
 
     /**

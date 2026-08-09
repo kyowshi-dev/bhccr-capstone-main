@@ -108,8 +108,6 @@ class ConsultationController extends Controller
     // 1. Show the Admission Form (Triage) — modal partial via AJAX; redirect for direct navigation
     public function create(Request $request, Patient $patient): View|RedirectResponse
     {
-        $this->guardPatientAccess($patient);
-
         $previousVitals = DB::table('vitals')
             ->join('consultations', 'vitals.consultation_id', '=', 'consultations.id')
             ->where('consultations.patient_id', $patient->id)
@@ -136,7 +134,6 @@ class ConsultationController extends Controller
     // 2. Save the Data (Triage Save)
     public function store(StoreConsultationRequest $request, Patient $patient): RedirectResponse
     {
-        $this->guardPatientAccess($patient);
 
         $worker = $this->currentWorker();
         $result = ConsultationService::start($patient, $request->validated(), $worker);
@@ -155,7 +152,6 @@ class ConsultationController extends Controller
     public function show(Consultation $consultation): View
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         $patient = Patient::query()->find($consultation->patient_id);
 
@@ -258,7 +254,6 @@ class ConsultationController extends Controller
     public function acknowledgeIntake(Consultation $consultation): RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         $worker = $this->currentWorker();
         if (strtolower((string) $worker->role) !== 'nurse') {
@@ -280,7 +275,6 @@ class ConsultationController extends Controller
     public function cancelIntake(Consultation $consultation): RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         $worker = $this->currentWorker();
         if (strtolower((string) $worker->role) !== 'nurse') {
@@ -322,7 +316,6 @@ class ConsultationController extends Controller
     public function retakeVitals(VitalsRequest $request, Consultation $consultation): RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         $worker = $this->currentWorker();
 
@@ -339,7 +332,6 @@ class ConsultationController extends Controller
     public function updateVitalVersion(VitalsRequest $request, Consultation $consultation, $vitalId): RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         if (! VitalsService::updateVersion($consultation, (int) $vitalId, $request->validated())) {
             abort(404, 'Vitals version not found for this consultation.');
@@ -352,7 +344,6 @@ class ConsultationController extends Controller
     public function deleteVitalVersion(Consultation $consultation, $vitalId): RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         $result = VitalsService::deleteVersion($consultation, (int) $vitalId);
 
@@ -373,7 +364,6 @@ class ConsultationController extends Controller
     public function addDiagnosis(AddDiagnosisRequest $request, Consultation $consultation): RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         $worker = $this->currentWorker();
         if (strtolower((string) $worker->role) !== 'doctor') {
@@ -395,7 +385,6 @@ class ConsultationController extends Controller
     public function referralContext(Consultation $consultation): JsonResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         $context = ReferralService::context($consultation);
 
@@ -405,7 +394,6 @@ class ConsultationController extends Controller
     public function refer(ReferralRequest $request, Consultation $consultation): RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         $worker = $this->currentWorker();
         if (! in_array(strtolower((string) $worker->role), ['doctor', 'nurse'], true)) {
@@ -425,7 +413,6 @@ class ConsultationController extends Controller
     public function finalizeConsultation(FinalizeConsultationRequest $request, Consultation $consultation): RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         if ($error = ConsultationService::clinicalReviewError($consultation)) {
             return redirect()->back()->withErrors(['consultation' => $error]);
@@ -456,7 +443,6 @@ class ConsultationController extends Controller
     public function addPrescription(AddPrescriptionRequest $request, Consultation $consultation): RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         $worker = $this->currentWorker();
         if (strtolower((string) $worker->role) !== 'doctor') {
@@ -479,7 +465,6 @@ class ConsultationController extends Controller
     public function edit(Consultation $consultation): View
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         // Get patient info
         $patient = DB::table('patients')->find($consultation->patient_id);
@@ -518,7 +503,6 @@ class ConsultationController extends Controller
     public function update(UpdateConsultationRequest $request, Consultation $consultation): RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         if ($request->has('notes')) {
             ConsultationService::updateNotes($consultation, $request->input('notes'));
@@ -530,7 +514,6 @@ class ConsultationController extends Controller
     public function deleteDiagnosis(Request $request, Consultation $consultation, $diagnosisId): JsonResponse|RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         if (! ConsultationService::deleteDiagnosis($consultation, (int) $diagnosisId)) {
             if ($request->expectsJson()) {
@@ -549,7 +532,6 @@ class ConsultationController extends Controller
     public function deletePrescription(Request $request, Consultation $consultation, $prescriptionId): JsonResponse|RedirectResponse
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         if (! ConsultationService::deletePrescription($consultation, (int) $prescriptionId)) {
             if ($request->expectsJson()) {
@@ -579,7 +561,6 @@ class ConsultationController extends Controller
     private function guardHandoutAccess(Consultation $consultation): void
     {
         $this->authorizePermission('consultations');
-        $this->guardConsultationAccess($consultation);
 
         if (! auth()->user()->canPrintHandout()) {
             abort(403, 'You do not have permission to print consultation handouts.');
@@ -587,28 +568,6 @@ class ConsultationController extends Controller
 
         if (! in_array($consultation->status, ConsultationStatus::terminalValues(), true)) {
             abort(403, 'Print handout is available only for completed consultations.');
-        }
-    }
-
-    /**
-     * Zone scoping: zone-assigned workers may only act on consultations
-     * whose patient belongs to one of their assigned zones.
-     */
-    private function guardConsultationAccess(Consultation $consultation): void
-    {
-        if (! auth()->user()->canAccessConsultation($consultation)) {
-            abort(403, 'This consultation is outside your assigned zones.');
-        }
-    }
-
-    /**
-     * Zone scoping: zone-assigned workers may only open patients in their
-     * assigned zones.
-     */
-    private function guardPatientAccess(Patient $patient): void
-    {
-        if (! auth()->user()->canAccessPatient($patient)) {
-            abort(403, 'This patient is outside your assigned zones.');
         }
     }
 }
