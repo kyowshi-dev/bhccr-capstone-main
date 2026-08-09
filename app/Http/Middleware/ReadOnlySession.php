@@ -29,10 +29,8 @@ class ReadOnlySession
         }
 
         $session->setRequestOnHandler($request);
-        file_put_contents('/tmp/rs_debug.log', 'READONLY_SESSION handle start, cookieId='.$cookieId."\n", FILE_APPEND);
         $session->start();
         $request->setLaravelSession($session);
-        file_put_contents('/tmp/rs_debug.log', "READONLY_SESSION session set\n", FILE_APPEND);
 
         return $next($request);
     }

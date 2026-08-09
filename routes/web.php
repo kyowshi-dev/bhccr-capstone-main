@@ -21,6 +21,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ZoneController;
 use App\Http\Middleware\ReadOnlySession;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -467,12 +468,9 @@ Route::get('/session/status', [SessionController::class, 'status'])
 // Middleware order matters: the session is read before auth runs.
 Route::get('/consultations/live-requests', [ConsultationController::class, 'liveRequests'])
     ->withoutMiddleware([
+        VerifyCsrfToken::class,
         StartSession::class,
         ShareErrorsFromSession::class,
     ])
-    ->middleware([
-        ReadOnlySession::class,
-        'auth',
-        'permission:consultations',
-    ])
+    ->middleware(ReadOnlySession::class)
     ->name('consultations.live-requests');

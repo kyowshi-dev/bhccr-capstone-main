@@ -7,22 +7,20 @@
 
 @php
     $modalId = $id ?: 'modal-' . \Illuminate\Support\Str::random(6);
+    $callerXData = (string) $attributes->get('x-data', '');
 @endphp
 
 <div
-    x-data="{ open: false }"
+    x-data="{{ $callerXData !== '' ? 'modalMerge(' . $callerXData . ')' : 'modalMerge(null)' }}"
     x-init="$watch('open', (v) => { document.body.classList.toggle('overflow-hidden', v); if (v) { const f = $refs.panel.querySelector('[data-autofocus], input, select, textarea, button'); f?.focus(); } })"
     x-on:keydown.escape.window="open = false"
-    @if ($closeOnBackdrop) x-on:click.outside="open = false" @endif
     role="dialog"
     aria-modal="true"
     :aria-hidden="!open"
-    {{ $attributes }}
+    {{ $attributes->except(['x-data']) }}
 >
     @if (isset($trigger) && !$trigger->isEmpty())
         <div @click="open = true">{{ $trigger }}</div>
-    @else
-        {{ $slot }}
     @endif
 
     <template x-teleport="body">
@@ -30,7 +28,7 @@
              x-transition.opacity.duration.200ms
              class="fixed inset-0 z-50 flex items-center justify-center p-4"
              style="display: none;">
-            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @if ($closeOnBackdrop) @click="open = false" @endif></div>
             <div x-ref="panel"
                  x-show="open"
                  x-transition:enter="transition ease-out duration-200"
@@ -49,7 +47,7 @@
                     </div>
                 @endif
                 <div class="p-6">
-                    {{ $content }}
+                    {{ $slot }}
                 </div>
                 @if (isset($footer) && !$footer->isEmpty())
                     <div class="flex flex-wrap items-center justify-end gap-2 border-t border-border px-6 py-4">
