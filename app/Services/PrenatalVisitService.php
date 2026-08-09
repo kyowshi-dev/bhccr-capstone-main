@@ -14,6 +14,7 @@ class PrenatalVisitService
     {
         return PrenatalVisit::create([
             'pregnancy_id' => $pregnancy->id,
+            'consultation_id' => $data['consultation_id'] ?? null,
             'visit_date' => $data['visit_date'],
             'fundic_height_cm' => $data['fundic_height_cm'] ?? null,
             'fetal_heart_tone_bpm' => $data['fetal_heart_tone_bpm'] ?? null,
@@ -28,6 +29,7 @@ class PrenatalVisitService
     public function update(PrenatalVisit $visit, array $data): PrenatalVisit
     {
         $visit->update([
+            'consultation_id' => $data['consultation_id'] ?? null,
             'visit_date' => $data['visit_date'],
             'fundic_height_cm' => $data['fundic_height_cm'] ?? null,
             'fetal_heart_tone_bpm' => $data['fetal_heart_tone_bpm'] ?? null,

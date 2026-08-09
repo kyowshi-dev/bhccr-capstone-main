@@ -33,6 +33,7 @@ class FamilyPlanningService
     {
         $visit = FamilyPlanningVisit::create([
             'client_id' => $client->id,
+            'consultation_id' => $data['consultation_id'] ?? null,
             'visit_date' => $data['visit_date'],
             'method' => $data['method'],
             'schedule_next_visit' => $data['schedule_next_visit'] ?? null,

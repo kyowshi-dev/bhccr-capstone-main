@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Patient;
 use App\Models\PostnatalRecord;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePostnatalRequest extends FormRequest
 {
@@ -20,6 +22,7 @@ class StorePostnatalRequest extends FormRequest
     {
         return [
             'pregnancy_id' => ['nullable', 'integer', 'exists:pregnancies,id'],
+            'consultation_id' => $this->consultationRule(),
             'pregnancy_outcome' => ['required', 'in:'.implode(',', array_keys(PostnatalRecord::OUTCOMES))],
             'prenatal_visits_completed' => ['nullable', 'integer', 'min:0', 'max:99'],
             'place_delivered' => ['required', 'in:'.implode(',', array_keys(PostnatalRecord::PLACES))],
@@ -47,5 +50,21 @@ class StorePostnatalRequest extends FormRequest
             'child_birth_length_cm' => ['nullable', 'numeric', 'min:0', 'max:99.9'],
             'child_birth_weight_kg' => ['nullable', 'numeric', 'min:0', 'max:20'],
         ];
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function consultationRule(): array
+    {
+        $rules = ['nullable', 'integer'];
+
+        $patient = $this->route('patient');
+
+        if ($patient instanceof Patient) {
+            $rules[] = Rule::exists('consultations', 'id')->where('patient_id', $patient->id);
+        }
+
+        return $rules;
     }
 }

@@ -194,6 +194,11 @@
                                            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                                 </div>
+                                @include('maternal.partials.consultation-select', [
+                                    'fieldName' => 'consultation_id',
+                                    'consultations' => $consultations,
+                                    'selected' => old('consultation_id'),
+                                ])
                                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md"
                                         style="background: var(--primary);">
                                     <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save visit
@@ -229,7 +234,8 @@
                                                             visit_date: '{{ $visit->visit_date?->format('Y-m-d') }}',
                                                             fundic_height_cm: {{ $visit->fundic_height_cm ?? 'null' }},
                                                             fetal_heart_tone_bpm: {{ $visit->fetal_heart_tone_bpm ?? 'null' }},
-                                                            next_visit_date: '{{ $visit->next_visit_date?->format('Y-m-d') }}'
+                                                            next_visit_date: '{{ $visit->next_visit_date?->format('Y-m-d') }}',
+                                                            consultation_id: {{ $visit->consultation_id ?? 'null' }}
                                                         })"
                                                                 class="text-xs font-semibold hover:underline" style="color: var(--accent-blue);">Edit</button>
                                                     </td>
@@ -316,6 +322,12 @@
                    class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                    style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
         </div>
+        @include('maternal.partials.consultation-select', [
+            'fieldName' => 'consultation_id',
+            'consultations' => $consultations,
+            'selected' => $visit->consultation_id ?? null,
+            'xModel' => 'visit.consultation_id',
+        ])
         <div class="flex justify-end gap-2 pt-1">
             <button type="button" @click="$dispatch('close')" class="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:bg-black/[0.03]"
                     style="border-color: var(--border); color: var(--ink-muted);">Cancel</button>
@@ -543,14 +555,15 @@
 <script>
     function visitEditor() {
         return {
-            visit: { id: null, visit_date: '', fundic_height_cm: null, fetal_heart_tone_bpm: null, next_visit_date: '' },
+            visit: { id: null, visit_date: '', fundic_height_cm: null, fetal_heart_tone_bpm: null, next_visit_date: '', consultation_id: null },
             setVisit(d) {
                 this.visit = {
                     id: d.id,
                     visit_date: d.visit_date || '',
                     fundic_height_cm: d.fundic_height_cm ?? null,
                     fetal_heart_tone_bpm: d.fetal_heart_tone_bpm ?? null,
-                    next_visit_date: d.next_visit_date || ''
+                    next_visit_date: d.next_visit_date || '',
+                    consultation_id: d.consultation_id ?? null
                 };
             }
         };

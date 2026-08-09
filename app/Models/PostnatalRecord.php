@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $patient_id
  * @property int|null $pregnancy_id
+ * @property int|null $consultation_id
  * @property string $pregnancy_outcome
  * @property int|null $prenatal_visits_completed
  * @property string $place_delivered
@@ -40,6 +41,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Patient|null $childPatient
+ * @property-read Consultation|null $consultation
  * @property-read Patient $patient
  * @property-read Pregnancy|null $pregnancy
  * @property-read HealthWorker|null $recordedBy
@@ -57,6 +59,7 @@ use Illuminate\Support\Carbon;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PostnatalRecord whereChildMiddleName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PostnatalRecord whereChildPatientId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PostnatalRecord whereChildSex($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PostnatalRecord whereConsultationId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PostnatalRecord whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PostnatalRecord whereDangerSignsBaby($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PostnatalRecord whereDangerSignsMother($value)
@@ -151,6 +154,7 @@ class PostnatalRecord extends Model
     protected $fillable = [
         'patient_id',
         'pregnancy_id',
+        'consultation_id',
         'pregnancy_outcome',
         'prenatal_visits_completed',
         'place_delivered',
@@ -205,6 +209,11 @@ class PostnatalRecord extends Model
     public function pregnancy(): BelongsTo
     {
         return $this->belongsTo(Pregnancy::class);
+    }
+
+    public function consultation(): BelongsTo
+    {
+        return $this->belongsTo(Consultation::class);
     }
 
     public function childPatient(): BelongsTo

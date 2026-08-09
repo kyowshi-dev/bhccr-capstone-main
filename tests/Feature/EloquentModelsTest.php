@@ -124,6 +124,51 @@ class EloquentModelsTest extends TestCase
             ->assertSee('Nurse Santos');
     }
 
+    public function test_patients_show_renders_eager_loaded_active_pregnancy_and_accessors(): void
+    {
+        $user = $this->createUserWithPermissions(['patients', 'maternal']);
+        $householdId = $this->createHouseholdFixture();
+        $patientId = $this->createPatientFixture($householdId);
+
+        $latestPregnancyId = DB::table('pregnancies')->insertGetId([
+            'patient_id' => $patientId,
+            'status' => 'active',
+            'gravidity' => 1,
+            'parity' => 0,
+            'lmp' => '2026-01-10',
+            'edc' => '2026-10-17',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('prenatal_visits')->insert([
+            'pregnancy_id' => $latestPregnancyId,
+            'visit_date' => '2026-02-01',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('pregnancies')->insert([
+            'patient_id' => $patientId,
+            'status' => 'active',
+            'gravidity' => 2,
+            'parity' => 1,
+            'lmp' => '2025-05-01',
+            'edc' => '2026-02-05',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('patients.show', $patientId))
+            ->assertOk()
+            ->assertSee('JD')
+            ->assertSee('PT'.str_pad((string) $patientId, 3, '0', STR_PAD_LEFT))
+            ->assertSee('Oct 17, 2026')
+            ->assertDontSee('Feb 5, 2026')
+            ->assertSee('1 prenatal visit(s) recorded.');
+    }
+
     public function test_zones_index_renders_worker_name_via_relation(): void
     {
         $user = $this->createUserWithPermissions(['zones']);

@@ -29,6 +29,9 @@
         </div>
         <div class="mt-2 flex flex-wrap items-center gap-3">
             <span class="inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold" style="{{ $consultation->status_style }}">{{ $consultation->status_label }}</span>
+            @if ($consultation->purpose_of_visit)
+                <span class="inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">{{ $consultation->purpose_of_visit }}</span>
+            @endif
             <a href="{{ route('patients.show', $patient->id) }}" class="text-xs font-medium text-[var(--primary)] hover:underline lg:text-sm">Back to patient</a>
             <a href="{{ route('consultations.index') }}" class="text-xs font-medium text-[var(--primary)] hover:underline lg:text-sm">History</a>
             @if (in_array($consultation->status, \App\Enums\ConsultationStatus::terminalValues(), true) && auth()->user()->canPrintHandout())
@@ -370,6 +373,93 @@
             @endif
             @endif
         </section>
+
+        @php
+            $isFemalePatient = strtolower((string) ($patient->sex ?? '')) === 'female';
+        @endphp
+        @if ($isFemalePatient)
+        <section class="rounded-xl border bg-[var(--bg-surface)] p-4 lg:p-5" style="border-color: var(--border);">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h3 class="font-display font-semibold text-lg" style="color: var(--ink);">Maternal Transactions</h3>
+                    <p class="text-xs mt-0.5" style="color: var(--ink-muted);">Prenatal, postpartum, and family planning records linked to this consultation from the maternal module.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('maternal.prenatal.patient', $patient->id) }}" target="_blank"
+                       class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition hover:bg-black/[0.03]"
+                       style="border-color: var(--border); color: var(--primary);">
+                        <i class="fa-solid fa-baby-carriage" aria-hidden="true"></i> Prenatal
+                    </a>
+                    <a href="{{ route('maternal.postnatal.patient', $patient->id) }}" target="_blank"
+                       class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition hover:bg-black/[0.03]"
+                       style="border-color: var(--border); color: var(--primary);">
+                        <i class="fa-solid fa-child-reaching" aria-hidden="true"></i> Postpartum
+                    </a>
+                    <a href="{{ route('maternal.family-planning.patient', $patient->id) }}" target="_blank"
+                       class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition hover:bg-black/[0.03]"
+                       style="border-color: var(--border); color: var(--primary);">
+                        <i class="fa-solid fa-hand-holding-heart" aria-hidden="true"></i> Family planning
+                    </a>
+                </div>
+            </div>
+
+            @if ($linkedPrenatalVisits->isEmpty() && $linkedPostnatal === null && $linkedFpVisits->isEmpty())
+                <p class="mt-4 text-sm" style="color: var(--ink-muted);">
+                    No maternal records are linked to this consultation yet. Add one from the maternal module and select this consultation as its origin.
+                </p>
+            @else
+                <div class="mt-4 space-y-4">
+                    @if ($linkedPrenatalVisits->isNotEmpty())
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: var(--ink-muted);">Prenatal visits</p>
+                            <div class="space-y-2">
+                                @foreach ($linkedPrenatalVisits as $pv)
+                                    <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+                                        <span class="font-medium" style="color: var(--ink);">{{ \Carbon\Carbon::parse($pv->visit_date)->format('M d, Y') }}</span>
+                                        <span class="text-xs" style="color: var(--ink-muted);">
+                                            FH {{ $pv->fundic_height_cm ?? '—' }} cm · FHT {{ $pv->fetal_heart_tone_bpm ?? '—' }} bpm
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($linkedPostnatal !== null)
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: var(--ink-muted);">Postpartum record</p>
+                            <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+                                <span class="font-medium" style="color: var(--ink);">
+                                    {{ \App\Models\PostnatalRecord::OUTCOMES[$linkedPostnatal->pregnancy_outcome] ?? $linkedPostnatal->pregnancy_outcome }}
+                                    · {{ \Carbon\Carbon::parse($linkedPostnatal->delivery_date)->format('M d, Y') }}
+                                </span>
+                                <span class="text-xs" style="color: var(--ink-muted);">
+                                    {{ $linkedPostnatal->postpartum_24h_date ? '24h ✓' : '' }}
+                                    {{ $linkedPostnatal->postpartum_7d_date ? '7d ✓' : '' }}
+                                    {{ $linkedPostnatal->postpartum_14d_date ? '14d ✓' : '' }}
+                                    {{ $linkedPostnatal->postpartum_28d_date ? '28d ✓' : '' }}
+                                </span>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($linkedFpVisits->isNotEmpty())
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: var(--ink-muted);">Family planning visits</p>
+                            <div class="space-y-2">
+                                @foreach ($linkedFpVisits as $fp)
+                                    <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
+                                        <span class="font-medium" style="color: var(--ink);">{{ \Carbon\Carbon::parse($fp->visit_date)->format('M d, Y') }}</span>
+                                        <span class="text-xs" style="color: var(--ink-muted);">{{ $fp->method }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            @endif
+        </section>
+        @endif
 
         @if ($clinicalReviewOpen)
             <form id="finalizeForm" action="{{ route('consultations.finalize', $consultation->id) }}" method="POST">

@@ -8,10 +8,10 @@
         <div class="bg-surface p-4 lg:p-6 rounded-xl lg:rounded-lg shadow-sm border border-border">
             <div class="text-center mb-3 lg:mb-4">
                 <div class="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center text-2xl lg:text-3xl font-bold mx-auto" style="background: var(--teal-soft); color: var(--primary);">
-                    {{ substr($patient->first_name, 0, 1) }}{{ substr($patient->last_name, 0, 1) }}
+                    {{ $patient->initials }}
                 </div>
                 <h2 class="text-lg lg:text-xl font-bold mt-2">{{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }}</h2>
-                <p class="text-ink-muted text-xs lg:text-sm">ID: PT{{ str_pad($patient->id, 3, '0', STR_PAD_LEFT) }}</p>
+                <p class="text-ink-muted text-xs lg:text-sm">ID: {{ $patient->patient_code }}</p>
             </div>
 
             <hr class="my-3 lg:my-4">
@@ -35,7 +35,7 @@
                 </div>
                 <div class="flex justify-between items-start">
                     <span class="text-ink-muted">Spouse's Name:</span>
-                    <span class="font-medium text-right">{{ ucwords ($patient->spouse_name) }}</span>
+                    <span class="font-medium text-right">{{ ucwords($patient->spouse_name) }}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-ink-muted">Relationship:</span>
@@ -99,12 +99,12 @@
             <div class="mt-4 lg:mt-6 pt-3 lg:pt-4 border-t">
                 <h4 class="text-xs font-bold text-ink-subtle uppercase mb-2">Maternal Care</h4>
                 @if (auth()->user()?->hasPermission('maternal'))
-                    @if ($activePregnancy = $patient->pregnancies()->where('status', 'active')->orderByDesc('lmp')->first())
+                    @if ($patient->activePregnancy)
                         <p class="text-xs lg:text-sm text-ink-muted mb-1">
-                            Active pregnancy · EDC <span class="font-semibold" style="color: var(--ink);">{{ $activePregnancy->edc?->format('M d, Y') }}</span>
+                            Active pregnancy · EDC <span class="font-semibold" style="color: var(--ink);">{{ $patient->activePregnancy->edc?->format('M d, Y') }}</span>
                         </p>
                         <p class="text-xs lg:text-sm text-ink-muted mb-2">
-                            {{ $activePregnancy->visits()->count() }} prenatal visit(s) recorded.
+                            {{ $patient->activePregnancy->visits_count }} prenatal visit(s) recorded.
                         </p>
                     @else
                         <p class="text-xs lg:text-sm text-ink-muted mb-2">No active pregnancy recorded.</p>
@@ -125,7 +125,7 @@
 
             <div class="mt-4 lg:mt-6 pt-3 lg:pt-4 border-t">
                 <h4 class="text-xs font-bold text-ink-subtle uppercase mb-2">Immunization</h4>
-                <p class="text-xs lg:text-sm text-ink-muted mb-2">{{ $immunizationCount }} dose(s) recorded.</p>
+                <p class="text-xs lg:text-sm text-ink-muted mb-2">{{ $patient->immunization_records_count }} dose(s) recorded.</p>
                 <a href="{{ route('immunizations.patient', $patient->id) }}" class="inline-flex items-center justify-center w-full px-3 py-2 rounded-lg text-xs lg:text-sm font-medium bg-teal-50 text-teal-700 hover:bg-teal-100 transition">
                     View / Add Immunization
                 </a>
@@ -162,16 +162,15 @@
                         <tbody class="divide-y divide-border">
                             @foreach($history as $record)
                             <tr class="hover:bg-teal-soft">
-                                <td class="px-2 lg:px-4 py-2 lg:py-3 whitespace-nowrap">{{ \Carbon\Carbon::parse($record->created_at)->format('M d, Y') }}</td>
+                                <td class="px-2 lg:px-4 py-2 lg:py-3 whitespace-nowrap">{{ $record->created_at->format('M d, Y') }}</td>
                                 <td class="px-2 lg:px-4 py-2 lg:py-3 font-medium text-ink">
                                     <div>{{ $record->complaint_name ?? 'General Checkup' }}</div>
-                                    <div class="text-xs text-ink-muted sm:hidden">{{ ucwords((string) $record->worker_name) ?: 'Staff' }}</div>
+                                    <div class="text-xs text-ink-muted sm:hidden">{{ $record->worker_label }}</div>
                                 </td>
-                                <td class="px-2 lg:px-4 py-2 lg:py-3 hidden sm:table-cell">{{ ucwords((string) $record->worker_name) ?: 'Staff' }}</td>
+                                <td class="px-2 lg:px-4 py-2 lg:py-3 hidden sm:table-cell">{{ $record->worker_label }}</td>
                                 <td class="px-2 lg:px-4 py-2 lg:py-3">
-                                    <span class="px-2 py-0.5 lg:py-1 rounded-full text-xs 
-                                        {{ $record->status == \App\Enums\ConsultationStatus::Completed->value ? 'bg-teal-soft text-primary' : 'bg-amber-100 text-amber-700' }}">
-                                        {{ ucfirst($record->status) }}
+                                    <span class="px-2 py-0.5 lg:py-1 rounded-full text-xs font-semibold" style="{{ $record->status_style }}">
+                                        {{ $record->status_label }}
                                     </span>
                                 </td>
                                 <td class="px-2 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">

@@ -54,6 +54,10 @@ class PostnatalController extends Controller
                 ->where('status', 'active')
                 ->orderByDesc('lmp')
                 ->get(),
+            'consultations' => $patient->consultations()
+                ->orderByDesc('created_at')
+                ->limit(30)
+                ->get(),
         ]);
     }
 
@@ -102,7 +106,13 @@ class PostnatalController extends Controller
                 ])->withInput();
         }
 
-        $record->update([$slot => $date->toDateString()]);
+        $update = [$slot => $date->toDateString()];
+
+        if ($request->filled('consultation_id')) {
+            $update['consultation_id'] = (int) $request->input('consultation_id');
+        }
+
+        $record->update($update);
 
         return redirect()
             ->route('maternal.postnatal.patient', $record->patient_id)

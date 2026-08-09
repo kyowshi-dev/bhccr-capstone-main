@@ -134,7 +134,8 @@
                             </li>
                         @endforeach
                     </ul>
-                    <form method="POST" action="{{ route('maternal.postnatal.complete-visit', $current->id) }}" class="mt-3">
+                    <form method="POST" action="{{ route('maternal.postnatal.complete-visit', $current->id) }}" class="mt-3"
+                          x-data="ppSuggest('{{ $current->delivery_date->format('Y-m-d') }}')" x-init="$nextTick(suggest)">
                         @csrf
                         <div>
                             <label for="pp_slot" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Record completed visit</label>
@@ -151,6 +152,22 @@
                                        class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                        style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                                 <button type="submit" class="rounded-lg px-4 py-2 text-sm font-semibold text-white transition hover:shadow-md" style="background: var(--primary);">Save</button>
+                            </div>
+                            {{-- Auto-suggest the postpartum slot due for today's date relative to delivery. --}}
+                            <div class="mt-3">
+                                <label for="pp_consultation_id" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Origin consultation <span class="text-xs font-normal" style="color: var(--ink-subtle);">(optional)</span></label>
+                                <select id="pp_consultation_id" name="consultation_id" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                                        style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                                    <option value="">— None —</option>
+                                    @forelse ($consultations as $consultation)
+                                        <option value="{{ $consultation->id }}" @selected((string) old('consultation_id', $current->consultation_id ?? null) === (string) $consultation->id)>
+                                            #{{ $consultation->id }} · {{ optional($consultation->created_at)->format('M d, Y') }} · {{ $consultation->purpose_of_visit ?? $consultation->nature_of_visit ?? 'Consultation' }}
+                                        </option>
+                                    @empty
+                                        <option value="" disabled>No prior consultations</option>
+                                    @endforelse
+                                </select>
+                                @error('consultation_id') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
                             </div>
                             @if ($errors->has('slot') || $errors->has('date'))
                                 <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $errors->first('slot') ?: $errors->first('date') }}</p>
@@ -247,6 +264,11 @@
                 @error('pregnancy_outcome') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
             </div>
         </div>
+        @include('maternal.partials.consultation-select', [
+            'fieldName' => 'consultation_id',
+            'consultations' => $consultations,
+            'selected' => old('consultation_id'),
+        ])
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div>
                 <label for="pn_place_delivered" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Place <span style="color: var(--danger);">*</span></label>
@@ -422,6 +444,11 @@
                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                 </div>
             </div>
+            @include('maternal.partials.consultation-select', [
+                'fieldName' => 'consultation_id',
+                'consultations' => $consultations,
+                'selected' => old('consultation_id', $current->consultation_id),
+            ])
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
                     <label for="ep_place_delivered" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Place</label>
@@ -519,4 +546,26 @@
         </form>
     </x-modal>
 @endif
+
+<script>
+    function ppSuggest(deliveryDate) {
+        return {
+            suggest() {
+                const select = document.getElementById('pp_slot');
+                if (! select) return;
+                const due = new Date(deliveryDate + 'T00:00:00');
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const days = Math.round((today - due) / 86400000);
+                const slot = days <= 2 ? 'postpartum_24h_date'
+                    : days <= 10 ? 'postpartum_7d_date'
+                    : days <= 21 ? 'postpartum_14d_date'
+                    : 'postpartum_28d_date';
+                if (select.querySelector('option[value="' + slot + '"]')) {
+                    select.value = slot;
+                }
+            }
+        };
+    }
+</script>
 @endsection

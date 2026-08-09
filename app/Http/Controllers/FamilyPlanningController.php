@@ -55,6 +55,10 @@ class FamilyPlanningController extends Controller
                 ->orderByDesc('id')
                 ->get(),
             'visitHistory' => $client?->visits()->orderByDesc('visit_date')->get() ?? collect(),
+            'consultations' => $patient->consultations()
+                ->orderByDesc('created_at')
+                ->limit(30)
+                ->get(),
         ]);
     }
 

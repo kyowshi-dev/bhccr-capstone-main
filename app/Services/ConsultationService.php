@@ -30,6 +30,7 @@ final class ConsultationService
                 'status' => ConsultationStatus::NurseReview->value,
                 'nature_of_visit' => $validated['nature_of_visit'],
                 'mode_of_transaction' => $validated['mode_of_transaction'],
+                'purpose_of_visit' => $validated['purpose_of_visit'] ?? null,
                 'referred_from' => $validated['referred_from'] ?? null,
                 'complaint_text' => $validated['chief_complaint'] ?? null,
                 'created_at' => now(),

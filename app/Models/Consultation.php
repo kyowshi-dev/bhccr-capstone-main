@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $nature_of_visit
  * @property string|null $notes
  * @property string $mode_of_transaction
+ * @property string|null $purpose_of_visit
  * @property string|null $referred_from
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -42,6 +43,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Vitals> $vitals
  * @property-read int|null $vitals_count
  * @property-read HealthWorker $worker
+ * @property-read string|null $worker_label
  * @property-read mixed $worker_name
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Consultation newModelQuery()
@@ -59,6 +61,7 @@ use Illuminate\Support\Carbon;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Consultation whereNurseValidatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Consultation whereNurseValidatedBy($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Consultation wherePatientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Consultation wherePurposeOfVisit($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Consultation whereReferredFrom($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Consultation whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Consultation whereUpdatedAt($value)
@@ -78,6 +81,7 @@ class Consultation extends Model
         'is_locked',
         'nature_of_visit',
         'mode_of_transaction',
+        'purpose_of_visit',
     ];
 
     protected function casts(): array
@@ -133,6 +137,13 @@ class Consultation extends Model
     {
         return Attribute::make(
             get: fn () => trim(($this->worker->first_name ?? '').' '.($this->worker->last_name ?? '')),
+        );
+    }
+
+    public function workerLabel(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => ucwords($this->worker_name) ?: 'Staff',
         );
     }
 

@@ -112,6 +112,11 @@
                                    style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                             @error('schedule_next_visit') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
                         </div>
+                        @include('maternal.partials.consultation-select', [
+                            'fieldName' => 'consultation_id',
+                            'consultations' => $consultations,
+                            'selected' => old('consultation_id'),
+                        ])
                         <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md"
                                 style="background: var(--primary);">
                             <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save visit

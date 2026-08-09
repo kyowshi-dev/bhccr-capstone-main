@@ -57,8 +57,14 @@ class ConsultationController extends Controller
 
     public function liveRequests(Request $request): JsonResponse
     {
-        if (! auth()->user()->hasPermission('consultations')) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $user = auth()->user();
+
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        if (! $user->hasPermission('consultations')) {
+            return response()->json(['message' => 'Forbidden.'], 403);
         }
 
         // Only fetch consultations waiting for doctor that haven't been notified yet
@@ -212,6 +218,22 @@ class ConsultationController extends Controller
         $diagnosisOptions = DB::table('diagnosis_lookup')->orderBy('diagnosis_name')->get();
         $medicineOptions = DB::table('medicines_lookup')->orderBy('name')->get();
 
+        // Maternal care records linked to this consultation.
+        $linkedPrenatalVisits = DB::table('prenatal_visits')
+            ->where('consultation_id', $consultation->id)
+            ->orderBy('visit_date')
+            ->get();
+
+        $linkedPostnatal = DB::table('postnatal_records')
+            ->where('consultation_id', $consultation->id)
+            ->latest('id')
+            ->first();
+
+        $linkedFpVisits = DB::table('family_planning_visits')
+            ->where('consultation_id', $consultation->id)
+            ->orderBy('visit_date')
+            ->get();
+
         return view('consultations.show', [
             'consultation' => $consultation,
             'patient' => $patient,
@@ -223,6 +245,9 @@ class ConsultationController extends Controller
             'prescriptions' => $existingPrescriptions,
             'diagnosisOptions' => $diagnosisOptions,
             'medicineOptions' => $medicineOptions,
+            'linkedPrenatalVisits' => $linkedPrenatalVisits,
+            'linkedPostnatal' => $linkedPostnatal,
+            'linkedFpVisits' => $linkedFpVisits,
             'canReferExternally' => $canReferExternally,
             'canAcknowledgeIntake' => $canAcknowledgeIntake,
             'canAddDiagnosis' => $canAddDiagnosis,

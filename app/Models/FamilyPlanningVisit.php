@@ -10,6 +10,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $client_id
+ * @property int|null $consultation_id
  * @property Carbon $visit_date
  * @property string $method
  * @property Carbon|null $schedule_next_visit
@@ -17,12 +18,14 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read FamilyPlanningClient $client
+ * @property-read Consultation|null $consultation
  * @property-read HealthWorker|null $recordedBy
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FamilyPlanningVisit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FamilyPlanningVisit newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FamilyPlanningVisit query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FamilyPlanningVisit whereClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|FamilyPlanningVisit whereConsultationId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FamilyPlanningVisit whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FamilyPlanningVisit whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FamilyPlanningVisit whereMethod($value)
@@ -39,6 +42,7 @@ class FamilyPlanningVisit extends Model
 
     protected $fillable = [
         'client_id',
+        'consultation_id',
         'visit_date',
         'method',
         'schedule_next_visit',
@@ -56,6 +60,11 @@ class FamilyPlanningVisit extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(FamilyPlanningClient::class, 'client_id');
+    }
+
+    public function consultation(): BelongsTo
+    {
+        return $this->belongsTo(Consultation::class);
     }
 
     public function recordedBy(): BelongsTo

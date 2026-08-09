@@ -10,6 +10,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $pregnancy_id
+ * @property int|null $consultation_id
  * @property Carbon $visit_date
  * @property numeric|null $fundic_height_cm
  * @property int|null $fetal_heart_tone_bpm
@@ -18,11 +19,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Pregnancy $pregnancy
+ * @property-read Consultation|null $consultation
  * @property-read HealthWorker|null $recordedBy
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PrenatalVisit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PrenatalVisit newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PrenatalVisit query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PrenatalVisit whereConsultationId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PrenatalVisit whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PrenatalVisit whereFetalHeartToneBpm($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PrenatalVisit whereFundicHeightCm($value)
@@ -41,6 +44,7 @@ class PrenatalVisit extends Model
 
     protected $fillable = [
         'pregnancy_id',
+        'consultation_id',
         'visit_date',
         'fundic_height_cm',
         'fetal_heart_tone_bpm',
@@ -60,6 +64,11 @@ class PrenatalVisit extends Model
     public function pregnancy(): BelongsTo
     {
         return $this->belongsTo(Pregnancy::class);
+    }
+
+    public function consultation(): BelongsTo
+    {
+        return $this->belongsTo(Consultation::class);
     }
 
     public function recordedBy(): BelongsTo

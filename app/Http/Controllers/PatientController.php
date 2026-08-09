@@ -8,6 +8,8 @@ use App\Models\Patient;
 use App\Models\Zone;
 use App\Services\PatientQueryService;
 use App\Services\PatientService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -88,20 +90,22 @@ class PatientController extends Controller
     }
 
     // 4. View Single Patient Profile
-    public function show($id)
+    public function show(int $id): View
     {
-        $patient = Patient::with('household')->findOrFail($id);
+        $patient = Patient::with([
+            'household',
+            'activePregnancy' => fn (HasOne $query) => $query->withCount('visits'),
+        ])
+            ->withCount('immunizationRecords')
+            ->findOrFail($id);
 
         $this->authorize('view', $patient);
 
-        // Load Consultations (History) – worker_id is health_workers.id
         $history = $patient->consultations()
             ->with('worker')
             ->orderByDesc('created_at')
             ->get();
 
-        $immunizationCount = $patient->immunizationRecords()->count();
-
-        return view('patients.show', compact('patient', 'history', 'immunizationCount'));
+        return view('patients.show', compact('patient', 'history'));
     }
 }
