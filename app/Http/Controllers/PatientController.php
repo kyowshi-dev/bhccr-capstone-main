@@ -62,9 +62,6 @@ class PatientController extends Controller
 
         $zonesQuery = Zone::query()
             ->orderBy('zone_number');
-        if ($user->isZoneScoped()) {
-            $zonesQuery->whereIn('id', $user->accessibleZoneIds());
-        }
 
         return view('patients.create', [
             'selectedHouseholdId' => $selectedHouseholdId,

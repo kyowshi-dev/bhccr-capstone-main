@@ -36,16 +36,12 @@ final class PatientService
     {
         $user = auth()->user();
 
-        // Zone-scoped workers may only register patients into households or
-        // zones within their assigned coverage.
+        // Zone-scoped workers may only attach patients to households within
+        // their assigned coverage, but they may create households in any zone.
         if ($user !== null && $user->isZoneScoped()) {
             $creatingNew = (int) ($validated['create_new_household'] ?? 0) === 1;
 
-            if ($creatingNew) {
-                if (! in_array((int) $validated['new_household_zone_id'], $user->accessibleZoneIds(), true)) {
-                    throw ValidationException::withMessages(['new_household_zone_id' => 'This zone is outside your assigned zones.']);
-                }
-            } elseif (! $user->canAccessHousehold((int) $validated['household_id'])) {
+            if (! $creatingNew && ! $user->canAccessHousehold((int) $validated['household_id'])) {
                 throw ValidationException::withMessages(['household_id' => 'This household is outside your assigned zones.']);
             }
         }

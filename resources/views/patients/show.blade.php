@@ -98,7 +98,7 @@
 
             <div class="mt-4 lg:mt-6 pt-3 lg:pt-4 border-t">
                 <h4 class="text-xs font-bold text-ink-subtle uppercase mb-2">Maternal Care</h4>
-                @if (auth()->user()?->hasPermission('maternal'))
+                @if (auth()->user()?->hasPermission('maternal') && $patient->sex === 'Female' && $patient->age >= 15 && $patient->age <= 49)
                     @if ($patient->activePregnancy)
                         <p class="text-xs lg:text-sm text-ink-muted mb-1">
                             Active pregnancy · EDC <span class="font-semibold" style="color: var(--ink);">{{ $patient->activePregnancy->edc?->format('M d, Y') }}</span>
@@ -120,6 +120,8 @@
                             <i class="fa-solid fa-hand-holding-heart mr-1.5" aria-hidden="true"></i> Family Planning
                         </a>
                     </div>
+                @else
+                    <p class="text-xs lg:text-sm text-ink-muted mb-2">Maternal care programs are not applicable for this patient.</p>
                 @endif
             </div>
 

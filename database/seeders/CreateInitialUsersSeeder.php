@@ -142,7 +142,7 @@ class CreateInitialUsersSeeder extends Seeder
             $contact_number = $userData['contact_number'];
 
             // Check if user already exists
-            $existingUser = User::where('username', $userData['username'])->first();
+            $existingUser = User::where('username', '=', $userData['username'])->first();
             if ($existingUser) {
                 $this->command->warn("User '{$userData['username']}' already exists. Skipping...");
 
