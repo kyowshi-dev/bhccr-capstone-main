@@ -7,6 +7,7 @@ use App\Models\Consultation;
 use App\Models\Immunization;
 use App\Models\Medicine;
 use App\Models\Patient;
+use App\Models\PostnatalRecord;
 use App\Models\User;
 use App\Policies\ImmunizationPolicy;
 use App\Policies\MedicinePolicy;
@@ -59,6 +60,10 @@ class AppServiceProvider extends ServiceProvider
                     'attending_doctor.last_name as attending_doctor_last_name'
                 )
                 ->firstOrFail();
+        });
+
+        Route::bind('postnatal', function (string $value) {
+            return PostnatalRecord::findOrFail($value);
         });
     }
 
