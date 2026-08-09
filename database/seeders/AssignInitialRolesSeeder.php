@@ -16,11 +16,20 @@ class AssignInitialRolesSeeder extends Seeder
     public function run(): void
     {
         $rolePermissionMap = [
+            // ADMIN
             'Admin' => Permission::query()->pluck('name')->toArray(),
-            'Doctor' => ['patients', 'consultations', 'medicines', 'print_handouts', 'dashboard_handouts_clinical'],
-            'Nurse' => ['patients', 'consultations', 'medicines', 'immunizations', 'print_handouts', 'dashboard_handouts_clinical'],
-            'Midwife' => ['patients', 'consultations', 'immunizations', 'reports', 'print_handouts', 'dashboard_handouts_clinical', 'dashboard_handouts_midwife'],
-            'BHW' => ['household', 'patients', 'consultations', 'reports', 'print_handouts', 'dashboard_handouts_bhw'],
+
+            // DOCTOR
+            'Doctor' => ['patients', 'consultations', 'medicines', 'maternal', 'print_handouts', 'dashboard_handouts_clinical'],
+
+            // NURSE
+            'Nurse' => ['patients', 'consultations', 'medicines', 'immunizations', 'maternal', 'print_handouts', 'dashboard_handouts_clinical'],
+
+            // MIDWIFE
+            'Midwife' => ['patients', 'consultations', 'immunizations', 'maternal', 'reports', 'print_handouts', 'dashboard_handouts_clinical', 'dashboard_handouts_midwife'],
+            
+            // BHW
+            'BHW' => ['household', 'patients', 'consultations', 'immunizations', 'maternal', 'reports', 'print_handouts', 'dashboard_handouts_bhw'],
         ];
 
         foreach ($rolePermissionMap as $roleName => $permissionNames) {
@@ -31,7 +40,7 @@ class AssignInitialRolesSeeder extends Seeder
             }
 
             $permissionIds = Permission::query()
-                ->whereIn('name', $permissionNames, 'and', false)
+                ->whereIn('name', $permissionNames)
                 ->pluck('id')
                 ->all();
 

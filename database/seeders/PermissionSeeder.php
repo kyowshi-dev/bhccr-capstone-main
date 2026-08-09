@@ -21,6 +21,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'reports', 'description' => 'Access to Reports module'],
             ['name' => 'users', 'description' => 'Access to User Management'],
             ['name' => 'zones', 'description' => 'Manage geographic zones and assign health workers'],
+            ['name' => 'maternal', 'description' => 'Access to Maternal Health module (prenatal, postnatal, family planning)'],
             ['name' => 'print_handouts', 'description' => 'Print consultation Rx and diagnosis handouts'],
             ['name' => 'dashboard_handouts_bhw', 'description' => 'BHW dashboard — Results ready panel'],
             ['name' => 'dashboard_handouts_clinical', 'description' => 'Clinical dashboard — Recent completed handouts panel'],

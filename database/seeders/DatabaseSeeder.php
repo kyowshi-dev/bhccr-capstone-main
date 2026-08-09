@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -12,45 +11,23 @@ class DatabaseSeeder extends Seeder
     {
         // 1. ROLES
         $roles = [
-            ['id' => 1, 'role_name' => 'Admin'],    // Head Nurse/IT
-            ['id' => 2, 'role_name' => 'Nurse'],   // HRH
-            ['id' => 3, 'role_name' => 'Midwife'], // Midwife
-            ['id' => 4, 'role_name' => 'BHW'],     // Encoder
-            ['id' => 5, 'role_name' => 'BNS'],     // Nutrition Scholar
-            ['id' => 6, 'role_name' => 'Doctor'],
-            ['id' => 7, 'role_name' => 'User'],
+            ['id' => 1, 'role_name' => 'Admin'],
+            ['id' => 2, 'role_name' => 'Nurse'],
+            ['id' => 3, 'role_name' => 'Midwife'],
+            ['id' => 4, 'role_name' => 'BHW'],
+            ['id' => 5, 'role_name' => 'Doctor'],
         ];
         DB::table('user_roles')->insertOrIgnore($roles);
 
-        // 2. USERS (Create 1 Admin Account)
-        // Username: admin | Password: password
-        DB::table('users')->insertOrIgnore([
-            'username' => 'admin',
-            'password' => Hash::make('password'),
-            'email' => 'admin@sta-ana.ph',
-            'is_active' => true,
-            'role_id' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // Link Admin to Health Worker Profile
-        DB::table('health_workers')->insertOrIgnore([
-            'user_id' => 1,
-            'first_name' => 'System',
-            'last_name' => 'Admin',
-            'role' => 'Head Nurse',
-            'contact_number' => '09123456789',
-        ]);
-
-        // 3. PERMISSIONS
+        // 2. PERMISSIONS + role assignment
         $this->call(PermissionSeeder::class);
         $this->call(AssignInitialRolesSeeder::class);
 
-        // 4. INITIAL USERS (Admin, BHW, Nurse, Doctor)
+        // 3. INITIAL USERS (Admin, BHW, Nurse, Doctor)
+        // All passwords: password123
         $this->call(CreateInitialUsersSeeder::class);
 
-        // 5. DIAGNOSIS (Common PH Diseases for Search Testing)
+        // 4. DIAGNOSIS — common PH diseases for local search testing
         $diagnoses = [
             ['diagnosis_code' => 'J00', 'diagnosis_name' => 'Acute Nasopharyngitis (Common Cold)', 'category' => 'Respiratory'],
             ['diagnosis_code' => 'J06.9', 'diagnosis_name' => 'Acute Upper Respiratory Infection (URTI)', 'category' => 'Respiratory'],
@@ -62,41 +39,67 @@ class DatabaseSeeder extends Seeder
         ];
         DB::table('diagnosis_lookup')->insertOrIgnore($diagnoses);
 
-        // 6. MEDICINES (Basic RHU Formulary)
+        // 5. MEDICINES — basic RHU formulary
         $medicines = [
-            ['name' => 'Paracetamol 500mg Tablet'],
-            ['name' => 'Paracetamol 250mg/5mL Syrup'],
-            ['name' => 'Amoxicillin 500mg Capsule'],
-            ['name' => 'Amoxicillin 250mg/5mL Suspension'],
-            ['name' => 'Losartan 50mg Tablet'],
-            ['name' => 'Amlodipine 5mg Tablet'],
-            ['name' => 'Metformin 500mg Tablet'],
+            ['name' => 'Paracetamol'],
+            ['name' => 'Amoxicillin'],
+            ['name' => 'Metformin'],
+            ['name' => 'Biogesic'],
+            ['name' => 'Losartan'],
+            ['name' => 'Amlodipine'],
+            ['name' => 'Bioflu'],
             ['name' => 'ORS (Oral Rehydration Salts) Sachet'],
-            ['name' => 'Multivitamins Capsule'],
-            ['name' => 'Vitamin B Complex Tablet'],
+            ['name' => 'Cetirizine'],
+            ['name' => 'Salbutamol Inhaler'],
+            ['name' => 'Ibuprofen'],
+            ['name' => 'Azithromycin'],
+            ['name' => 'Vitamin C'],
+            ['name' => 'Erethromycin'],
+            ['name' => 'Diatabs'],
         ];
+        $now = now();
+        foreach ($medicines as $i => $m) {
+            $medicines[$i]['created_at'] = $now;
+            $medicines[$i]['updated_at'] = $now;
+        }
         DB::table('medicines_lookup')->insertOrIgnore($medicines);
 
-        // 7. ZONES (Barangay Sta. Ana Specific)
-        $zones = [];
-        for ($i = 1; $i <= 8; $i++) {
-            $zones[] = ['zone_number' => "Zone $i"];
+        // 6. ZONES
+        $zoneIds = [];
+        for ($i = 1; $i <= 7; $i++) {
+            $zoneIds[] = DB::table('zones')->insertGetId([
+                'zone_number' => "$i",
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
         }
-        DB::table('zones')->insertOrIgnore($zones);
 
-        // 9. VACCINES (EPI / Immunization lookup)
+        // 6a. Assign each zone to a BHW
+        $bhwIds = DB::table('health_workers')
+            ->where('role', 'BHW')
+            ->orderBy('id')
+            ->pluck('id')
+            ->toArray();
+
+        foreach ($zoneIds as $i => $zoneId) {
+            if (isset($bhwIds[$i])) {
+                DB::table('zones')->where('id', $zoneId)->update(['assigned_worker_id' => $bhwIds[$i]]);
+            }
+        }
+
+        // 7. VACCINES — EPI / immunization lookup
         $this->call(VaccineSeeder::class);
 
-        // 10. ICD-10 diagnosis codes (optional: copy icd102019syst_codes.sql to storage/app/ or set BHCIS_ICD_SQL_PATH)
+        // 8. ICD-10 diagnosis codes (requires icd102019syst_codes.sql in storage/app/ or BHCIS_ICD_SQL_PATH)
         $this->call(IcdDiagnosisSeeder::class);
 
-        // 11. PATIENTS
+        // 9. PATIENTS + households
         $this->call(PatientSeeder::class);
 
-        // 12. CONSULTATIONS + Outward Referrals
+        // 10. CONSULTATIONS + outward referrals
         $this->call(ConsultationSeeder::class);
 
-        // 13. Sample Audit Logs (references the real users, patients, and consultations seeded above)
+        // 11. Sample audit logs
         $this->call(AuditLogSeeder::class);
     }
 }

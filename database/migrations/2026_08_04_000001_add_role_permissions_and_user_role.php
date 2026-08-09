@@ -82,7 +82,7 @@ return new class extends Migration
 
     private function ensureRoles(): void
     {
-        foreach (['Admin', 'Nurse', 'Midwife', 'BHW', 'BNS', 'Doctor', 'User'] as $roleName) {
+        foreach (['Admin', 'Nurse', 'Midwife', 'BHW', 'Doctor'] as $roleName) {
             $exists = DB::table('user_roles')->where('role_name', $roleName)->exists();
 
             if (! $exists) {

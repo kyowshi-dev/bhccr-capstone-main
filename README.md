@@ -1,25 +1,143 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<div align="center">
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# BHCIS System Sta. Ana
 
-## About Laravel
+**Barangay Health Center Information System** — a DOH-aligned capstone system for Sta. Ana that complements the barangay's paper-log workflow with digital maternal tracking, child & adult immunization management, consultations & referrals, prescriptions, and barangay health reports.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+PHP 8.2+ · Laravel 12 · Blade + Tailwind CSS v4 · MySQL
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+</div>
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Table of Contents
 
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+- [Running the App](#running-the-app)
+- [Scripts](#scripts)
+- [Project Structure](#project-structure)
+- [Testing](#testing)
+- [Roadmap](#roadmap)
+- [License](#license)
 
+---
 
+## Features
+
+- **Consultations & Referrals** — intake, vitals (versioned), diagnoses, prescriptions, consultation finalization, outward referrals with status tracking, and printable DOH-style referral forms.
+- **Maternal Care** — prenatal profile & pregnancy tracking, prenatal visit records, postpartum/postnatal visits, obstetric history, and family planning client management with visit logging.
+- **Immunizations** — child & adult immunization schedules, vaccine administration, marked-as-done tracking, no-show handling, and infant enrollment.
+- **Households & Patients** — zone-based household registry, patient records, shared-searchable records, encryption of sensitive PHI.
+- **Reports** — morbidity, maternal care, immunization, family planning, NCD, and referral reports with DOH-style PDF downloads and CSV export for households.
+- **Administration** — user/role management, data-driven permissions, application settings, notifications, audit-logged actions.
+- **ICD-11 Diagnosis Lookup** — remote WHO ICD API with automatic fallback to a local `diagnosis_lookup` table when the API is disabled/unreachable.
+- **DOH-style Print Handouts & PDF Forms** — black 1px border, fixed-grid print layouts generated via Spatie Laravel PDF + Browsershot/DOMPDF.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Backend | [Laravel 12](https://laravel.com), PHP 8.2+ |
+| Frontend | [Blade](https://laravel.com/docs/blade), [Tailwind CSS v4](https://tailwindcss.com), Vite, Alpine-style Sweetalert2 UI |
+| Frontend libs | ApexCharts, Font Awesome 7, SweetAlert2 |
+| PDFs | `spatie/laravel-pdf` + `browsershot`/puppeteer, `barryvdh/laravel-dompdf` |
+| Database | MySQL (SQLite for tests) |
+| Tooling | Laravel Pint, Larastan/PHPStan, PHPUnit, Laravel Sail, Laravel Pail |
+
+## Getting Started
+
+### Prerequisites
+
+- PHP **8.2+**
+- [Composer](https://getcomposer.org)
+- [Node.js](https://nodejs.org) 18+ (with npm)
+- A MySQL database (or SQLite for local testing)
+- Chromium for puppeteer-based PDF rendering (installed by `npm install`)
+
+### Installation
+
+```sh
+# 1. Install dependencies, copy .env, generate key, migrate, link storage, build assets
+composer run setup
+# (or run the steps individually: composer install, php artisan key:generate,
+#  php artisan migrate --seed, npm install, npm run build)
+
+# 2. Seed roles, permissions, an admin user, and lookup data:
+php artisan db:seed
+```
+
+### Configuration
+
+Copy `.env.example` to `.env` (done automatically by `composer run setup`) and set:
+
+| Variable | Description |
+|----------|-------------|
+| `APP_KEY` | Generated by `php artisan key:generate` |
+| `SESSION_ENCRYPT` | `true` encrypts PHI-bearing session payloads at rest |
+| `SESSION_SECURE_COOKIE` | `true` when serving over HTTPS |
+| `BHCIS_ICD_API_ENABLED` | `true` uses the remote WHO ICD API for diagnosis lookup |
+| `BHCIS_ICD_API_BASE_URL` / `BHCIS_ICD_API_TOKEN_URL` | ICD API endpoints (defaults: WHO `id.who.int`) |
+| `BHCIS_ICD_API_CLIENT_ID` / `BHCIS_ICD_API_CLIENT_SECRET` | Your WHO ICD API credentials (never commit) |
+
+> **Security:** Never deploy with `APP_DEBUG=true` — it leaks stack traces, env vars and PHI. Obtain your own ICD API credentials from WHO ([id.who.int](https://id.who.int)).
+
+## Development
+
+```sh
+composer run dev
+```
+
+Runs `php artisan serve`, the queue listener, Laravel Pail logs, and Vite dev server together via `concurrently`.
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `composer run dev` | Serve app + queue + logs + Vite in parallel |
+| `composer run test` | `config:clear` + `php artisan test` |
+| `composer run phpstan` | PHPStan static analysis (Larastan) |
+| `vendor/bin/pint --dirty` | Laravel Pint code style fixer |
+| `npm run build` | Build production frontend assets (required after Blade/JS changes) |
+
+## Project Structure
+
+```
+app/
+├── Http/Controllers/        # Auth, Dashboard, Household, Patient, Consultation,
+│                            # Referral, Immunization, Prenatal, Postnatal,
+│                            # FamilyPlanning, Report, Prescription, User & Role mgmt...
+├── Http/Requests/           # Form Request validation classes
+├── Models/                  # Eloquent models (Patient, Pregnancy, Vaccination...)
+├── Services/PdfService.php  # Shared PDF rendering (Spatie PDF + Browsershot)
+└── Helpers/                 # Global helpers (user(), breadcrumbs)
+routes/web.php               # All web routes (auth + protected)
+resources/views/             # App-shell layouts + feature views
+```
+
+## Testing
+
+```sh
+composer run test                    # full suite (in-memory SQLite)
+php artisan test --compact --filter=testName   # single test
+```
+
+## Roadmap
+
+- [ ] Additional DOH report formats (dengue, tuberculosis, non-communicable diseases)
+- [ ] Multi-year vaccination schedule customization
+- [ ] API integration for externals (electronic medical records)
+- [ ] Offline/sync support for barangay health workers
+- [ ] Automated PHI expiry/archive workflows
+
+See the [open issues](https://github.com/kyowshi-dev/bhccr-capstone-main/issues) for the full list of proposed features and known issues.
+
+## License
+
+Distributed under the MIT license. This is a **capstone project and is not affiliated with, or endorsed by, the Philippine DOH (Department of Health).**
+
+---
+
+<p align="center"><i>Built with 💚 for the health workers of Brgy. Sta. Ana</i></p>

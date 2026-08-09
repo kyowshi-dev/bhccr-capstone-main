@@ -51,6 +51,7 @@ class PatientSeeder extends Seeder
             $lastName = $lastNames[array_rand($lastNames)];
 
             $birthDate = Carbon::createFromDate(rand(1950, 2023), rand(1, 12), rand(1, 28));
+            $isChild = $birthDate->diffInYears(now()) < 18;
             $civilStatus = rand(0, 1) ? 'Single' : 'Married';
             $isPhilhealthMember = rand(0, 1) === 1;
             $isPcbMember = rand(0, 1) === 1;
@@ -72,7 +73,7 @@ class PatientSeeder extends Seeder
                 'mother_name' => $firstNamesFemale[array_rand($firstNamesFemale)].' '.$lastNames[array_rand($lastNames)],
                 'spouse_name' => $civilStatus === 'Married'
                     ? ($isMale ? $firstNamesFemale[array_rand($firstNamesFemale)] : $firstNamesMale[array_rand($firstNamesMale)]).' '.$lastNames[array_rand($lastNames)]
-                    : 'N/A',
+                    : '',
                 'family_relationship' => Patient::FAMILY_RELATIONSHIP_OPTIONS[array_rand(Patient::FAMILY_RELATIONSHIP_OPTIONS)],
                 'residential_address' => $zoneNumber.' Sta. Ana, Tagoloan',
                 'is_philhealth_member' => $isPhilhealthMember ? 'y' : 'n',
@@ -82,6 +83,7 @@ class PatientSeeder extends Seeder
                 'is_pcb_member' => $isPcbMember ? 'y' : 'n',
                 'has_4ps' => rand(0, 1),
                 'has_nhts' => rand(0, 1),
+                'is_immunization_enrolled' => $isChild,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
