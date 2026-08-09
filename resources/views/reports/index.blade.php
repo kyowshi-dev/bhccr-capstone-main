@@ -34,7 +34,37 @@
             <h3 class="font-display font-semibold text-base mb-1" style="color: var(--ink);">Morbidity report</h3>
             <p class="text-sm" style="color: var(--ink-muted);">Leading causes of morbidity by diagnosis (ICD). FHSIS standard format.</p>
         </a>
-        </div>
+
+        <a href="{{ route('reports.maternal-care', ['month' => $month, 'year' => $year]) }}"
+           class="block p-5 lg:p-6 rounded-xl border transition-all duration-200 hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
+            <h3 class="font-display font-semibold text-base mb-1" style="color: var(--ink);">Maternal care report</h3>
+            <p class="text-sm" style="color: var(--ink-muted);">Prenatal care, TT/iron, deliveries and postnatal visits. FHSIS MCH format.</p>
+        </a>
+
+        <a href="{{ route('reports.immunization', ['month' => $month, 'year' => $year]) }}"
+           class="block p-5 lg:p-6 rounded-xl border transition-all duration-200 hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
+            <h3 class="font-display font-semibold text-base mb-1" style="color: var(--ink);">EPI immunization report</h3>
+            <p class="text-sm" style="color: var(--ink-muted);">Doses by antigen, child/adult totals and Fully Immunized Children. EPI format.</p>
+        </a>
+
+        <a href="{{ route('reports.family-planning', ['month' => $month, 'year' => $year]) }}"
+           class="block p-5 lg:p-6 rounded-xl border transition-all duration-200 hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
+            <h3 class="font-display font-semibold text-base mb-1" style="color: var(--ink);">Family planning report</h3>
+            <p class="text-sm" style="color: var(--ink-muted);">New acceptors, continuing users, drop-outs and visits by method. FHSIS FP format.</p>
+        </a>
+
+        <a href="{{ route('reports.ncd', ['month' => $month, 'year' => $year]) }}"
+           class="block p-5 lg:p-6 rounded-xl border transition-all duration-200 hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
+            <h3 class="font-display font-semibold text-base mb-1" style="color: var(--ink);">Adult care / NCD report</h3>
+            <p class="text-sm" style="color: var(--ink-muted);">Hypertension and diabetes patients seen and on registry. DOH NCD format.</p>
+        </a>
+
+        <a href="{{ route('reports.referrals', ['month' => $month, 'year' => $year]) }}"
+           class="block p-5 lg:p-6 rounded-xl border transition-all duration-200 hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
+            <h3 class="font-display font-semibold text-base mb-1" style="color: var(--ink);">Referral report</h3>
+            <p class="text-sm" style="color: var(--ink-muted);">Outward referrals by destination facility and incoming referrals by source.</p>
+        </a>
+    </div>
 
     <script>
         (function () {
