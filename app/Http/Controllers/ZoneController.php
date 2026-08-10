@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreZoneRequest;
+use App\Http\Requests\UpdateZoneRequest;
 use App\Models\Zone;
 use App\Services\ZoneQueryService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 
 class ZoneController extends Controller
 {
@@ -28,14 +29,11 @@ class ZoneController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreZoneRequest $request): RedirectResponse
     {
         $this->authorizePermission('zones');
 
-        $validated = $request->validate([
-            'zone_number' => ['required', 'string', 'max:255', 'unique:zones,zone_number'],
-            'assigned_worker_id' => ['nullable', 'exists:health_workers,id'],
-        ]);
+        $validated = $request->validated();
 
         Zone::create([
             'zone_number' => $validated['zone_number'],
@@ -68,16 +66,12 @@ class ZoneController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id): RedirectResponse
+    public function update(UpdateZoneRequest $request, $id): RedirectResponse
     {
         $this->authorizePermission('zones');
 
         $zone = Zone::findOrFail($id);
-
-        $validated = $request->validate([
-            'zone_number' => ['required', 'string', 'max:255', 'unique:zones,zone_number,'.$id],
-            'assigned_worker_id' => ['nullable', 'exists:health_workers,id'],
-        ]);
+        $validated = $request->validated();
 
         $zone->update([
             'zone_number' => $validated['zone_number'],

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ImportMedicineRequest;
+use App\Http\Requests\StoreMedicineRequest;
+use App\Http\Requests\UpdateMedicineRequest;
 use App\Models\AuditLog;
 use App\Services\MedicineImportService;
 use App\Services\MedicineService;
@@ -34,31 +37,20 @@ class MedicineController extends Controller
         return view('medicines.create');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreMedicineRequest $request): RedirectResponse
     {
         $this->authorizePermission('medicines');
 
-        $request->merge(['name' => $request->input('name', $request->input('medicine_name'))]);
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,name'],
-            'form' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        MedicineService::create($validated);
+        MedicineService::create($request->validated());
 
         return redirect()
             ->route('medicines.index')
             ->with('success', 'Medicine added successfully.');
     }
 
-    public function import(Request $request): RedirectResponse
+    public function import(ImportMedicineRequest $request): RedirectResponse
     {
         $this->authorizePermission('medicines');
-
-        $request->validate([
-            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
-        ]);
 
         $result = MedicineImportService::import($request->file('csv_file')->getRealPath());
 
@@ -134,20 +126,13 @@ class MedicineController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id): RedirectResponse
+    public function update(UpdateMedicineRequest $request, $id): RedirectResponse
     {
         $this->authorizePermission('medicines');
 
         MedicineService::findOrFail($id);
 
-        $request->merge(['name' => $request->input('name', $request->input('medicine_name'))]);
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,name,'.$id],
-            'form' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        MedicineService::update($id, $validated);
+        MedicineService::update($id, $request->validated());
 
         return redirect()
             ->route('medicines.index')

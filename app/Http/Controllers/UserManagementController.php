@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RestrictUserRequest;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\UserManagementService;
@@ -34,21 +37,11 @@ class UserManagementController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreUserRequest $request): RedirectResponse
     {
         $this->authorizePermission('users');
 
-        $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'contact_number' => ['nullable', 'string', 'max:255', 'regex:/^[0-9+\-\s()]*$/'],
-            'username' => ['required', 'string', 'max:255', 'unique:users,username'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role_id' => ['required', 'exists:user_roles,id'],
-        ]);
-
-        UserManagementService::create($validated);
+        UserManagementService::create($request->validated());
 
         return redirect()
             ->route('users.index')
@@ -68,21 +61,11 @@ class UserManagementController extends Controller
         ]);
     }
 
-    public function update(Request $request, User $user): RedirectResponse
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
         $this->authorizePermission('users');
 
-        $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'contact_number' => ['nullable', 'string', 'max:255', 'regex:/^[0-9+\-\s()]*$/'],
-            'username' => ['required', 'string', 'max:255', 'unique:users,username,'.$user->id],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-            'role_id' => ['required', 'exists:user_roles,id'],
-        ]);
-
-        UserManagementService::update($user, $validated);
+        UserManagementService::update($user, $request->validated());
 
         return redirect()
             ->route('users.index')
@@ -113,14 +96,9 @@ class UserManagementController extends Controller
             ->with('success', 'User disabled successfully.');
     }
 
-    public function enable(Request $request, User $user): RedirectResponse
+    public function enable(RestrictUserRequest $request, User $user): RedirectResponse
     {
         $this->authorizePermission('users');
-
-        // Validate password confirmation
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
 
         if ($user->is_active) {
             return redirect()
@@ -136,7 +114,7 @@ class UserManagementController extends Controller
             ->with('success', 'User enabled successfully.');
     }
 
-    public function destroy(Request $request, User $user): RedirectResponse
+    public function destroy(RestrictUserRequest $request, User $user): RedirectResponse
     {
         $this->authorizePermission('users');
 
@@ -147,12 +125,6 @@ class UserManagementController extends Controller
                 ->with('error', 'You cannot delete your own account.');
         }
 
-        // Validate password confirmation
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
-
-        // Delete the user (this will cascade delete health_worker due to foreign key constraint)
         $user->delete();
 
         return redirect()

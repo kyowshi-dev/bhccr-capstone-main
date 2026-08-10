@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\HouseholdHelper;
+use App\Http\Requests\StoreHouseholdRequest;
+use App\Http\Requests\UpdateHouseholdRequest;
 use App\Models\Household;
+use App\Services\HouseholdExportService;
 use App\Services\HouseholdPdfService;
 use App\Services\HouseholdQueryService;
 use App\Services\HouseholdService;
@@ -54,15 +57,11 @@ class HouseholdController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreHouseholdRequest $request): RedirectResponse
     {
         $this->authorizePermission('household');
 
-        $data = $request->validate([
-            'zone_id' => ['required', 'integer', 'exists:zones,id'],
-            'family_name_head' => ['required', 'string', 'max:255'],
-            'contact_number' => ['nullable', 'string', 'max:32', 'regex:/^[0-9+\-\s()]*$/'],
-        ]);
+        $data = $request->validated();
 
         $this->guardZoneAccess((int) $data['zone_id']);
 
@@ -89,7 +88,7 @@ class HouseholdController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id): RedirectResponse
+    public function update(UpdateHouseholdRequest $request, $id): RedirectResponse
     {
         $this->authorizePermission('household');
 
@@ -99,11 +98,7 @@ class HouseholdController extends Controller
             abort(403, 'This household is outside your assigned zones.');
         }
 
-        $data = $request->validate([
-            'zone_id' => ['required', 'integer', 'exists:zones,id'],
-            'family_name_head' => ['required', 'string', 'max:255'],
-            'contact_number' => ['nullable', 'string', 'max:32', 'regex:/^[0-9+\-\s()]*$/'],
-        ]);
+        $data = $request->validated();
 
         $this->guardZoneAccess((int) $data['zone_id']);
 
@@ -143,19 +138,7 @@ class HouseholdController extends Controller
 
         $callback = function () use ($households, $memberCounts) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['ID', 'Zone', 'Family Name', 'Contact Number', 'Registered Date', 'Member Count']);
-
-            foreach ($households as $household) {
-                fputcsv($file, [
-                    $household->id,
-                    $household->zone_number,
-                    $household->family_name_head,
-                    $household->contact_number ?? '',
-                    $household->created_at,
-                    $memberCounts[$household->id] ?? 0,
-                ]);
-            }
-
+            HouseholdExportService::writeCsvRows($file, $households, $memberCounts);
             fclose($file);
         };
 

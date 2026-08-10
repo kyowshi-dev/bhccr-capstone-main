@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ListPatientsRequest;
 use App\Http\Requests\StorePatientWithHouseholdRequest;
 use App\Models\Household;
 use App\Models\Patient;
@@ -11,29 +12,17 @@ use App\Services\PatientService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PatientController extends Controller
 {
     // 1. List all patients
-    public function index(Request $request)
+    public function index(ListPatientsRequest $request)
     {
         $this->authorize('viewAny', Patient::class);
 
-        $request->validate([
-            'sort' => ['sometimes', Rule::in(['name', 'age', 'last_visit', 'created'])],
-            'dir' => ['sometimes', Rule::in(['asc', 'desc'])],
-        ]);
-
         $sort = $request->input('sort', 'created');
-        $dir = $request->input('dir');
-        if (! in_array($dir, ['asc', 'desc'], true)) {
-            $dir = match ($sort) {
-                'name' => 'asc',
-                default => 'desc',
-            };
-        }
+        $dir = $request->input('dir', $sort === 'name' ? 'asc' : 'desc');
 
         $patients = PatientQueryService::paginateIndex($sort, $dir, auth()->user());
 
