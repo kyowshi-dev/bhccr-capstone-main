@@ -51,7 +51,7 @@
             <input type="hidden" name="mode" value="{{ $mode }}">
             <div>
                 <label for="filter_zone" class="sr-only">Filter by purok</label>
-                <select id="filter_zone" name="zone_id" @change="this.form.submit()"
+                <select id="filter_zone" name="zone_id" @change="$el.form.submit()"
                         class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                         style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                     <option value="">All puroks</option>
@@ -64,7 +64,7 @@
                 <div>
                     <label for="filter_date" class="sr-only">Filter by due date</label>
                     <input id="filter_date" type="date" name="date" value="{{ $date }}" max="{{ \Carbon\Carbon::today()->addYear()->toDateString() }}"
-                           @change="this.form.submit()"
+                           @change="$el.form.submit()"
                            class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                 </div>

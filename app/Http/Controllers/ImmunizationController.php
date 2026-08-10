@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesWorkerId;
 use App\Http\Requests\AdministerVaccineRequest;
 use App\Http\Requests\MarkNoShowRequest;
 use App\Http\Requests\StoreInfantWithHouseholdRequest;
@@ -15,13 +16,17 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ImmunizationController extends Controller
 {
+    use ResolvesWorkerId;
+
+    public function __construct(
+        private readonly ChildImmunizationService $service,
+    ) {}
+
     public function index(Request $request): View
     {
         $this->authorizeImmunizations();
@@ -30,13 +35,11 @@ class ImmunizationController extends Controller
         $zoneId = $request->filled('zone_id') ? (int) $request->input('zone_id') : null;
         $date = $request->filled('date') ? $request->input('date') : Carbon::today()->toDateString();
 
-        $service = $this->service();
         $categories = $mode === 'child' ? ['Child', 'Both'] : ['Adult', 'Both'];
 
         $queues = [];
-
         foreach (['due', 'overdue', 'no_show'] as $key) {
-            $queues[$key] = $service->queue($key, $zoneId, $key === 'due' ? $date : null, $categories);
+            $queues[$key] = $this->service->queue($key, $zoneId, $key === 'due' ? $date : null, $categories);
         }
 
         $dueTodayCount = $queues['due']->map(fn (array $entry) => $entry['patient']->id)->unique()->count();
@@ -54,7 +57,7 @@ class ImmunizationController extends Controller
             ])
             ->values();
 
-        $recentRecords = $this->withNextDue(ImmunizationQueryService::recentRecords());
+        $recentRecords = $this->service->withNextDue(ImmunizationQueryService::recentRecords());
 
         $infantStats = ImmunizationQueryService::infantStats($zoneId);
         ['totalGiven' => $totalGiven, 'patientsWithRecords' => $patientsWithRecords] = ImmunizationQueryService::overallStats();
@@ -105,16 +108,15 @@ class ImmunizationController extends Controller
             ];
         });
 
-        $service = $this->service();
         $vaccineModels = Vaccine::whereIn('category', $allowedCategories)->with('schedules')->get();
-        $statuses = $vaccineModels->mapWithKeys(fn (Vaccine $v) => [$v->id => $service->statusFor($patient, $v)]);
-        $eligibility = $vaccineModels->mapWithKeys(fn (Vaccine $v) => [$v->id => $service->eligibility($patient, $v)]);
+        $statuses = $vaccineModels->mapWithKeys(fn (Vaccine $v) => [$v->id => $this->service->statusFor($patient, $v)]);
+        $eligibility = $vaccineModels->mapWithKeys(fn (Vaccine $v) => [$v->id => $this->service->eligibility($patient, $v)]);
         $schedulesByVaccine = $vaccineModels->mapWithKeys(fn (Vaccine $v) => [$v->id => $v->schedules]);
 
-        $currentWorkerId = DB::table('health_workers')->where('user_id', auth()->id())->value('id');
+        $currentWorkerId = (int) $this->currentWorkerId();
 
         $noShowEvents = $vaccineModels->mapWithKeys(
-            fn (Vaccine $v) => [$v->id => $service->unresolvedMissed($patient, $v)]
+            fn (Vaccine $v) => [$v->id => $this->service->unresolvedMissed($patient, $v)]
         );
 
         return view('immunizations.patient', [
@@ -138,12 +140,12 @@ class ImmunizationController extends Controller
 
         $vaccine = Vaccine::findOrFail($request->input('vaccine_id'));
 
-        if (! $this->service()->vaccineMatchesAge($patient, $vaccine)) {
+        if (! $this->service->vaccineMatchesAge($patient, $vaccine)) {
             return back()->withErrors(['vaccine_id' => 'This vaccine is not appropriate for this patient.'])->withInput();
         }
 
         try {
-            $record = $this->service()->administer($patient, $vaccine, [
+            $record = $this->service->administer($patient, $vaccine, [
                 'date_given' => $request->input('date_given'),
                 'temp_recorded' => $request->input('temp_recorded'),
                 'notes' => $request->input('notes'),
@@ -155,7 +157,7 @@ class ImmunizationController extends Controller
         }
 
         $next = '';
-        $nextDue = $this->service()->nextDoseDate($patient, $vaccine);
+        $nextDue = $this->service->nextDoseDate($patient, $vaccine);
 
         if ($nextDue !== null && $nextDue->gt($record->date_given)) {
             $next = ' Next dose due '.$nextDue->format('M j, Y').'.';
@@ -175,12 +177,12 @@ class ImmunizationController extends Controller
     {
         $patient = Patient::findOrFail($id);
 
-        if (! $this->service()->vaccineMatchesAge($patient, $vaccine)) {
+        if (! $this->service->vaccineMatchesAge($patient, $vaccine)) {
             return back()->withErrors(['vaccine_id' => 'This vaccine is not appropriate for this patient.']);
         }
 
         try {
-            $record = $this->service()->administer($patient, $vaccine, [
+            $record = $this->service->administer($patient, $vaccine, [
                 'date_given' => null,
                 'temp_recorded' => null,
                 'notes' => 'Marked as done — administered elsewhere',
@@ -211,7 +213,7 @@ class ImmunizationController extends Controller
         }
 
         try {
-            $patient = $this->service()->enrollInfant($validated);
+            $patient = $this->service->enrollInfant($validated);
         } catch (ValidationException $e) {
             return back()->withErrors($e->errors())->withInput();
         }
@@ -230,10 +232,10 @@ class ImmunizationController extends Controller
         $vaccine = Vaccine::findOrFail($validated['vaccine_id']);
 
         if ($validated['no_show']) {
-            $this->service()->markNoShow($patient, $vaccine, $validated['dose_number'] ?? null);
+            $this->service->markNoShow($patient, $vaccine, $validated['dose_number'] ?? null);
             $message = $patient->first_name.' '.$patient->last_name.' marked as no-show.';
         } else {
-            $cleared = $this->service()->clearNoShow($patient, $vaccine);
+            $cleared = $this->service->clearNoShow($patient, $vaccine);
             $message = $cleared !== null
                 ? 'No-show cleared; it stays in the patient history.'
                 : 'No unresolved no-show to clear.';
@@ -246,7 +248,7 @@ class ImmunizationController extends Controller
     {
         $this->authorizeImmunizations();
 
-        $this->service()->enrollPatient($patient);
+        $this->service->enrollPatient($patient);
 
         return back()->with('success', $patient->first_name.' '.$patient->last_name.' enrolled in immunization program.');
     }
@@ -302,46 +304,5 @@ class ImmunizationController extends Controller
         }
 
         return in_array($mode, ['child', 'adult'], true) ? $mode : 'child';
-    }
-
-    private function service(): ChildImmunizationService
-    {
-        return app(ChildImmunizationService::class);
-    }
-
-    private function currentWorkerId(): ?int
-    {
-        $workerId = DB::table('health_workers')->where('user_id', auth()->id())->value('id');
-
-        return $workerId !== null ? (int) $workerId : null;
-    }
-
-    /**
-     * Attach a schedule-derived next due date to each recent record row, so the
-     * "Recent" tables can badge up-to-date / due / overdue without a stored column.
-     */
-    private function withNextDue(Collection $records): Collection
-    {
-        $patientIds = $records->pluck('patient_id')->unique()->all();
-        $vaccineIds = $records->pluck('vaccine_id')->unique()->all();
-
-        if ($patientIds === [] || $vaccineIds === []) {
-            return $records;
-        }
-
-        $patients = Patient::with('immunizationRecords')->whereIn('id', $patientIds)->get()->keyBy('id');
-        $vaccines = Vaccine::with('schedules')->whereIn('id', $vaccineIds)->get()->keyBy('id');
-        $service = $this->service();
-
-        foreach ($records as $record) {
-            $patient = $patients->get($record->patient_id);
-            $vaccine = $vaccines->get($record->vaccine_id);
-
-            $record->next_due = $patient !== null && $vaccine !== null
-                ? $service->nextDoseDate($patient, $vaccine)?->toDateString()
-                : null;
-        }
-
-        return $records;
     }
 }

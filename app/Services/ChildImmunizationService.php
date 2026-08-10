@@ -14,21 +14,21 @@ use Illuminate\Validation\ValidationException;
 
 class ChildImmunizationService
 {
-    public const STATUS_COMPLETED = 'completed';
+    public const string STATUS_COMPLETED = 'completed';
 
-    public const STATUS_WAITING = 'waiting';
+    public const string STATUS_WAITING = 'waiting';
 
-    public const STATUS_OVERDUE = 'overdue';
+    public const string STATUS_OVERDUE = 'overdue';
 
-    public const STATUS_OUT_OF_WINDOW = 'out_of_window';
+    public const string STATUS_OUT_OF_WINDOW = 'out_of_window';
 
-    public const STATUS_NO_SHOW = 'no_show';
+    public const string STATUS_NO_SHOW = 'no_show';
 
-    public const QUEUE_DUE = 'due';
+    public const string QUEUE_DUE = 'due';
 
-    public const DUE_WINDOW_DAYS = 7;
+    public const int DUE_WINDOW_DAYS = 7;
 
-    public const OVERDUE_LOOKBACK_DAYS = 730;
+    public const int OVERDUE_LOOKBACK_DAYS = 730;
 
     /**
      * Per-request cache of each patient's immunization records, keyed by
@@ -225,57 +225,19 @@ class ChildImmunizationService
     {
         $records = $this->recordsFor($patient, $vaccine);
         $schedules = $vaccine->schedules;
-
-        if ($schedules->isEmpty()) {
-            throw ValidationException::withMessages([
-                'vaccine_id' => 'This vaccine has no schedule configured.',
-            ]);
-        }
-
         $given = $records->where('no_show', false)->values();
 
-        if ($vaccine->repeat_months === null && $given->count() >= $schedules->count()) {
-            throw ValidationException::withMessages([
-                'dose_number' => 'The series for this vaccine is already complete.',
-            ]);
-        }
+        $this->assertScheduleConfigured($schedules);
+        $this->assertSeriesNotComplete($vaccine, $given, $schedules);
 
         $nextIndex = $given->count();
         $doseNumber = $nextIndex + 1;
         $schedule = $schedules->get($nextIndex) ?? $schedules->last();
         $dateGiven = isset($data['date_given']) ? Carbon::parse($data['date_given']) : Carbon::today();
 
-        $earliest = $this->nextDoseDate($patient, $vaccine, $nextIndex);
-
-        if ($earliest !== null && $dateGiven->lt($earliest)) {
-            throw ValidationException::withMessages([
-                'date_given' => 'Too early for this dose. Earliest date: '.$earliest->format('M j, Y').'.',
-            ]);
-        }
-
-        if ($this->isOutOfWindow($patient, $vaccine) && blank($data['override_reason'] ?? null)) {
-            throw ValidationException::withMessages([
-                'override_reason' => 'This vaccine is out of its age window; an override reason is required.',
-            ]);
-        }
-
-        if ($schedule->requires_temp) {
-            $temp = $data['temp_recorded'] ?? null;
-            $administeredElsewhere = (bool) ($data['administered_elsewhere'] ?? false);
-
-            if (! $administeredElsewhere && ($temp === null || $temp === '')) {
-                throw ValidationException::withMessages([
-                    'temp_recorded' => 'Temperature recording is required for this vaccine.',
-                ]);
-            }
-
-            if ($temp !== null && $temp !== '' && (! is_numeric($temp) || (float) $temp < 30 || (float) $temp > 45)) {
-                throw ValidationException::withMessages([
-                    'temp_recorded' => 'Temperature must be a number between 30 and 45.',
-                ]);
-            }
-        }
-
+        $this->assertDoseNotTooEarly($patient, $vaccine, $nextIndex, $dateGiven);
+        $this->assertOutOfWindowOverride($patient, $vaccine, $data);
+        $this->assertTemperatureValid($schedule, $data);
         $this->assertNoGroupConflict($patient, $vaccine);
 
         $patient->immunizationRecords()
@@ -541,6 +503,33 @@ class ChildImmunizationService
         return collect($entries);
     }
 
+    /**
+     * Attach a schedule-derived next due date to each recent record row.
+     */
+    public function withNextDue(\Illuminate\Support\Collection $records): \Illuminate\Support\Collection
+    {
+        $patientIds = $records->pluck('patient_id')->unique()->all();
+        $vaccineIds = $records->pluck('vaccine_id')->unique()->all();
+
+        if ($patientIds === [] || $vaccineIds === []) {
+            return $records;
+        }
+
+        $patients = Patient::with('immunizationRecords')->whereIn('id', $patientIds)->get()->keyBy('id');
+        $vaccines = Vaccine::with('schedules')->whereIn('id', $vaccineIds)->get()->keyBy('id');
+
+        foreach ($records as $record) {
+            $patient = $patients->get($record->patient_id);
+            $vaccine = $vaccines->get($record->vaccine_id);
+
+            $record->next_due = $patient !== null && $vaccine !== null
+                ? $this->nextDoseDate($patient, $vaccine)?->toDateString()
+                : null;
+        }
+
+        return $records;
+    }
+
     private function assertNoGroupConflict(Patient $patient, Vaccine $vaccine): void
     {
         if ($vaccine->group_key === null) {
@@ -563,6 +552,79 @@ class ChildImmunizationService
         if ($conflict) {
             throw ValidationException::withMessages([
                 'vaccine_id' => 'This patient has already received another vaccine in the same group ('.$vaccine->group_key.').',
+            ]);
+        }
+    }
+
+    /**
+     * @param  Collection<int, VaccineSchedule>  $schedules
+     */
+    private function assertScheduleConfigured(Collection $schedules): void
+    {
+        if ($schedules->isEmpty()) {
+            throw ValidationException::withMessages([
+                'vaccine_id' => 'This vaccine has no schedule configured.',
+            ]);
+        }
+    }
+
+    /**
+     * @param  Collection<int, Immunization>  $given
+     * @param  Collection<int, VaccineSchedule>  $schedules
+     */
+    private function assertSeriesNotComplete(Vaccine $vaccine, Collection $given, Collection $schedules): void
+    {
+        if ($vaccine->repeat_months === null && $given->count() >= $schedules->count()) {
+            throw ValidationException::withMessages([
+                'dose_number' => 'The series for this vaccine is already complete.',
+            ]);
+        }
+    }
+
+    private function assertDoseNotTooEarly(Patient $patient, Vaccine $vaccine, int $doseIndex, Carbon $dateGiven): void
+    {
+        $earliest = $this->nextDoseDate($patient, $vaccine, $doseIndex);
+
+        if ($earliest !== null && $dateGiven->lt($earliest)) {
+            throw ValidationException::withMessages([
+                'date_given' => 'Too early for this dose. Earliest date: '.$earliest->format('M j, Y').'.',
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function assertOutOfWindowOverride(Patient $patient, Vaccine $vaccine, array $data): void
+    {
+        if ($this->isOutOfWindow($patient, $vaccine) && blank($data['override_reason'] ?? null)) {
+            throw ValidationException::withMessages([
+                'override_reason' => 'This vaccine is out of its age window; an override reason is required.',
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function assertTemperatureValid(VaccineSchedule $schedule, array $data): void
+    {
+        if (! $schedule->requires_temp) {
+            return;
+        }
+
+        $temp = $data['temp_recorded'] ?? null;
+        $administeredElsewhere = (bool) ($data['administered_elsewhere'] ?? false);
+
+        if (! $administeredElsewhere && ($temp === null || $temp === '')) {
+            throw ValidationException::withMessages([
+                'temp_recorded' => 'Temperature recording is required for this vaccine.',
+            ]);
+        }
+
+        if ($temp !== null && $temp !== '' && (! is_numeric($temp) || (float) $temp < 30 || (float) $temp > 45)) {
+            throw ValidationException::withMessages([
+                'temp_recorded' => 'Temperature must be a number between 30 and 45.',
             ]);
         }
     }
