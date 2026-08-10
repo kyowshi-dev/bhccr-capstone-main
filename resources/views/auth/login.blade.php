@@ -51,8 +51,8 @@
         </div>
 
         <div class="flex items-center justify-between mb-5 text-sm">
-            <label class="flex items-center text-sm cursor-pointer" style="color: var(--ink-muted);">
-                <input type="checkbox" name="remember" class="mr-2 h-4 w-4 rounded" style="accent-color: var(--primary);">
+            <label class="flex items-center gap-3 text-sm cursor-pointer" style="color: var(--ink-muted);">
+                <input type="checkbox" name="remember" class="h-4 w-4 rounded" style="accent-color: var(--primary);">
                 Remember me
             </label>
             <a href="{{ route('password.forgot') }}" class="text-sm font-medium" style="color: var(--primary); text-decoration: underline;">
