@@ -175,7 +175,7 @@ final class ConsultationService
     {
         $requestedReferral = (bool) ($validated['refer_to_higher_facility'] ?? false);
 
-        if ($requestedReferral && ! in_array(strtolower((string) $worker->role), ['doctor', 'nurse'], true)) {
+        if ($requestedReferral && ! $worker->isClinical()) {
             throw new DomainException('Only Doctor or Nurse roles can trigger external referral.');
         }
 
@@ -202,7 +202,7 @@ final class ConsultationService
      */
     private static function promoteAttendingDoctor(Consultation $consultation, HealthWorker $worker): void
     {
-        if (! in_array(strtolower((string) $worker->role), ['doctor', 'nurse'], true)) {
+        if (! $worker->isClinical()) {
             return;
         }
 
@@ -273,6 +273,11 @@ final class ConsultationService
         DB::table('consultations')
             ->where('id', $consultation->id)
             ->update(['notes' => $notes, 'updated_at' => now()]);
+    }
+
+    public static function hasDiagnosis(int $consultationId): bool
+    {
+        return DB::table('diagnosis_records')->where('consultation_id', $consultationId)->exists();
     }
 
     /**

@@ -4,10 +4,12 @@ namespace App\Services;
 
 use App\Enums\ConsultationStatus;
 use App\Models\Consultation;
+use App\Models\Patient;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -192,5 +194,90 @@ final class ConsultationQueryService
     {
         return DB::table('prescriptions')
             ->leftJoin('medicines_lookup', 'prescriptions.medicine_id', '=', 'medicines_lookup.id');
+    }
+
+    public static function previousVitalsFor(Patient $patient): ?\stdClass
+    {
+        return DB::table('vitals')
+            ->join('consultations', 'vitals.consultation_id', '=', 'consultations.id')
+            ->where('consultations.patient_id', $patient->id)
+            ->orderByDesc('vitals.created_at')
+            ->orderByDesc('vitals.id')
+            ->select([
+                'vitals.bp_systolic',
+                'vitals.bp_diastolic',
+                'vitals.temperature_c',
+                'vitals.weight_kg',
+                'vitals.height_cm',
+            ])
+            ->first();
+    }
+
+    public static function diagnosesForEdit(Consultation $consultation): Collection
+    {
+        return self::diagnosisRecordsQuery()
+            ->where('diagnosis_records.consultation_id', $consultation->id)
+            ->select(
+                'diagnosis_records.id',
+                'diagnosis_lookup.diagnosis_name as diagnosis_name',
+                'diagnosis_records.remarks'
+            )
+            ->get();
+    }
+
+    public static function prescriptionsForEdit(Consultation $consultation): Collection
+    {
+        return self::prescriptionsQuery()
+            ->where('prescriptions.consultation_id', $consultation->id)
+            ->select(
+                'prescriptions.id',
+                'medicines_lookup.name as medicine_name',
+                'prescriptions.dosage',
+                'prescriptions.frequency',
+                'prescriptions.duration',
+                'prescriptions.quantity'
+            )
+            ->get();
+    }
+
+    /**
+     * Fetch and atomically mark the next unnotified DoctorReview consultation
+     * for the live-requests polling endpoint.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function nextUnnotifiedDoctorReview(): ?array
+    {
+        $consultation = DB::table('consultations')
+            ->where('status', ConsultationStatus::DoctorReview->value)
+            ->whereNull('notified_at')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (! $consultation) {
+            return null;
+        }
+
+        $patient = DB::table('patients')->where('id', $consultation->patient_id)->first();
+        $worker = DB::table('health_workers')->where('id', $consultation->worker_id)->first();
+
+        if (! $patient || ! $worker) {
+            return null;
+        }
+
+        DB::table('consultations')
+            ->where('id', $consultation->id)
+            ->update(['notified_at' => now()]);
+
+        return [
+            'id' => $consultation->id,
+            'open_url' => route('consultations.show', ['consultation' => $consultation->id]),
+            'clinic_name' => 'Santa Ana Health Center',
+            'worker_name' => trim(($worker->first_name ?? '').' '.($worker->last_name ?? '')),
+            'patient_name' => trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')),
+            'patient_age' => $patient->date_of_birth ? Carbon::parse($patient->date_of_birth)->age : null,
+            'patient_gender' => $patient->sex ?? '',
+            'chief_complaint' => $consultation->complaint_text ?? $consultation->chief_complaint ?? 'No reason provided',
+        ];
     }
 }

@@ -13,18 +13,16 @@ use App\Http\Requests\VitalsRequest;
 use App\Models\Consultation;
 use App\Models\HealthWorker;
 use App\Models\Patient;
-use App\Models\Vitals;
 use App\Services\ConsultationHandoutService;
 use App\Services\ConsultationQueryService;
 use App\Services\ConsultationService;
+use App\Services\ConsultationWorkspaceService;
 use App\Services\ReferralService;
 use App\Services\VitalsService;
-use Carbon\Carbon;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Spatie\LaravelPdf\Enums\Format;
 use Spatie\LaravelPdf\Facades\Pdf;
@@ -67,60 +65,22 @@ class ConsultationController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-        // Only fetch consultations waiting for doctor that haven't been notified yet
-        $consultation = DB::table('consultations')
-            ->where('status', ConsultationStatus::DoctorReview->value)
-            ->whereNull('notified_at')  // Only unnotified consultations
-            ->orderByDesc('created_at')
-            ->first();
+        $data = ConsultationQueryService::nextUnnotifiedDoctorReview();
 
-        if (! $consultation) {
+        if ($data === null) {
             return response()->json(['hasRequest' => false]);
         }
-
-        $patient = DB::table('patients')->where('id', $consultation->patient_id)->first();
-        $worker = DB::table('health_workers')->where('id', $consultation->worker_id)->first();
-
-        if (! $patient || ! $worker) {
-            return response()->json(['hasRequest' => false]);
-        }
-
-        // Mark consultation as notified
-        DB::table('consultations')
-            ->where('id', $consultation->id)
-            ->update(['notified_at' => now()]);
 
         return response()->json([
             'hasRequest' => true,
-            'request' => [
-                'id' => $consultation->id,
-                'open_url' => route('consultations.show', ['consultation' => $consultation->id]),
-                'clinic_name' => 'Santa Ana Health Center',
-                'worker_name' => trim(($worker->first_name ?? '').' '.($worker->last_name ?? '')),
-                'patient_name' => trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')),
-                'patient_age' => $patient->date_of_birth ? Carbon::parse($patient->date_of_birth)->age : null,
-                'patient_gender' => $patient->sex ?? '',
-                'chief_complaint' => $consultation->complaint_text ?? $consultation->chief_complaint ?? 'No reason provided',
-            ],
+            'request' => $data,
         ]);
     }
 
     // 1. Show the Admission Form (Triage) — modal partial via AJAX; redirect for direct navigation
     public function create(Request $request, Patient $patient): View|RedirectResponse
     {
-        $previousVitals = DB::table('vitals')
-            ->join('consultations', 'vitals.consultation_id', '=', 'consultations.id')
-            ->where('consultations.patient_id', $patient->id)
-            ->orderByDesc('vitals.created_at')
-            ->orderByDesc('vitals.id')
-            ->select([
-                'vitals.bp_systolic',
-                'vitals.bp_diastolic',
-                'vitals.temperature_c',
-                'vitals.weight_kg',
-                'vitals.height_cm',
-            ])
-            ->first();
+        $previousVitals = ConsultationQueryService::previousVitalsFor($patient);
 
         if ($request->ajax() || $request->wantsJson()) {
             return view('consultations.partials.create-modal', compact('patient', 'previousVitals'));
@@ -153,102 +113,10 @@ class ConsultationController extends Controller
     {
         $this->authorizePermission('consultations');
 
-        $patient = Patient::query()->find($consultation->patient_id);
-
-        $allVitals = Vitals::query()
-            ->where('vitals.consultation_id', $consultation->id)
-            ->leftJoin('health_workers', 'vitals.captured_by', '=', 'health_workers.id')
-            ->orderBy('vitals.created_at')
-            ->orderBy('vitals.id')
-            ->select(
-                'vitals.*',
-                'health_workers.first_name as captured_by_first_name',
-                'health_workers.last_name as captured_by_last_name',
-                'health_workers.role as captured_by_role'
-            )
-            ->get();
-
-        $triageVitals = $allVitals->firstWhere('phase', 'triage') ?? $allVitals->first();
-        $latestVitals = $allVitals->last();
-        $vitals = $latestVitals;
-        if (! $vitals) {
-            $vitals = (object) [
-                'bp_systolic' => null,
-                'bp_diastolic' => null,
-                'temperature_c' => null,
-                'weight_kg' => null,
-                'height_cm' => null,
-                'phase' => 'triage',
-            ];
-        }
-
-        $healthWorker = auth()->user()->healthWorker;
-        $currentUserRole = strtolower((string) ($healthWorker ? $healthWorker->role : ''));
-
-        $canReferExternally = in_array($currentUserRole, ['doctor', 'nurse'], true);
-        $canAcknowledgeIntake = $currentUserRole === 'nurse';
-        $canAddDiagnosis = $currentUserRole === 'doctor';
-        $canAddPrescription = $currentUserRole === 'doctor';
-
-        // 2. Fetch Existing Records (History)
-        $existingDiagnoses = ConsultationQueryService::diagnosisRecordsQuery()
-            ->where('diagnosis_records.consultation_id', $consultation->id)
-            ->select(
-                'diagnosis_records.*',
-                'diagnosis_lookup.diagnosis_code as diagnosis_code',
-                'diagnosis_lookup.diagnosis_name as diagnosis_name',
-                DB::raw('(diagnosis_records.diagnosis_id IS NULL) as is_custom')
-            )
-            ->get();
-
-        $existingPrescriptions = ConsultationQueryService::prescriptionsQuery()
-            ->where('prescriptions.consultation_id', $consultation->id)
-            ->select(
-                'prescriptions.*',
-                'medicines_lookup.name as medicine_name',
-                DB::raw('(prescriptions.medicine_id IS NULL) as is_custom')
-            )
-            ->get();
-
-        // 3. NEW: Fetch Dropdown Options (The "Menu" for the Doctor)
-        $diagnosisOptions = DB::table('diagnosis_lookup')->orderBy('diagnosis_name')->get();
-        $medicineOptions = DB::table('medicines_lookup')->orderBy('name')->get();
-
-        // Maternal care records linked to this consultation.
-        $linkedPrenatalVisits = DB::table('prenatal_visits')
-            ->where('consultation_id', $consultation->id)
-            ->orderBy('visit_date')
-            ->get();
-
-        $linkedPostnatal = DB::table('postnatal_records')
-            ->where('consultation_id', $consultation->id)
-            ->latest('id')
-            ->first();
-
-        $linkedFpVisits = DB::table('family_planning_visits')
-            ->where('consultation_id', $consultation->id)
-            ->orderBy('visit_date')
-            ->get();
-
-        return view('consultations.show', [
-            'consultation' => $consultation,
-            'patient' => $patient,
-            'vitals' => $vitals,
-            'triageVitals' => $triageVitals,
-            'latestVitals' => $latestVitals,
-            'allVitals' => $allVitals,
-            'diagnoses' => $existingDiagnoses,
-            'prescriptions' => $existingPrescriptions,
-            'diagnosisOptions' => $diagnosisOptions,
-            'medicineOptions' => $medicineOptions,
-            'linkedPrenatalVisits' => $linkedPrenatalVisits,
-            'linkedPostnatal' => $linkedPostnatal,
-            'linkedFpVisits' => $linkedFpVisits,
-            'canReferExternally' => $canReferExternally,
-            'canAcknowledgeIntake' => $canAcknowledgeIntake,
-            'canAddDiagnosis' => $canAddDiagnosis,
-            'canAddPrescription' => $canAddPrescription,
-        ]);
+        return view('consultations.show', ConsultationWorkspaceService::data(
+            $consultation,
+            auth()->user()->healthWorker
+        ));
     }
 
     public function acknowledgeIntake(Consultation $consultation): RedirectResponse
@@ -256,7 +124,7 @@ class ConsultationController extends Controller
         $this->authorizePermission('consultations');
 
         $worker = $this->currentWorker();
-        if (strtolower((string) $worker->role) !== 'nurse') {
+        if (! $worker->isNurse()) {
             abort(403, 'Only nurses can acknowledge intake.');
         }
 
@@ -277,7 +145,7 @@ class ConsultationController extends Controller
         $this->authorizePermission('consultations');
 
         $worker = $this->currentWorker();
-        if (strtolower((string) $worker->role) !== 'nurse') {
+        if (! $worker->isNurse()) {
             abort(403, 'Only nurses can cancel intake requests.');
         }
 
@@ -329,7 +197,7 @@ class ConsultationController extends Controller
             ->with('success', 'Clinical vitals saved as a new version.');
     }
 
-    public function updateVitalVersion(VitalsRequest $request, Consultation $consultation, $vitalId): RedirectResponse
+    public function updateVitalVersion(VitalsRequest $request, Consultation $consultation, int $vitalId): RedirectResponse
     {
         $this->authorizePermission('consultations');
 
@@ -341,7 +209,7 @@ class ConsultationController extends Controller
             ->with('success', 'Vitals version updated successfully.');
     }
 
-    public function deleteVitalVersion(Consultation $consultation, $vitalId): RedirectResponse
+    public function deleteVitalVersion(Consultation $consultation, int $vitalId): RedirectResponse
     {
         $this->authorizePermission('consultations');
 
@@ -366,7 +234,7 @@ class ConsultationController extends Controller
         $this->authorizePermission('consultations');
 
         $worker = $this->currentWorker();
-        if (strtolower((string) $worker->role) !== 'doctor') {
+        if (! $worker->isDoctor()) {
             abort(403, 'Only doctors can add diagnoses.');
         }
 
@@ -396,7 +264,7 @@ class ConsultationController extends Controller
         $this->authorizePermission('consultations');
 
         $worker = $this->currentWorker();
-        if (! in_array(strtolower((string) $worker->role), ['doctor', 'nurse'], true)) {
+        if (! $worker->isClinical()) {
             abort(403, 'Only Nurse and Doctor roles can refer patients.');
         }
 
@@ -418,11 +286,7 @@ class ConsultationController extends Controller
             return redirect()->back()->withErrors(['consultation' => $error]);
         }
 
-        $diagnosisCount = DB::table('diagnosis_records')
-            ->where('consultation_id', $consultation->id)
-            ->count();
-
-        if ($diagnosisCount < 1) {
+        if (! ConsultationService::hasDiagnosis((int) $consultation->id)) {
             return redirect()->route('consultations.show', $consultation->id)
                 ->withErrors(['diagnosis' => 'Add at least one diagnosis before finalizing consultation.']);
         }
@@ -445,7 +309,7 @@ class ConsultationController extends Controller
         $this->authorizePermission('consultations');
 
         $worker = $this->currentWorker();
-        if (strtolower((string) $worker->role) !== 'doctor') {
+        if (! $worker->isDoctor()) {
             abort(403, 'Only doctors can add prescriptions.');
         }
 
@@ -466,37 +330,11 @@ class ConsultationController extends Controller
     {
         $this->authorizePermission('consultations');
 
-        // Get patient info
-        $patient = DB::table('patients')->find($consultation->patient_id);
-
-        // Get diagnoses
-        $diagnoses = ConsultationQueryService::diagnosisRecordsQuery()
-            ->where('diagnosis_records.consultation_id', $consultation->id)
-            ->select(
-                'diagnosis_records.id',
-                'diagnosis_lookup.diagnosis_name as diagnosis_name',
-                'diagnosis_records.remarks'
-            )
-            ->get();
-
-        // Get prescriptions
-        $prescriptions = ConsultationQueryService::prescriptionsQuery()
-            ->where('prescriptions.consultation_id', $consultation->id)
-            ->select(
-                'prescriptions.id',
-                'medicines_lookup.name as medicine_name',
-                'prescriptions.dosage',
-                'prescriptions.frequency',
-                'prescriptions.duration',
-                'prescriptions.quantity'
-            )
-            ->get();
-
         return view('consultations.edit', [
             'consultation' => $consultation,
-            'patient' => $patient,
-            'diagnoses' => $diagnoses,
-            'prescriptions' => $prescriptions,
+            'patient' => Patient::query()->find($consultation->patient_id),
+            'diagnoses' => ConsultationQueryService::diagnosesForEdit($consultation),
+            'prescriptions' => ConsultationQueryService::prescriptionsForEdit($consultation),
         ]);
     }
 
@@ -511,7 +349,7 @@ class ConsultationController extends Controller
         return redirect()->route('consultations.show', $consultation->id)->with('success', 'Consultation updated successfully.');
     }
 
-    public function deleteDiagnosis(Request $request, Consultation $consultation, $diagnosisId): JsonResponse|RedirectResponse
+    public function deleteDiagnosis(Request $request, Consultation $consultation, int $diagnosisId): JsonResponse|RedirectResponse
     {
         $this->authorizePermission('consultations');
 
@@ -529,7 +367,7 @@ class ConsultationController extends Controller
         return redirect()->route('consultations.edit', $consultation->id)->with('success', 'Diagnosis deleted successfully.');
     }
 
-    public function deletePrescription(Request $request, Consultation $consultation, $prescriptionId): JsonResponse|RedirectResponse
+    public function deletePrescription(Request $request, Consultation $consultation, int $prescriptionId): JsonResponse|RedirectResponse
     {
         $this->authorizePermission('consultations');
 

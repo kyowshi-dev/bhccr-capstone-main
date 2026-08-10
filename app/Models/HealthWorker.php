@@ -73,4 +73,29 @@ class HealthWorker extends Model
             get: fn () => trim(($this->first_name ?? '').' '.($this->last_name ?? '')),
         );
     }
+
+    public function isDoctor(): bool
+    {
+        return strtolower((string) $this->role) === 'doctor';
+    }
+
+    public function isNurse(): bool
+    {
+        return strtolower((string) $this->role) === 'nurse';
+    }
+
+    public function isMidwife(): bool
+    {
+        return strtolower((string) $this->role) === 'midwife';
+    }
+
+    public function isBhw(): bool
+    {
+        return strtolower((string) $this->role) === 'bhw';
+    }
+
+    public function isClinical(): bool
+    {
+        return $this->isDoctor() || $this->isNurse();
+    }
 }
