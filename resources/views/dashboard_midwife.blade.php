@@ -84,7 +84,8 @@
     </div>
 
     <div class="animate-in opacity-0 delay-6 space-y-4" x-data="maternalToday()" x-init="init()">
-        <div class="relative">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div class="relative flex-1">
             <label for="maternal-search" class="sr-only">Search patient</label>
             <div class="relative">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none" style="color: var(--ink-subtle);">
@@ -114,6 +115,14 @@
                     </button>
                 </template>
             </div>
+        </div>
+
+        <x-btn href="{{ route('patients.create') }}"
+               :disabled="! (auth()->user()?->hasPermission('patients'))"
+               icon="fa-solid fa-user-plus"
+               class="justify-center shrink-0">
+            Enroll patient
+        </x-btn>
         </div>
 
         <div class="flex gap-2 border-b overflow-x-auto" style="border-color: var(--border);">
