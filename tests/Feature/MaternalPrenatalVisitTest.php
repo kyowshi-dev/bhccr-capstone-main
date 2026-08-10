@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\HealthWorker;
 use App\Models\Household;
 use App\Models\Patient;
 use App\Models\Pregnancy;
@@ -37,7 +38,16 @@ class MaternalPrenatalVisitTest extends TestCase
 
     private function authorizedUser(): User
     {
-        return $this->createUserWithPermissions(['maternal']);
+        $user = $this->createUserWithPermissions(['maternal']);
+
+        HealthWorker::create([
+            'user_id' => $user->id,
+            'first_name' => 'Midwife',
+            'last_name' => 'Test',
+            'role' => 'Midwife',
+        ]);
+
+        return $user;
     }
 
     private function pregnancy(): Pregnancy
@@ -78,6 +88,13 @@ class MaternalPrenatalVisitTest extends TestCase
 
         $this->post(route('maternal.prenatal.visits.store', $pregnancy->id), [
             'visit_date' => now()->toDateString(),
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
             'fundic_height_cm' => 24.5,
             'fetal_heart_tone_bpm' => 140,
             'next_visit_date' => now()->addWeek()->toDateString(),

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\FamilyPlanningClient;
 use App\Models\FamilyPlanningVisit;
+use App\Models\HealthWorker;
 use App\Models\Household;
 use App\Models\Patient;
 use App\Models\User;
@@ -37,7 +38,16 @@ class MaternalFamilyPlanningTest extends TestCase
 
     private function authorizedUser(): User
     {
-        return $this->createUserWithPermissions(['maternal']);
+        $user = $this->createUserWithPermissions(['maternal']);
+
+        HealthWorker::create([
+            'user_id' => $user->id,
+            'first_name' => 'Midwife',
+            'last_name' => 'Test',
+            'role' => 'Midwife',
+        ]);
+
+        return $user;
     }
 
     private function patient(): Patient
@@ -116,6 +126,13 @@ class MaternalFamilyPlanningTest extends TestCase
         $this->post(route('maternal.family-planning.visits.store', $client->id), [
             'visit_date' => now()->toDateString(),
             'method' => 'IUD',
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
             'schedule_next_visit' => now()->addYear()->toDateString(),
         ])->assertRedirect(route('maternal.family-planning.patient', $patient->id));
 
@@ -144,6 +161,13 @@ class MaternalFamilyPlanningTest extends TestCase
         $this->post(route('maternal.family-planning.visits.store', $client->id), [
             'visit_date' => now()->toDateString(),
             'method' => 'Condom',
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
         ])->assertRedirect();
 
         $client->refresh();

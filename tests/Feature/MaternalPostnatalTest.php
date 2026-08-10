@@ -88,6 +88,19 @@ class MaternalPostnatalTest extends TestCase
         $this->assertNotNull($record->childPatient);
     }
 
+    public function test_postnatal_patient_page_renders_successfully(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload())
+            ->assertRedirect();
+
+        $this->get(route('maternal.postnatal.patient', $mother->id))
+            ->assertOk()
+            ->assertSee('Postpartum schedule');
+    }
+
     public function test_linked_pregnancy_is_marked_delivered(): void
     {
         $this->actingAs($this->authorizedUser());

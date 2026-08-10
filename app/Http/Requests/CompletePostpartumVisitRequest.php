@@ -2,10 +2,9 @@
 
 namespace App\Http\Requests;
 
-use App\Models\PostnatalRecord;
+use App\Services\VitalsService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class CompletePostpartumVisitRequest extends FormRequest
 {
@@ -22,24 +21,11 @@ class CompletePostpartumVisitRequest extends FormRequest
         return [
             'slot' => ['required', 'in:postpartum_24h_date,postpartum_7d_date,postpartum_14d_date,postpartum_28d_date'],
             'date' => ['required', 'date', 'before_or_equal:today'],
-            'consultation_id' => $this->consultationRule(),
+            'mode_of_transaction' => ['required', 'string', 'max:255'],
+            'nature_of_visit' => ['required', 'string', 'max:255'],
+            'chief_complaint' => ['nullable', 'string', 'max:500'],
+            ...VitalsService::rules(required: true),
         ];
-    }
-
-    /**
-     * @return array<mixed>
-     */
-    private function consultationRule(): array
-    {
-        $rules = ['nullable', 'integer'];
-
-        $record = $this->route('postnatal');
-
-        if ($record instanceof PostnatalRecord) {
-            $rules[] = Rule::exists('consultations', 'id')->where('patient_id', $record->patient_id);
-        }
-
-        return $rules;
     }
 
     public function attributes(): array

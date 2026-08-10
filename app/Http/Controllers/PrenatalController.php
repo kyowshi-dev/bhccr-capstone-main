@@ -12,6 +12,7 @@ use App\Models\Patient;
 use App\Models\Pregnancy;
 use App\Models\PrenatalVisit;
 use App\Models\Zone;
+use App\Services\MaternalIntakeService;
 use App\Services\MaternalProfileService;
 use App\Services\MaternalQueryService;
 use App\Services\PregnancyService;
@@ -30,6 +31,7 @@ class PrenatalController extends Controller
         private readonly PrenatalVisitService $visitService,
         private readonly MaternalProfileService $profileService,
         private readonly MaternalQueryService $query,
+        private readonly MaternalIntakeService $intakeService,
     ) {}
 
     public function index(Request $request): View
@@ -105,7 +107,21 @@ class PrenatalController extends Controller
 
     public function addVisit(AddPrenatalVisitRequest $request, Pregnancy $pregnancy): RedirectResponse
     {
-        $this->visitService->add($pregnancy, $request->validated(), $this->currentWorkerId());
+        $worker = $this->resolveWorker();
+        $patient = $pregnancy->patient;
+
+        $consultationId = $this->intakeService->recordEncounter(
+            $patient,
+            'Prenatal',
+            $request->validated(),
+            $worker,
+            $pregnancy,
+        );
+
+        $data = $request->validated();
+        $data['consultation_id'] = $consultationId;
+
+        $this->visitService->add($pregnancy, $data, $this->currentWorkerId());
 
         return redirect()
             ->route('maternal.prenatal.patient', $pregnancy->patient_id)

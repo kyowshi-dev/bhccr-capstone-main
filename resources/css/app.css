@@ -502,3 +502,9 @@ body.modal-open {
 [x-cloak] {
     display: none !important;
 }
+
+/* Inline validation error highlight for inputs/selects managed by Alpine */
+.input-error {
+    border-color: var(--color-danger) !important;
+    --tw-ring-color: rgba(220, 38, 38, 0.25) !important;
+}

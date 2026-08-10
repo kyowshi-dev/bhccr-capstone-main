@@ -88,6 +88,13 @@ class ConsultationMaternalLinkTest extends TestCase
 
         $this->actingAs($user)->post(route('maternal.prenatal.visits.store', $pregnancyId), [
             'visit_date' => now()->toDateString(),
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
             'fundic_height_cm' => 24.5,
             'fetal_heart_tone_bpm' => 140,
             'consultation_id' => $consultationId,
@@ -99,7 +106,7 @@ class ConsultationMaternalLinkTest extends TestCase
         );
     }
 
-    public function test_maternal_record_rejects_consultation_from_another_patient(): void
+    public function test_maternal_record_ignores_foreign_patient_consultation_id(): void
     {
         $user = $this->createMaternalWorker();
         $patientId = $this->createPatient();
@@ -124,10 +131,22 @@ class ConsultationMaternalLinkTest extends TestCase
 
         $this->actingAs($user)->post(route('maternal.prenatal.visits.store', $pregnancyId), [
             'visit_date' => now()->toDateString(),
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
             'consultation_id' => $foreignConsultationId,
-        ])->assertSessionHasErrors('consultation_id');
+        ])->assertRedirect(route('maternal.prenatal.patient', $patientId));
 
-        $this->assertDatabaseCount('prenatal_visits', 0);
+        $this->assertDatabaseCount('prenatal_visits', 1);
+
+        $this->assertNotSame(
+            $foreignConsultationId,
+            (int) DB::table('prenatal_visits')->where('pregnancy_id', $pregnancyId)->value('consultation_id')
+        );
     }
 
     public function test_postnatal_store_can_be_linked_to_a_consultation(): void
@@ -182,6 +201,13 @@ class ConsultationMaternalLinkTest extends TestCase
             ->post(route('maternal.postnatal.complete-visit', $record->id), [
                 'slot' => 'postpartum_7d_date',
                 'date' => now()->toDateString(),
+                'mode_of_transaction' => 'Walk-in',
+                'nature_of_visit' => 'New Consultation/Case',
+                'bp_systolic' => 120,
+                'bp_diastolic' => 80,
+                'temperature' => 36.5,
+                'weight' => 60,
+                'height' => 160,
                 'consultation_id' => $consultationId,
             ])->assertRedirect(route('maternal.postnatal.patient', $patientId));
 
@@ -213,6 +239,13 @@ class ConsultationMaternalLinkTest extends TestCase
         $this->actingAs($user)->post("/maternal/family-planning/{$clientId}/visits", [
             'visit_date' => now()->toDateString(),
             'method' => 'Pills',
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
             'consultation_id' => $consultationId,
         ])->assertRedirect(route('maternal.family-planning.patient', $patientId));
 

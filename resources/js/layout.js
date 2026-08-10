@@ -899,6 +899,13 @@
                     if (data.hasRequest && data.request) {
                         showConsultationToast(data.request);
                     }
+
+                    if (data.queue_version_hash && data.queue_version_hash !== window.__maternalQueueHash) {
+                        window.__maternalQueueHash = data.queue_version_hash;
+                        window.dispatchEvent(new CustomEvent('maternal-queue-stale', {
+                            detail: { counts: data.queue_counts, hash: data.queue_version_hash },
+                        }));
+                    }
                 })
                 .catch(function(error) {
                     console.error('Live consultation poll failed:', error);

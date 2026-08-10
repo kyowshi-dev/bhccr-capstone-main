@@ -107,9 +107,12 @@ class MaternalQuickActionTest extends TestCase
             ->postJson("/maternal/quick/{$patientId}", [
                 'action' => 'log_prenatal_visit',
                 'visit_date' => now()->toDateString(),
+                'mode_of_transaction' => 'Walk-in',
+                'nature_of_visit' => 'New Consultation/Case',
                 'bp_systolic' => 130,
                 'bp_diastolic' => 85,
                 'weight' => 65.5,
+                'height' => 160,
                 'temperature' => 36.8,
                 'fundic_height_cm' => 22,
                 'fetal_heart_tone_bpm' => 140,
@@ -122,6 +125,7 @@ class MaternalQuickActionTest extends TestCase
             ->where('purpose_of_visit', 'Prenatal')
             ->first();
         $this->assertNotNull($consultation);
+        $this->assertSame('nurse_review', $consultation->status);
 
         $vital = DB::table('vitals')->where('consultation_id', $consultation->id)->first();
         $this->assertNotNull($vital);
@@ -170,8 +174,13 @@ class MaternalQuickActionTest extends TestCase
             ->postJson("/maternal/quick/{$patientId}", [
                 'action' => 'log_postpartum',
                 'visit_date' => now()->toDateString(),
+                'mode_of_transaction' => 'Walk-in',
+                'nature_of_visit' => 'New Consultation/Case',
                 'bp_systolic' => 110,
                 'bp_diastolic' => 70,
+                'temperature' => 36.5,
+                'weight' => 60,
+                'height' => 160,
             ])->assertOk()
             ->assertJson(['success' => true]);
 
@@ -292,6 +301,13 @@ class MaternalQuickActionTest extends TestCase
             ->postJson("/maternal/quick/{$patientId}", [
                 'action' => 'log_fp_visit',
                 'visit_date' => now()->toDateString(),
+                'mode_of_transaction' => 'Walk-in',
+                'nature_of_visit' => 'New Consultation/Case',
+                'bp_systolic' => 120,
+                'bp_diastolic' => 80,
+                'temperature' => 36.7,
+                'weight' => 55,
+                'height' => 162,
                 'method' => 'Injectable',
                 'next_visit_date' => now()->addMonths(3)->toDateString(),
             ])->assertOk()
@@ -300,6 +316,70 @@ class MaternalQuickActionTest extends TestCase
         $visit = DB::table('family_planning_visits')->latest('id')->first();
         $this->assertNotNull($visit);
         $this->assertSame('Injectable', $visit->method);
+    }
+
+    public function test_family_planning_accepts_btl_method_from_model_constants(): void
+    {
+        $user = $this->createMaternalWorker();
+        $patientId = $this->createPatient();
+
+        DB::table('family_planning_clients')->insert([
+            'patient_id' => $patientId,
+            'type_of_client' => 'continuing_user',
+            'method' => 'Pills',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->postJson("/maternal/quick/{$patientId}", [
+                'action' => 'log_fp_visit',
+                'visit_date' => now()->toDateString(),
+                'mode_of_transaction' => 'Walk-in',
+                'nature_of_visit' => 'Follow-up Visit',
+                'bp_systolic' => 118,
+                'bp_diastolic' => 78,
+                'temperature' => 36.6,
+                'weight' => 58,
+                'height' => 160,
+                'method' => 'BTL',
+                'next_visit_date' => now()->addMonths(1)->toDateString(),
+            ])->assertOk()
+            ->assertJson(['success' => true]);
+
+        $visit = DB::table('family_planning_visits')->latest('id')->first();
+        $this->assertSame('BTL', $visit->method);
+    }
+
+    public function test_family_planning_rejects_removed_method_option(): void
+    {
+        $user = $this->createMaternalWorker();
+        $patientId = $this->createPatient();
+
+        DB::table('family_planning_clients')->insert([
+            'patient_id' => $patientId,
+            'type_of_client' => 'continuing_user',
+            'method' => 'Pills',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->postJson("/maternal/quick/{$patientId}", [
+                'action' => 'log_fp_visit',
+                'visit_date' => now()->toDateString(),
+                'mode_of_transaction' => 'Walk-in',
+                'nature_of_visit' => 'Follow-up Visit',
+                'bp_systolic' => 118,
+                'bp_diastolic' => 78,
+                'temperature' => 36.6,
+                'weight' => 58,
+                'height' => 160,
+                'method' => 'BSO',
+            ])->assertStatus(422)
+            ->assertJsonValidationErrors(['method']);
     }
 
     public function test_family_planning_rejects_without_active_client(): void

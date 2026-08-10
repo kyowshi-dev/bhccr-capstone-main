@@ -9,6 +9,7 @@ use App\Http\Requests\UpdatePostnatalRequest;
 use App\Models\Patient;
 use App\Models\PostnatalRecord;
 use App\Models\Zone;
+use App\Services\MaternalIntakeService;
 use App\Services\MaternalQueryService;
 use App\Services\PostnatalService;
 use Carbon\Carbon;
@@ -24,6 +25,7 @@ class PostnatalController extends Controller
     public function __construct(
         private readonly PostnatalService $service,
         private readonly MaternalQueryService $query,
+        private readonly MaternalIntakeService $intakeService,
     ) {}
 
     public function index(Request $request): View
@@ -106,13 +108,22 @@ class PostnatalController extends Controller
                 ])->withInput();
         }
 
-        $update = [$slot => $date->toDateString()];
+        $worker = $this->resolveWorker();
+        $patient = $record->patient;
+        $pregnancy = $record->pregnancy ?? null;
 
-        if ($request->filled('consultation_id')) {
-            $update['consultation_id'] = (int) $request->input('consultation_id');
-        }
+        $consultationId = $this->intakeService->recordEncounter(
+            $patient,
+            'Postpartum',
+            $request->validated(),
+            $worker,
+            $pregnancy,
+        );
 
-        $record->update($update);
+        $record->update([
+            $slot => $date->toDateString(),
+            'consultation_id' => $consultationId,
+        ]);
 
         return redirect()
             ->route('maternal.postnatal.patient', $record->patient_id)

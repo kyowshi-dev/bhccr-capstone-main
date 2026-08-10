@@ -20,16 +20,16 @@ class AssignInitialRolesSeeder extends Seeder
             'Admin' => Permission::query()->pluck('name')->toArray(),
 
             // DOCTOR
-            'Doctor' => ['patients', 'consultations', 'medicines', 'maternal', 'print_handouts', 'dashboard_handouts_clinical'],
+            'Doctor' => ['patients', 'consultations', 'medicines', 'maternal', 'maternal.view_queues', 'maternal.log_visit', 'maternal.manage_watchlist', 'print_handouts', 'dashboard_handouts_clinical'],
 
             // NURSE
-            'Nurse' => ['patients', 'consultations', 'medicines', 'immunizations', 'maternal', 'print_handouts', 'dashboard_handouts_clinical'],
+            'Nurse' => ['patients', 'consultations', 'medicines', 'immunizations', 'maternal', 'maternal.view_queues', 'maternal.log_visit', 'maternal.manage_watchlist', 'print_handouts', 'dashboard_handouts_clinical'],
 
             // MIDWIFE
-            'Midwife' => ['patients', 'consultations', 'immunizations', 'maternal', 'reports', 'print_handouts', 'dashboard_handouts_clinical', 'dashboard_handouts_midwife'],
-            
+            'Midwife' => ['patients', 'consultations', 'immunizations', 'maternal', 'maternal.view_queues', 'maternal.log_visit', 'maternal.manage_watchlist', 'reports', 'print_handouts', 'dashboard_handouts_clinical', 'dashboard_handouts_midwife'],
+
             // BHW
-            'BHW' => ['household', 'patients', 'consultations', 'immunizations', 'maternal', 'reports', 'print_handouts', 'dashboard_handouts_bhw'],
+            'BHW' => ['household', 'patients', 'consultations', 'immunizations', 'maternal', 'maternal.view_queues', 'reports', 'print_handouts', 'dashboard_handouts_bhw'],
         ];
 
         foreach ($rolePermissionMap as $roleName => $permissionNames) {

@@ -134,7 +134,7 @@
                             </li>
                         @endforeach
                     </ul>
-                    <form method="POST" action="{{ route('maternal.postnatal.complete-visit', $current->id) }}" class="mt-3"
+                    <form method="POST" action="{{ route('maternal.postnatal.complete-visit', $current->id) }}" class="mt-3 space-y-3"
                           x-data="ppSuggest('{{ $current->delivery_date->format('Y-m-d') }}')" x-init="$nextTick(suggest)">
                         @csrf
                         <div>
@@ -151,28 +151,15 @@
                                 <input type="date" name="date" value="{{ now()->toDateString() }}" max="{{ now()->toDateString() }}"
                                        class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                        style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                                <button type="submit" class="rounded-lg px-4 py-2 text-sm font-semibold text-white transition hover:shadow-md" style="background: var(--primary);">Save</button>
                             </div>
-                            {{-- Auto-suggest the postpartum slot due for today's date relative to delivery. --}}
-                            <div class="mt-3">
-                                <label for="pp_consultation_id" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Origin consultation <span class="text-xs font-normal" style="color: var(--ink-subtle);">(optional)</span></label>
-                                <select id="pp_consultation_id" name="consultation_id" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                                        style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                                    <option value="">— None —</option>
-                                    @forelse ($consultations as $consultation)
-                                        <option value="{{ $consultation->id }}" @selected((string) old('consultation_id', $current->consultation_id ?? null) === (string) $consultation->id)>
-                                            #{{ $consultation->id }} · {{ optional($consultation->created_at)->format('M d, Y') }} · {{ $consultation->purpose_of_visit ?? $consultation->nature_of_visit ?? 'Consultation' }}
-                                        </option>
-                                    @empty
-                                        <option value="" disabled>No prior consultations</option>
-                                    @endforelse
-                                </select>
-                                @error('consultation_id') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
-                            </div>
-                            @if ($errors->has('slot') || $errors->has('date'))
-                                <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $errors->first('slot') ?: $errors->first('date') }}</p>
-                            @endif
                         </div>
+
+                        @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'pp_'])
+
+                        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md"
+                                style="background: var(--primary);">
+                            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save visit
+                        </button>
                     </form>
                 </div>
             @else

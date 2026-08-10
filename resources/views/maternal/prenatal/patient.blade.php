@@ -165,15 +165,18 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 lg:p-5">
                         <div>
                             <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">Record prenatal visit</h2>
-                            <form method="POST" action="{{ route('maternal.prenatal.visits.store', $active->id) }}" class="space-y-3">
+                            <form method="POST" action="{{ route('maternal.prenatal.visits.store', $active->id) }}" class="space-y-4">
                                 @csrf
                                 <div>
-                                    <label for="visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: var(--danger);">*</span></label>
+                                    <label for="visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: #b91c1c;">*</span></label>
                                     <input id="visit_date" type="date" name="visit_date" value="{{ old('visit_date', now()->toDateString()) }}" max="{{ now()->toDateString() }}"
                                            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                                    @error('visit_date') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
+                                    @error('visit_date') <p class="mt-1 text-xs font-medium" style="color: #b91c1c;">{{ $message }}</p> @enderror
                                 </div>
+
+                                @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'pv_'])
+
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label for="fundic_height_cm" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Fundic height (cm)</label>
@@ -194,11 +197,6 @@
                                            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                                 </div>
-                                @include('maternal.partials.consultation-select', [
-                                    'fieldName' => 'consultation_id',
-                                    'consultations' => $consultations,
-                                    'selected' => old('consultation_id'),
-                                ])
                                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md"
                                         style="background: var(--primary);">
                                     <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save visit

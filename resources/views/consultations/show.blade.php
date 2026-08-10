@@ -32,6 +32,11 @@
             @if ($consultation->purpose_of_visit)
                 <span class="inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">{{ $consultation->purpose_of_visit }}</span>
             @endif
+            @if ($consultation->escalated_at)
+                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style="background: var(--amber-soft); color: var(--amber);">
+                    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Flagged for physician review
+                </span>
+            @endif
             <a href="{{ route('patients.show', $patient->id) }}" class="text-xs font-medium text-[var(--primary)] hover:underline lg:text-sm">Back to patient</a>
             <a href="{{ route('consultations.index') }}" class="text-xs font-medium text-[var(--primary)] hover:underline lg:text-sm">History</a>
             @if (in_array($consultation->status, \App\Enums\ConsultationStatus::terminalValues(), true) && auth()->user()->canPrintHandout())

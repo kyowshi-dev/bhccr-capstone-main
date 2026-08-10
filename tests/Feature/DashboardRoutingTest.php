@@ -47,7 +47,7 @@ class DashboardRoutingTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Maternal Dashboard')
-            ->assertSee('Pre-natal registrants')
+            ->assertSee('Active Prenatal')
             ->assertSee('Results Ready');
     }
 

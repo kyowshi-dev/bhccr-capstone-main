@@ -86,37 +86,35 @@
 
                 <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
                     <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">Record follow-up visit</h2>
-                    <form method="POST" action="{{ route('maternal.family-planning.visits.store', $client->id) }}" class="space-y-3">
+                    <form method="POST" action="{{ route('maternal.family-planning.visits.store', $client->id) }}" class="space-y-4">
                         @csrf
                         <div>
-                            <label for="visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: var(--danger);">*</span></label>
+                            <label for="visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: #b91c1c;">*</span></label>
                             <input id="visit_date" type="date" name="visit_date" value="{{ old('visit_date', now()->toDateString()) }}" max="{{ now()->toDateString() }}"
                                    class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                    style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                            @error('visit_date') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
+                            @error('visit_date') <p class="mt-1 text-xs font-medium" style="color: #b91c1c;">{{ $message }}</p> @enderror
                         </div>
+
+                        @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'fp_'])
+
                         <div>
-                            <label for="method" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Method <span style="color: var(--danger);">*</span></label>
+                            <label for="method" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Method <span style="color: #b91c1c;">*</span></label>
                             <select id="method" name="method" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                     style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                                 @foreach (\App\Models\FamilyPlanningClient::METHODS as $option)
                                     <option value="{{ $option }}" @selected(old('method', $client->method) === $option)>{{ $option }}</option>
                                 @endforeach
                             </select>
-                            @error('method') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
+                            @error('method') <p class="mt-1 text-xs font-medium" style="color: #b91c1c;">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="schedule_next_visit" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Next follow-up</label>
                             <input id="schedule_next_visit" type="date" name="schedule_next_visit" value="{{ old('schedule_next_visit', $client->schedule_next_visit?->format('Y-m-d')) }}"
                                    class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                    style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                            @error('schedule_next_visit') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
+                            @error('schedule_next_visit') <p class="mt-1 text-xs font-medium" style="color: #b91c1c;">{{ $message }}</p> @enderror
                         </div>
-                        @include('maternal.partials.consultation-select', [
-                            'fieldName' => 'consultation_id',
-                            'consultations' => $consultations,
-                            'selected' => old('consultation_id'),
-                        ])
                         <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md"
                                 style="background: var(--primary);">
                             <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save visit

@@ -10,6 +10,7 @@ use App\Models\FamilyPlanningClient;
 use App\Models\Patient;
 use App\Models\Zone;
 use App\Services\FamilyPlanningService;
+use App\Services\MaternalIntakeService;
 use App\Services\MaternalQueryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class FamilyPlanningController extends Controller
     public function __construct(
         private readonly FamilyPlanningService $service,
         private readonly MaternalQueryService $query,
+        private readonly MaternalIntakeService $intakeService,
     ) {}
 
     public function index(Request $request): View
@@ -82,7 +84,23 @@ class FamilyPlanningController extends Controller
 
     public function addVisit(AddFamilyPlanningVisitRequest $request, FamilyPlanningClient $client): RedirectResponse
     {
-        $this->service->addVisit($client, $request->validated(), $this->currentWorkerId());
+        $worker = $this->resolveWorker();
+        $patient = $client->patient;
+
+        $pregnancy = $this->intakeService->activePregnancyFor($patient);
+
+        $consultationId = $this->intakeService->recordEncounter(
+            $patient,
+            'Family Planning',
+            $request->validated(),
+            $worker,
+            $pregnancy,
+        );
+
+        $data = $request->validated();
+        $data['consultation_id'] = $consultationId;
+
+        $this->service->addVisit($client, $data, $this->currentWorkerId());
 
         return redirect()
             ->route('maternal.family-planning.patient', $client->patient_id)

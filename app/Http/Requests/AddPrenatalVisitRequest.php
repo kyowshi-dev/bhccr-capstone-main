@@ -2,10 +2,9 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Pregnancy;
+use App\Services\VitalsService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class AddPrenatalVisitRequest extends FormRequest
 {
@@ -20,27 +19,14 @@ class AddPrenatalVisitRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'mode_of_transaction' => ['required', 'string', 'max:255'],
+            'nature_of_visit' => ['required', 'string', 'max:255'],
+            'chief_complaint' => ['nullable', 'string', 'max:500'],
             'visit_date' => ['required', 'date'],
             'fundic_height_cm' => ['nullable', 'numeric', 'min:0', 'max:99.9'],
             'fetal_heart_tone_bpm' => ['nullable', 'integer', 'min:60', 'max:220'],
             'next_visit_date' => ['nullable', 'date'],
-            'consultation_id' => $this->consultationRule(),
+            ...VitalsService::rules(required: true),
         ];
-    }
-
-    /**
-     * @return array<mixed>
-     */
-    private function consultationRule(): array
-    {
-        $pregnancy = $this->route('pregnancy');
-
-        $rules = ['nullable', 'integer'];
-
-        if ($pregnancy instanceof Pregnancy) {
-            $rules[] = Rule::exists('consultations', 'id')->where('patient_id', $pregnancy->patient_id);
-        }
-
-        return $rules;
     }
 }

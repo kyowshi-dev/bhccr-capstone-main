@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\MaternalQueueDTO;
 use App\Models\User;
 use App\Services\DashboardChartsService;
 use App\Services\DashboardQueryService;
-use App\Services\MaternalQueryService;
+use App\Services\MaternalQueueAggregatorService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -50,18 +51,25 @@ class DashboardController extends Controller
     {
         $handoutData = $this->handoutData($request, $user, 'midwife', limit: 8, defaultToToday: true);
 
-        $maternalQuery = app(MaternalQueryService::class);
+        $aggregator = app(MaternalQueueAggregatorService::class);
+        $kpis = $aggregator->kpis();
+        $items = $aggregator->aggregate();
+        $initialItems = $items->groupBy(fn ($dto) => $dto->patient_id)
+            ->map(fn ($group) => MaternalQueueDTO::forGroupedCard($group))
+            ->filter()
+            ->values();
 
-        return view('dashboard_midwife', [
+        return view('dashboard_midwife_v2', array_merge($handoutData, [
             'showResultsReady' => $user->canViewDashboardHandouts('midwife'),
-            'prenatalRegistrants' => $maternalQuery->prenatalRegistrants(),
-            'dueThisMonth' => $maternalQuery->dueThisMonth($today),
-            'postnatalDue' => $maternalQuery->postnatalDue($today),
-            'highRiskReferrals' => $maternalQuery->highRiskReferrals(),
-            'actionQueue' => $maternalQuery->actionQueue($today),
-            'watchlist' => $maternalQuery->watchlist(),
-            ...$handoutData,
-        ]);
+            'prenatalRegistrants' => $kpis['prenatalRegistrants'],
+            'dueThisMonth' => $kpis['dueThisMonth'],
+            'postnatalDue' => $kpis['postnatalDue'],
+            'highRiskReferrals' => $kpis['highRiskReferrals'],
+            'fpScheduled' => $kpis['fpScheduled'],
+            'layout' => 'accordion',
+            'items' => $initialItems,
+            'initialTab' => 'all',
+        ]));
     }
 
     private function nurseDashboard(Request $request, User $user, Carbon $today): View

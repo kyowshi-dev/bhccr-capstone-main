@@ -31,7 +31,7 @@ class MaternalQuickActionController extends Controller
                 $request->input('action'),
                 $patient,
                 $request->validated(),
-                $worker->id,
+                $worker,
             );
 
             return response()->json($result);

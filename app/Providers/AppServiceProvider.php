@@ -4,11 +4,17 @@ namespace App\Providers;
 
 use App\Models\ApplicationSetting;
 use App\Models\Consultation;
+use App\Models\FamilyPlanningClient;
 use App\Models\Immunization;
 use App\Models\Medicine;
 use App\Models\Patient;
 use App\Models\PostnatalRecord;
+use App\Models\Pregnancy;
 use App\Models\User;
+use App\Observers\ConsultationObserver;
+use App\Observers\FamilyPlanningClientObserver;
+use App\Observers\PostnatalRecordObserver;
+use App\Observers\PregnancyObserver;
 use App\Policies\ImmunizationPolicy;
 use App\Policies\MedicinePolicy;
 use App\Policies\PatientPolicy;
@@ -33,6 +39,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Consultation::observe(ConsultationObserver::class);
+        Pregnancy::observe(PregnancyObserver::class);
+        PostnatalRecord::observe(PostnatalRecordObserver::class);
+        FamilyPlanningClient::observe(FamilyPlanningClientObserver::class);
+
         // Set session lifetime from database setting
         try {
             $sessionTimeout = (int) ApplicationSetting::get('session_timeout', 120);

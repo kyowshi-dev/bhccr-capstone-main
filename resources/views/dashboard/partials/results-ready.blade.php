@@ -3,7 +3,28 @@
     $filterAction = $filterAction ?? route('dashboard');
     $panelTitle = $panelTitle ?? 'Results ready';
     $panelSubtitle = $panelSubtitle ?? 'Completed consultations — print handouts for patients picking up Rx or diagnosis summaries.';
+    $layout = $layout ?? 'block';
+    $isAccordion = $layout === 'accordion';
 @endphp
+
+@if($isAccordion)
+<div x-data="{ resultsOpen: false }">
+    <button type="button" @click="resultsOpen = !resultsOpen"
+            class="w-full flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition hover:bg-black/[0.02]"
+            style="background: var(--bg-surface); border-color: var(--border); box-shadow: var(--shadow-sm);">
+        <div class="flex items-center gap-2 min-w-0">
+            <i class="fa-solid fa-print" aria-hidden="true" style="color: var(--primary);"></i>
+            <span class="font-display font-semibold text-sm" style="color: var(--ink);">{{ $panelTitle }}</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
+                {{ $resultsReadyCount ?? 0 }}
+            </span>
+            <i class="fa-solid fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': resultsOpen }" style="color: var(--ink-muted);" aria-hidden="true"></i>
+        </div>
+    </button>
+    <div x-show="resultsOpen" x-collapse class="mt-2">
+@endif
 
 <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border); box-shadow: var(--shadow-sm);">
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
@@ -82,3 +103,8 @@
         @endforelse
     </ul>
 </div>
+
+@if($isAccordion)
+    </div>
+</div>
+@endif

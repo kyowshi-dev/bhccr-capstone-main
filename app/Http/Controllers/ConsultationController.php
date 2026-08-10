@@ -17,6 +17,7 @@ use App\Services\ConsultationHandoutService;
 use App\Services\ConsultationQueryService;
 use App\Services\ConsultationService;
 use App\Services\ConsultationWorkspaceService;
+use App\Services\MaternalQueueAggregatorService;
 use App\Services\ReferralService;
 use App\Services\VitalsService;
 use DomainException;
@@ -67,14 +68,26 @@ class ConsultationController extends Controller
 
         $data = ConsultationQueryService::nextUnnotifiedDoctorReview();
 
-        if ($data === null) {
-            return response()->json(['hasRequest' => false]);
+        $response = $data === null
+            ? ['hasRequest' => false]
+            : ['hasRequest' => true, 'request' => $data];
+
+        if (config('features.maternal_tabbed_hub') && $user->hasPermission('maternal.view_queues')) {
+            $aggregator = app(MaternalQueueAggregatorService::class);
+            $items = $aggregator->aggregate();
+            $response['queue_counts'] = [
+                'all' => $items->count(),
+                'prenatal' => $items->where('program_type', 'prenatal')->count(),
+                'postnatal' => $items->where('program_type', 'postnatal')->count(),
+                'fp' => $items->where('program_type', 'fp')->count(),
+                'watchlist' => $items->where('risk_level', 'high')->count(),
+            ];
+            $response['queue_version_hash'] = md5(serialize(
+                $items->map(fn ($i) => $i->patient_id.':'.$i->program_type)->toArray()
+            ));
         }
 
-        return response()->json([
-            'hasRequest' => true,
-            'request' => $data,
-        ]);
+        return response()->json($response);
     }
 
     // 1. Show the Admission Form (Triage) — modal partial via AJAX; redirect for direct navigation

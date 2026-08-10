@@ -77,6 +77,7 @@ class Consultation extends Model
         'patient_id',
         'worker_id',
         'attending_doctor_id',
+        'pregnancy_id',
         'status',
         'is_locked',
         'nature_of_visit',
@@ -124,6 +125,21 @@ class Consultation extends Model
     public function prescriptions(): HasMany
     {
         return $this->hasMany(Prescription::class, 'consultation_id');
+    }
+
+    public function pregnancy(): BelongsTo
+    {
+        return $this->belongsTo(Pregnancy::class);
+    }
+
+    public function prenatalVisits(): HasMany
+    {
+        return $this->hasMany(PrenatalVisit::class, 'consultation_id');
+    }
+
+    public function postnatalRecord(): HasOne
+    {
+        return $this->hasOne(PostnatalRecord::class, 'consultation_id');
     }
 
     public function complaintName(): Attribute
