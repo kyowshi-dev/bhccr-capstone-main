@@ -179,6 +179,67 @@ class MaternalPostnatalTest extends TestCase
         $this->assertSame(['Poor feeding'], $record->danger_signs_baby);
     }
 
+    public function test_stillbirth_stores_without_newborn_fields_and_skips_child_enrollment(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload([
+            'pregnancy_outcome' => PostnatalRecord::OUTCOME_STILLBIRTH,
+            'child_last_name' => null,
+            'child_first_name' => null,
+            'child_sex' => null,
+        ]))->assertRedirect();
+
+        $record = PostnatalRecord::where('patient_id', $mother->id)->firstOrFail();
+
+        $this->assertSame(PostnatalRecord::OUTCOME_STILLBIRTH, $record->pregnancy_outcome);
+        $this->assertNull($record->child_last_name);
+        $this->assertNull($record->child_first_name);
+        $this->assertNull($record->child_sex);
+        $this->assertNull($record->child_patient_id);
+        $this->assertSame(1, Patient::where('household_id', $mother->household_id)->count());
+    }
+
+    public function test_non_live_birth_outcome_rejects_newborn_fields(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload([
+            'pregnancy_outcome' => PostnatalRecord::OUTCOME_ABORTION,
+        ]))->assertSessionHasErrors(['child_first_name', 'child_last_name', 'child_sex']);
+
+        $this->assertDatabaseCount('postnatal_records', 0);
+    }
+
+    public function test_changing_outcome_to_stillbirth_clears_newborn_data(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload())->assertRedirect();
+
+        $record = PostnatalRecord::where('patient_id', $mother->id)->firstOrFail();
+
+        $this->assertNotNull($record->child_patient_id);
+
+        $this->put(route('maternal.postnatal.update', $record->id), $this->validPayload([
+            'pregnancy_outcome' => PostnatalRecord::OUTCOME_STILLBIRTH,
+            'child_last_name' => null,
+            'child_first_name' => null,
+            'child_sex' => null,
+        ]))->assertRedirect();
+
+        $record->refresh();
+
+        $this->assertSame(PostnatalRecord::OUTCOME_STILLBIRTH, $record->pregnancy_outcome);
+        $this->assertNull($record->child_last_name);
+        $this->assertNull($record->child_first_name);
+        $this->assertNull($record->child_sex);
+        $this->assertNull($record->child_patient_id);
+    }
+
     public function test_postnatal_index_loads_for_authorized_user(): void
     {
         $this->actingAs($this->authorizedUser());

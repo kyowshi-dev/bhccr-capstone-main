@@ -53,6 +53,12 @@ class PostnatalService
             $this->pregnancyService->markDelivered($pregnancy);
         }
 
+        if ($data['pregnancy_outcome'] !== PostnatalRecord::OUTCOME_LIVE_BIRTH) {
+            foreach (['child_last_name', 'child_first_name', 'child_middle_name', 'child_sex', 'child_birth_length_cm', 'child_birth_weight_kg', 'child_patient_id'] as $field) {
+                $data[$field] = null;
+            }
+        }
+
         $record->update($data);
 
         $this->syncChildPatient($record);
@@ -87,9 +93,14 @@ class PostnatalService
     /**
      * Create or keep in sync the linked child `patients` record so the
      * newborn is immediately available to the immunization module.
+     * Only live births produce a newborn record.
      */
     private function syncChildPatient(PostnatalRecord $record): void
     {
+        if ($record->pregnancy_outcome !== PostnatalRecord::OUTCOME_LIVE_BIRTH) {
+            return;
+        }
+
         $child = $record->child_patient_id !== null
             ? Patient::find($record->child_patient_id)
             : null;

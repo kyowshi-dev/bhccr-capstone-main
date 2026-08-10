@@ -73,13 +73,13 @@
                             <i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i> Mother danger signs: {{ implode(', ', $current->danger_signs_mother) }}
                         </div>
                     @endif
-                    @if (! empty($current->danger_signs_baby))
+                    @if ($current->pregnancy_outcome === \App\Models\PostnatalRecord::OUTCOME_LIVE_BIRTH && ! empty($current->danger_signs_baby))
                         <div class="mt-2 rounded-lg p-3 text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
                             <i class="fa-solid fa-circle-exclamation mr-1" aria-hidden="true"></i> Baby danger signs: {{ implode(', ', $current->danger_signs_baby) }}
                         </div>
                     @endif
 
-                    @if ($current->childPatient !== null)
+                    @if ($current->pregnancy_outcome === \App\Models\PostnatalRecord::OUTCOME_LIVE_BIRTH && $current->childPatient !== null)
                         <div class="mt-4 pt-3 border-t flex items-center justify-between" style="border-color: var(--border);">
                             <div class="text-sm">
                                 <p class="text-xs font-medium" style="color: var(--ink-muted);">Newborn enrolled</p>
@@ -238,7 +238,7 @@
 
 <x-modal name="store-postnatal-modal" title="Record delivery"
          x-on:open-store-postnatal.window="open = true" x-on:close.window="open = false">
-    <form method="POST" action="{{ route('maternal.postnatal.store', $patient->id) }}" class="space-y-3">
+    <form method="POST" action="{{ route('maternal.postnatal.store', $patient->id) }}" class="space-y-3" x-data="{ outcome: @js(old('pregnancy_outcome', '')) }">
         @csrf
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -255,7 +255,7 @@
             </div>
             <div>
                 <label for="pn_pregnancy_outcome" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Outcome <span style="color: var(--danger);">*</span></label>
-                <select id="pn_pregnancy_outcome" name="pregnancy_outcome" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                <select id="pn_pregnancy_outcome" name="pregnancy_outcome" x-model="outcome" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                         style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                     @foreach (\App\Models\PostnatalRecord::OUTCOMES as $value => $label)
                         <option value="{{ $value }}" @selected(old('pregnancy_outcome') === $value)>{{ $label }}</option>
@@ -336,7 +336,7 @@
                     @endforeach
                 </div>
             </div>
-            <div>
+            <div x-show="outcome === 'live_birth'" x-cloak>
                 <label class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Baby danger signs</label>
                 <div class="grid grid-cols-2 gap-1.5 rounded-lg border p-3" style="border-color: var(--border);">
                     @foreach (\App\Models\PostnatalRecord::DANGER_SIGNS_BABY as $sign)
@@ -368,7 +368,7 @@
                        style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
             </div>
         </div>
-        <div class="rounded-lg border p-3" style="border-color: var(--border);">
+        <div x-show="outcome === 'live_birth'" x-cloak class="rounded-lg border p-3" style="border-color: var(--border);">
             <p class="text-xs font-semibold mb-2" style="color: var(--ink-muted);">Newborn (auto-enrolled as patient)</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -413,6 +413,9 @@
                 </div>
             </div>
         </div>
+        <p x-show="outcome !== '' && outcome !== 'live_birth'" x-cloak class="text-xs font-medium rounded-lg border px-3 py-2" style="color: var(--ink-muted); border-color: var(--border);">
+            Newborn details apply to live births only.
+        </p>
         <div class="flex justify-end gap-2 pt-1">
             <button type="button" @click="$dispatch('close')" class="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:bg-black/[0.03]"
                     style="border-color: var(--border); color: var(--ink-muted);">Cancel</button>
@@ -424,13 +427,13 @@
 @if ($current !== null)
     <x-modal name="edit-postnatal-modal" title="Edit postnatal record"
              x-on:open-edit-postnatal.window="open = true" x-on:close.window="open = false">
-        <form method="POST" action="{{ route('maternal.postnatal.update', $current->id) }}" class="space-y-3">
+        <form method="POST" action="{{ route('maternal.postnatal.update', $current->id) }}" class="space-y-3" x-data="{ outcome: @js($current->pregnancy_outcome) }">
             @csrf
             @method('PUT')
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label for="ep_pregnancy_outcome" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Outcome <span style="color: var(--danger);">*</span></label>
-                    <select id="ep_pregnancy_outcome" name="pregnancy_outcome" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                    <select id="ep_pregnancy_outcome" name="pregnancy_outcome" x-model="outcome" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                             style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                         @foreach (\App\Models\PostnatalRecord::OUTCOMES as $value => $label)
                             <option value="{{ $value }}" @selected($current->pregnancy_outcome === $value)>{{ $label }}</option>
@@ -526,7 +529,7 @@
                         @endforeach
                     </div>
                 </div>
-                <div>
+                <div x-show="outcome === 'live_birth'" x-cloak>
                     <label class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Baby danger signs</label>
                     <div class="grid grid-cols-2 gap-1.5 rounded-lg border p-3" style="border-color: var(--border);">
                         @foreach (\App\Models\PostnatalRecord::DANGER_SIGNS_BABY as $sign)

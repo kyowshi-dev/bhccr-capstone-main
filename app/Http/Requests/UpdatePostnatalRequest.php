@@ -19,6 +19,14 @@ class UpdatePostnatalRequest extends FormRequest
      */
     public function rules(): array
     {
+        $isLiveBirth = $this->input('pregnancy_outcome') === PostnatalRecord::OUTCOME_LIVE_BIRTH;
+
+        $childName = $isLiveBirth ? ['required', 'string', 'max:255'] : ['prohibited'];
+        $childOptional = $isLiveBirth ? ['nullable', 'string', 'max:255'] : ['prohibited'];
+        $childSex = $isLiveBirth ? ['required', 'in:M,F'] : ['prohibited'];
+        $childMeasure = $isLiveBirth ? ['nullable', 'numeric', 'min:0', 'max:99.9'] : ['prohibited'];
+        $childWeight = $isLiveBirth ? ['nullable', 'numeric', 'min:0', 'max:20'] : ['prohibited'];
+
         return [
             'pregnancy_id' => ['nullable', 'integer', 'exists:pregnancies,id'],
             'consultation_id' => $this->consultationRule(),
@@ -42,12 +50,27 @@ class UpdatePostnatalRequest extends FormRequest
             'vitamin_a_date' => ['nullable', 'date'],
             'iron_date' => ['nullable', 'date'],
             'iron_count' => ['nullable', 'integer', 'min:0', 'max:999'],
-            'child_last_name' => ['required', 'string', 'max:255'],
-            'child_first_name' => ['required', 'string', 'max:255'],
-            'child_middle_name' => ['nullable', 'string', 'max:255'],
-            'child_sex' => ['required', 'in:M,F'],
-            'child_birth_length_cm' => ['nullable', 'numeric', 'min:0', 'max:99.9'],
-            'child_birth_weight_kg' => ['nullable', 'numeric', 'min:0', 'max:20'],
+            'child_last_name' => $childName,
+            'child_first_name' => $childName,
+            'child_middle_name' => $childOptional,
+            'child_sex' => $childSex,
+            'child_birth_length_cm' => $childMeasure,
+            'child_birth_weight_kg' => $childWeight,
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'child_last_name.prohibited' => 'Newborn details apply to live births only.',
+            'child_first_name.prohibited' => 'Newborn details apply to live births only.',
+            'child_middle_name.prohibited' => 'Newborn details apply to live births only.',
+            'child_sex.prohibited' => 'Newborn details apply to live births only.',
+            'child_birth_length_cm.prohibited' => 'Newborn details apply to live births only.',
+            'child_birth_weight_kg.prohibited' => 'Newborn details apply to live births only.',
         ];
     }
 
