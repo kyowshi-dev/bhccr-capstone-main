@@ -135,15 +135,9 @@ class User extends Authenticatable
         return $this->hasPermission('print_handouts');
     }
 
-    public function canViewDashboardHandouts(string $context): bool
+    public function canViewDashboardHandouts(): bool
     {
-        return match ($context) {
-            'bhw' => $this->hasPermission('dashboard_handouts_bhw'),
-            'clinical' => $this->hasPermission('dashboard_handouts_clinical'),
-            'midwife' => $this->hasPermission('dashboard_handouts_midwife'),
-            'admin' => $this->hasPermission('dashboard_handouts_admin'),
-            default => false,
-        };
+        return $this->hasPermission('dashboard_handouts');
     }
 
     private function getPermissionNames(): array

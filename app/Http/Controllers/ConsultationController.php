@@ -72,7 +72,7 @@ class ConsultationController extends Controller
             ? ['hasRequest' => false]
             : ['hasRequest' => true, 'request' => $data];
 
-        if (config('features.maternal_tabbed_hub') && $user->hasPermission('maternal.view_queues')) {
+        if (config('features.maternal_tabbed_hub') && $user->hasPermission('maternal')) {
             $aggregator = app(MaternalQueueAggregatorService::class);
             $items = $aggregator->aggregate();
             $response['queue_counts'] = [
@@ -90,7 +90,7 @@ class ConsultationController extends Controller
         return response()->json($response);
     }
 
-    // 1. Show the Admission Form (Triage) — modal partial via AJAX; redirect for direct navigation
+    // 1. Show the Admission Form (Triage) - modal partial via AJAX; redirect for direct navigation
     public function create(Request $request, Patient $patient): View|RedirectResponse
     {
         $previousVitals = ConsultationQueryService::previousVitalsFor($patient);

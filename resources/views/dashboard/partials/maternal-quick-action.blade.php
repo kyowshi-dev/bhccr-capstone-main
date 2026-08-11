@@ -124,7 +124,7 @@
                                 </div>
                                 <div>
                                     <label for="ql_weight" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Weight (kg) <span style="color: #b91c1c;">*</span></label>
-                                    <input id="ql_weight" type="number" step="0.1" name="weight" required x-model="formData.weight" min="0" max="500" placeholder="—"
+                                    <input id="ql_weight" type="number" step="0.1" name="weight" required x-model="formData.weight" min="0" max="500" placeholder="-"
                                            :class="{ 'input-error': errors.weight }"
                                            class="w-full rounded-lg border px-3 py-2 text-sm text-center focus:outline-none focus:ring-2"
                                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
@@ -143,7 +143,7 @@
 
                         <div>
                             <label for="ql_height" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Height (cm) <span style="color: #b91c1c;">*</span></label>
-                            <input id="ql_height" type="number" step="0.1" name="height" required x-model="formData.height" min="0" max="300" placeholder="—"
+                            <input id="ql_height" type="number" step="0.1" name="height" required x-model="formData.height" min="0" max="300" placeholder="-"
                                    :class="{ 'input-error': errors.height }"
                                    class="w-full rounded-lg border px-3 py-2 text-sm text-center focus:outline-none focus:ring-2"
                                    style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">

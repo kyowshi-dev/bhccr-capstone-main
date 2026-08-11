@@ -50,7 +50,6 @@ class LiveRequestsExtendedTest extends TestCase
         $user = $this->createUserWithPermissions([
             'consultations',
             'maternal',
-            'maternal.view_queues',
         ]);
 
         $patient = Patient::create([
@@ -125,7 +124,6 @@ class LiveRequestsExtendedTest extends TestCase
         $user = $this->createUserWithPermissions([
             'consultations',
             'maternal',
-            'maternal.view_queues',
         ]);
 
         $response1 = $this->actingAs($user)

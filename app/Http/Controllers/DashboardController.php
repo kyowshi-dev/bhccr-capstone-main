@@ -33,7 +33,7 @@ class DashboardController extends Controller
 
     private function bhwDashboard(Request $request, User $user, Carbon $today): View
     {
-        $handoutData = $this->handoutData($request, $user, 'bhw');
+        $handoutData = $this->handoutData($request, $user);
 
         return view('dashboard_bhw', [
             'totalPatients' => DashboardQueryService::totalPatients($user),
@@ -42,14 +42,14 @@ class DashboardController extends Controller
             'pendingQueue' => DashboardQueryService::pendingQueue($user),
             'recentPatients' => DashboardQueryService::recentPatients($user),
             'queueUpdatedAt' => now()->format('M j, Y g:i A'),
-            'showResultsReady' => $user->canViewDashboardHandouts('bhw'),
+            'showResultsReady' => $user->canViewDashboardHandouts(),
             ...$handoutData,
         ]);
     }
 
     private function midwifeDashboard(Request $request, User $user, Carbon $today): View
     {
-        $handoutData = $this->handoutData($request, $user, 'midwife', limit: 8, defaultToToday: true);
+        $handoutData = $this->handoutData($request, $user, limit: 8, defaultToToday: true);
 
         $aggregator = app(MaternalQueueAggregatorService::class);
         $kpis = $aggregator->kpis();
@@ -60,7 +60,7 @@ class DashboardController extends Controller
             ->values();
 
         return view('dashboard_midwife_v2', array_merge($handoutData, [
-            'showResultsReady' => $user->canViewDashboardHandouts('midwife'),
+            'showResultsReady' => $user->canViewDashboardHandouts(),
             'prenatalRegistrants' => $kpis['prenatalRegistrants'],
             'dueThisMonth' => $kpis['dueThisMonth'],
             'postnatalDue' => $kpis['postnatalDue'],
@@ -79,14 +79,14 @@ class DashboardController extends Controller
             'intakePipelineCount' => $intakePipelineCount,
         ] = DashboardQueryService::nurseCounts();
 
-        $handoutData = $this->handoutData($request, $user, 'clinical', limit: 8, defaultToToday: true);
+        $handoutData = $this->handoutData($request, $user, limit: 8, defaultToToday: true);
 
         return view('dashboard_nurse', [
             'consultationsToday' => DashboardQueryService::consultationsToday($today),
             'pendingValidationCount' => $pendingValidationCount,
             'intakePipelineCount' => $intakePipelineCount,
             'validationQueue' => DashboardQueryService::validationQueue(),
-            'showResultsReady' => $user->canViewDashboardHandouts('clinical'),
+            'showResultsReady' => $user->canViewDashboardHandouts(),
             ...$handoutData,
         ]);
     }
@@ -99,7 +99,7 @@ class DashboardController extends Controller
             'consultationsToday' => $consultationsToday,
         ] = DashboardQueryService::doctorCounts($today);
 
-        $handoutData = $this->handoutData($request, $user, 'clinical', limit: 8, defaultToToday: true);
+        $handoutData = $this->handoutData($request, $user, limit: 8, defaultToToday: true);
 
         return view('dashboard_doctor', [
             'consultationsToday' => $consultationsToday,
@@ -107,7 +107,7 @@ class DashboardController extends Controller
             'completedConsultationsToday' => $completedConsultationsToday,
             'followUpConsultationsToday' => DashboardQueryService::followUpsToday($today),
             'doctorQueue' => DashboardQueryService::doctorQueue(),
-            'showResultsReady' => $user->canViewDashboardHandouts('clinical'),
+            'showResultsReady' => $user->canViewDashboardHandouts(),
             ...$handoutData,
         ]);
     }
@@ -131,7 +131,7 @@ class DashboardController extends Controller
             'onDutyStaff' => $onDutyStaff,
         ] = DashboardQueryService::onDuty();
 
-        $handoutData = $this->handoutData($request, $user, 'admin', limit: 10);
+        $handoutData = $this->handoutData($request, $user, limit: 10);
 
         return view('dashboard', [
             'totalPatients' => DashboardQueryService::totalPatients(),
@@ -144,7 +144,7 @@ class DashboardController extends Controller
             'patientVolumeChartModel' => $patientVolumeChartModel,
             'presentingIllnessesChartModel' => $presentingIllnessesChartModel,
             'topPresentingIllnesses' => $topPresentingIllnesses,
-            'showResultsReady' => $user->canViewDashboardHandouts('admin'),
+            'showResultsReady' => $user->canViewDashboardHandouts(),
             ...$handoutData,
         ]);
     }
@@ -152,9 +152,9 @@ class DashboardController extends Controller
     /**
      * @return array{resultsReady: Collection, resultsReadyCount: int, resultsFilters: array{query: string, from: string, to: string}}
      */
-    private function handoutData(Request $request, User $user, string $scope, int $limit = 15, bool $defaultToToday = false): array
+    private function handoutData(Request $request, User $user, int $limit = 15, bool $defaultToToday = false): array
     {
-        if (! $user->canViewDashboardHandouts($scope)) {
+        if (! $user->canViewDashboardHandouts()) {
             return [
                 'resultsReady' => collect(),
                 'resultsReadyCount' => 0,

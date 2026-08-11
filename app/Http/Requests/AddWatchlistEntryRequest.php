@@ -8,7 +8,7 @@ class AddWatchlistEntryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->hasPermission('maternal.manage_watchlist');
+        return auth()->check() && auth()->user()->hasPermission('maternal');
     }
 
     /**

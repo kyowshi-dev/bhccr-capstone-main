@@ -248,17 +248,17 @@ Route::middleware('auth')->group(function () {
         ->name('maternal.quick.store');
 
     Route::get('/dashboards/midwife/queue-partial', [MaternalQueueController::class, 'queuePartial'])
-        ->middleware('permission:maternal.view_queues')
+        ->middleware('permission:maternal')
         ->name('maternal.queue-partial');
 
     Route::post('/api/maternal/watchlist/{patient}', [MaternalQueueController::class, 'addToWatchlist'])
-        ->middleware('permission:maternal.manage_watchlist');
+        ->middleware('permission:maternal');
 
     Route::delete('/api/maternal/watchlist/{entry}', [MaternalQueueController::class, 'removeFromWatchlist'])
-        ->middleware('permission:maternal.manage_watchlist');
+        ->middleware('permission:maternal');
 
     Route::post('/api/maternal/link-pregnancy/{consultation}', [MaternalQueueController::class, 'linkPregnancy'])
-        ->middleware('permission:maternal.log_visit');
+        ->middleware('permission:maternal');
 
     Route::get('/maternal/prenatal', [PrenatalController::class, 'index'])
         ->middleware('permission:maternal')

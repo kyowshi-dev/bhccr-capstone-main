@@ -33,10 +33,7 @@ class DashboardMidwifeV2Test extends TestCase
             'patients',
             'consultations',
             'maternal',
-            'maternal.view_queues',
-            'maternal.log_visit',
-            'maternal.manage_watchlist',
-            'dashboard_handouts_midwife',
+            'dashboard_handouts',
         ]);
     }
 
@@ -118,7 +115,7 @@ class DashboardMidwifeV2Test extends TestCase
 
         $response->assertOk();
 
-        if ($user->canViewDashboardHandouts('midwife')) {
+        if ($user->canViewDashboardHandouts()) {
             $response->assertSee('Results Ready');
         }
     }
@@ -130,8 +127,7 @@ class DashboardMidwifeV2Test extends TestCase
             'patients',
             'consultations',
             'maternal',
-            'maternal.view_queues',
-            'dashboard_handouts_bhw',
+            'dashboard_handouts',
         ]);
 
         $this->actingAs($user)

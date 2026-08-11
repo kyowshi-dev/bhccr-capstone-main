@@ -71,7 +71,7 @@ class MaternalQueueControllerTest extends TestCase
     private function midwifeUser(): User
     {
         $user = $this->createUserWithPermissions([
-            'maternal', 'maternal.view_queues', 'maternal.log_visit', 'maternal.manage_watchlist', 'consultations',
+            'maternal', 'consultations',
         ]);
 
         HealthWorker::create([

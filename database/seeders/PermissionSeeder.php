@@ -22,14 +22,8 @@ class PermissionSeeder extends Seeder
             ['name' => 'users', 'description' => 'Access to User Management'],
             ['name' => 'zones', 'description' => 'Manage geographic zones and assign health workers'],
             ['name' => 'maternal', 'description' => 'Access to Maternal Health module (prenatal, postnatal, family planning)'],
-            ['name' => 'maternal.view_queues', 'description' => 'View maternal service queues and patient cards'],
-            ['name' => 'maternal.log_visit', 'description' => 'Log maternal visits and attach to active consultations'],
-            ['name' => 'maternal.manage_watchlist', 'description' => 'Manage high-risk watchlist entries'],
             ['name' => 'print_handouts', 'description' => 'Print consultation Rx and diagnosis handouts'],
-            ['name' => 'dashboard_handouts_bhw', 'description' => 'BHW dashboard — Results ready panel'],
-            ['name' => 'dashboard_handouts_clinical', 'description' => 'Clinical dashboard — Recent completed handouts panel'],
-            ['name' => 'dashboard_handouts_midwife', 'description' => 'Midwife dashboard — Maternal tracking panel'],
-            ['name' => 'dashboard_handouts_admin', 'description' => 'Admin dashboard — Completed consultations handouts panel'],
+            ['name' => 'dashboard_handouts', 'description' => 'View completed handouts panel on dashboards'],
         ];
 
         foreach ($permissions as $permission) {

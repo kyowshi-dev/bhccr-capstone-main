@@ -17,7 +17,7 @@ class DashboardRoutingTest extends TestCase
     public function test_bhw_role_gets_bhw_dashboard(): void
     {
         $bhw = $this->createUserWithNamedRole('BHW', [
-            'household', 'patients', 'consultations', 'reports', 'print_handouts', 'dashboard_handouts_bhw',
+            'household', 'patients', 'consultations', 'reports', 'print_handouts', 'dashboard_handouts',
         ]);
 
         $this->actingAs($bhw)
@@ -40,7 +40,7 @@ class DashboardRoutingTest extends TestCase
     public function test_midwife_role_gets_midwife_dashboard(): void
     {
         $midwife = $this->createUserWithNamedRole('Midwife', [
-            'patients', 'consultations', 'immunizations', 'reports', 'print_handouts', 'dashboard_handouts_midwife',
+            'patients', 'consultations', 'immunizations', 'reports', 'print_handouts', 'dashboard_handouts',
         ]);
 
         $this->actingAs($midwife)
@@ -148,7 +148,7 @@ class DashboardRoutingTest extends TestCase
     public function test_role_permissions_gate_dashboard_handout_panels(): void
     {
         $roleId = DB::table('user_roles')->where('role_name', 'BHW')->value('id');
-        $permissionIds = DB::table('permissions')->whereIn('name', ['household', 'dashboard_handouts_bhw'])->pluck('id');
+        $permissionIds = DB::table('permissions')->whereIn('name', ['household', 'dashboard_handouts'])->pluck('id');
 
         foreach ($permissionIds as $permissionId) {
             DB::table('role_permissions')->insert([
