@@ -49,7 +49,7 @@ final class MaternalQuickActionService
 
         return [
             'success' => true,
-            'message' => 'Pregnancy registered. EDC '.($pregnancy->edc?->format('M d, Y') ?? '—').'.',
+            'message' => 'Pregnancy registered. EDC '.($pregnancy->edc?->format('M d, Y') ?? '-').'.',
         ];
     }
 
@@ -169,14 +169,8 @@ final class MaternalQuickActionService
     private function fillOpenPostpartumSlot(PostnatalRecord $record): string
     {
         $today = Carbon::today();
-        $slots = [
-            'postpartum_24h_date' => [1, '24-hour follow-up'],
-            'postpartum_7d_date' => [7, '7-day follow-up'],
-            'postpartum_14d_date' => [14, '14-day follow-up'],
-            'postpartum_28d_date' => [28, '28-day follow-up'],
-        ];
 
-        foreach ($slots as $column => [$days, $label]) {
+        foreach (PostnatalRecord::POSTPARTUM_SLOTS as $column => $days) {
             if ($record->{$column} !== null) {
                 continue;
             }
@@ -184,7 +178,7 @@ final class MaternalQuickActionService
             if (Carbon::parse($record->delivery_date)->addDays($days)->lte($today)) {
                 $record->update([$column => $today->toDateString()]);
 
-                return $label.' logged';
+                return ($days === 1 ? '24-hour follow-up' : $days.'-day follow-up').' logged';
             }
         }
 

@@ -151,6 +151,13 @@ class PostnatalRecord extends Model
         'Others',
     ];
 
+    public const POSTPARTUM_SLOTS = [
+        'postpartum_24h_date' => 1,
+        'postpartum_7d_date' => 7,
+        'postpartum_14d_date' => 14,
+        'postpartum_28d_date' => 28,
+    ];
+
     protected $fillable = [
         'patient_id',
         'pregnancy_id',

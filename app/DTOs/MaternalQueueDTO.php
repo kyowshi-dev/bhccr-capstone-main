@@ -34,9 +34,10 @@ final class MaternalQueueDTO
         }
 
         $badges = [];
+        $hasMultiplePrograms = $items->count() > 1;
 
         foreach ($items as $item) {
-            if ($items->count() > 1 || $item->program_type !== $primary->program_type) {
+            if ($hasMultiplePrograms || $item->program_type !== $primary->program_type) {
                 $badges[] = [
                     'program_type' => $item->program_type,
                     'label' => $item->badgeLabel(),

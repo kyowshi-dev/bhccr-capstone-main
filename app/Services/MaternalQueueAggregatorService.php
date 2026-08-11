@@ -40,7 +40,7 @@ class MaternalQueueAggregatorService
             ->merge(MaternalQueueDTOFactory::fromPregnancies($activePregnancies, $activeConsultationMap))
             ->merge(MaternalQueueDTOFactory::fromPostnatalRecords($openPostnatalSlots, $activeConsultationMap))
             ->merge(MaternalQueueDTOFactory::fromFamilyPlanningClients($fpDueSoon, $activeConsultationMap))
-            ->merge(MaternalQueueDTOFactory::fromConsultations($todayTriage, $activeConsultationMap))
+            ->merge(MaternalQueueDTOFactory::fromConsultations($todayTriage))
             ->merge($this->watchlistDtos($activeConsultationMap))
             ->sortBy('due_date')
             ->values();
@@ -81,11 +81,9 @@ class MaternalQueueAggregatorService
         return PostnatalRecord::query()
             ->where('delivery_date', '<=', $today)
             ->where(function ($query) {
-                $query
-                    ->whereNull('postpartum_24h_date')
-                    ->orWhereNull('postpartum_7d_date')
-                    ->orWhereNull('postpartum_14d_date')
-                    ->orWhereNull('postpartum_28d_date');
+                foreach (array_keys(PostnatalRecord::POSTPARTUM_SLOTS) as $column) {
+                    $query->orWhereNull($column);
+                }
             })
             ->with('patient')
             ->orderBy('delivery_date')
@@ -136,7 +134,7 @@ class MaternalQueueAggregatorService
 
             return new MaternalQueueDTO(
                 patient_id: $patient->id,
-                patient_name: trim($patient->last_name.', '.$patient->first_name.' '.($patient->middle_initial ?? '')),
+                patient_name: MaternalQueueDTOFactory::patientName($patient),
                 patient_code: $patient->patient_code,
                 program_type: $entry->program_type,
                 risk_level: 'high',

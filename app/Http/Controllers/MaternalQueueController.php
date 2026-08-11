@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\DTOs\MaternalQueueDTO;
+use App\Http\Controllers\Concerns\ResolvesWorkerId;
+use App\Http\Requests\AddWatchlistEntryRequest;
 use App\Models\Consultation;
 use App\Models\Pregnancy;
 use App\Models\WatchlistEntry;
@@ -14,53 +16,35 @@ use Illuminate\View\View;
 
 class MaternalQueueController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-        $this->middleware('permission:maternal.view_queues')->only(['queuePartial']);
-        $this->middleware('permission:maternal.manage_watchlist')->only(['addToWatchlist', 'removeFromWatchlist']);
-        $this->middleware('permission:maternal.log_visit')->only(['linkPregnancy']);
-    }
+    use ResolvesWorkerId;
 
     public function queuePartial(Request $request, MaternalQueueAggregatorService $aggregator): View
     {
         $tab = $request->query('tab', 'all');
         $items = $aggregator->aggregate();
 
-        if ($tab === 'all') {
-            $grouped = $items->groupBy(fn (MaternalQueueDTO $dto) => $dto->patient_id)
+        $items = match ($tab) {
+            'all' => $items->groupBy(fn (MaternalQueueDTO $dto) => $dto->patient_id)
                 ->map(fn ($group) => MaternalQueueDTO::forGroupedCard($group))
                 ->filter()
-                ->values();
+                ->values(),
+            'watchlist' => $items->where('risk_level', 'high')->values(),
+            default => $items->where('program_type', $tab)->values(),
+        };
 
-            return view('dashboards.partials.queue-cards', ['items' => $grouped, 'tab' => 'all']);
-        }
-
-        if ($tab === 'watchlist') {
-            $filtered = $items->where('risk_level', 'high')->values();
-
-            return view('dashboards.partials.queue-cards', ['items' => $filtered, 'tab' => $tab]);
-        }
-
-        $filtered = $items->where('program_type', $tab)->values();
-
-        return view('dashboards.partials.queue-cards', ['items' => $filtered, 'tab' => $tab]);
+        return view('dashboards.partials.queue-cards', ['items' => $items, 'tab' => $tab]);
     }
 
-    public function addToWatchlist(Request $request, int $patientId): JsonResponse
+    public function addToWatchlist(AddWatchlistEntryRequest $request, int $patientId): JsonResponse
     {
-        $validated = $request->validate([
-            'program_type' => ['required', 'string', 'in:prenatal,postnatal,fp,general'],
-            'reason_code' => ['required', 'string', 'max:100'],
-            'notes' => ['nullable', 'string', 'max:1000'],
-        ]);
+        $validated = $request->validated();
 
         $entry = WatchlistEntry::create([
             'patient_id' => $patientId,
             'program_type' => $validated['program_type'],
             'reason_code' => $validated['reason_code'],
             'notes' => $validated['notes'] ?? null,
-            'flagged_by' => user()->healthWorker->id ?? 1,
+            'flagged_by' => $this->currentWorkerId() ?? 1,
             'flagged_at' => now(),
         ]);
 

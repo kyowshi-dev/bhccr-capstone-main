@@ -36,12 +36,7 @@ class PrenatalController extends Controller
 
     public function index(Request $request): View
     {
-        $this->authorizeMaternal();
-
-        $pregnancies = $this->query->activePregnancies([
-            'zone_id' => $request->filled('zone_id') ? (int) $request->input('zone_id') : null,
-            'search' => $request->input('search'),
-        ]);
+        $pregnancies = $this->query->activePregnancies($request->only('zone_id', 'search'));
 
         return view('maternal.prenatal.index', [
             'pregnancies' => $pregnancies,
@@ -53,8 +48,6 @@ class PrenatalController extends Controller
 
     public function patient(Patient $patient): View
     {
-        $this->authorizeMaternal();
-
         return view('maternal.prenatal.patient', [
             'patient' => $patient->load(['household.zone', 'maternalProfile']),
             'pregnancies' => $this->query->pregnanciesForPatient($patient),
@@ -139,17 +132,8 @@ class PrenatalController extends Controller
 
     public function print(Pregnancy $pregnancy): View
     {
-        $this->authorizeMaternal();
-
         return view('maternal.print.prenatal', [
             'pregnancy' => $pregnancy->load(['patient.household.zone', 'visits']),
         ]);
-    }
-
-    private function authorizeMaternal(): void
-    {
-        if (! auth()->check() || ! auth()->user()->hasPermission('maternal')) {
-            abort(403, 'Unauthorized');
-        }
     }
 }

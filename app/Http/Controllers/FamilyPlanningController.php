@@ -28,12 +28,7 @@ class FamilyPlanningController extends Controller
 
     public function index(Request $request): View
     {
-        $this->authorizeMaternal();
-
-        $clients = $this->query->familyPlanningClients([
-            'zone_id' => $request->filled('zone_id') ? (int) $request->input('zone_id') : null,
-            'search' => $request->input('search'),
-        ]);
+        $clients = $this->query->familyPlanningClients($request->only('zone_id', 'search'));
 
         return view('maternal.family-planning.index', [
             'clients' => $clients,
@@ -45,8 +40,6 @@ class FamilyPlanningController extends Controller
 
     public function patient(Patient $patient): View
     {
-        $this->authorizeMaternal();
-
         $client = $patient->fpClient;
 
         return view('maternal.family-planning.patient', [
@@ -109,17 +102,8 @@ class FamilyPlanningController extends Controller
 
     public function print(FamilyPlanningClient $client): View
     {
-        $this->authorizeMaternal();
-
         return view('maternal.print.family-planning', [
             'client' => $client->load(['patient.household.zone', 'visits']),
         ]);
-    }
-
-    private function authorizeMaternal(): void
-    {
-        if (! auth()->check() || ! auth()->user()->hasPermission('maternal')) {
-            abort(403, 'Unauthorized');
-        }
     }
 }

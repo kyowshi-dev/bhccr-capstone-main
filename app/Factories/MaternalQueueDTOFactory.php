@@ -3,11 +3,18 @@
 namespace App\Factories;
 
 use App\DTOs\MaternalQueueDTO;
+use App\Models\Patient;
+use App\Models\PostnatalRecord;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class MaternalQueueDTOFactory
 {
+    public static function patientName(Patient $patient): string
+    {
+        return trim($patient->last_name.', '.$patient->first_name.' '.($patient->middle_initial ?? ''));
+    }
+
     public static function fromPregnancies(Collection $records, array $activeConsultationMap): Collection
     {
         return $records->map(function ($pregnancy) use ($activeConsultationMap) {
@@ -26,12 +33,12 @@ class MaternalQueueDTOFactory
                     ? ' | Next Due: '.$nextVisitDate->format('M j')
                     : ' | No next visit scheduled';
             } else {
-                $subtitle = 'New registration — schedule first visit';
+                $subtitle = 'New registration - schedule first visit';
             }
 
             return new MaternalQueueDTO(
                 patient_id: $patient->id,
-                patient_name: trim($patient->last_name.', '.$patient->first_name.' '.($patient->middle_initial ?? '')),
+                patient_name: self::patientName($patient),
                 patient_code: $patient->patient_code,
                 program_type: 'prenatal',
                 risk_level: $isHighRisk ? 'high' : 'normal',
@@ -58,22 +65,17 @@ class MaternalQueueDTOFactory
             $hasActiveConsultation = isset($activeConsultationMap[$patient->id]);
             $hasDangerSigns = ! empty($record->danger_signs_mother);
 
-            $slots = [
-                '24h' => ['column' => 'postpartum_24h_date', 'days' => 1, 'label' => '24-hour'],
-                '7d' => ['column' => 'postpartum_7d_date', 'days' => 7, 'label' => '7-day'],
-                '14d' => ['column' => 'postpartum_14d_date', 'days' => 14, 'label' => '14-day'],
-                '28d' => ['column' => 'postpartum_28d_date', 'days' => 28, 'label' => '28-day'],
-            ];
+            $slots = PostnatalRecord::POSTPARTUM_SLOTS;
 
             $earliestOpenSlot = null;
             $isOverdue = false;
 
-            foreach ($slots as $key => $slot) {
-                if ($record->{$slot['column']} !== null) {
+            foreach ($slots as $column => $days) {
+                if ($record->{$column} !== null) {
                     continue;
                 }
 
-                $slotDueDate = $deliveryDate->copy()->addDays($slot['days']);
+                $slotDueDate = $deliveryDate->copy()->addDays($days);
 
                 if ($slotDueDate->lte($today)) {
                     $isOverdue = true;
@@ -81,8 +83,7 @@ class MaternalQueueDTOFactory
 
                 if (! $earliestOpenSlot || $slotDueDate->lt($earliestOpenSlot['due_date'])) {
                     $earliestOpenSlot = [
-                        'key' => $key,
-                        'label' => $slot['label'],
+                        'label' => $days === 1 ? '24-hour' : $days.'-day',
                         'due_date' => $slotDueDate,
                     ];
                 }
@@ -95,11 +96,11 @@ class MaternalQueueDTOFactory
 
             return new MaternalQueueDTO(
                 patient_id: $patient->id,
-                patient_name: trim($patient->last_name.', '.$patient->first_name.' '.($patient->middle_initial ?? '')),
+                patient_name: self::patientName($patient),
                 patient_code: $patient->patient_code,
                 program_type: 'postnatal',
                 risk_level: $hasDangerSigns ? 'high' : 'normal',
-                due_date: $earliestOpenSlot['due_date']->toDateString(),
+                due_date: ($earliestOpenSlot['due_date'] ?? null)?->toDateString(),
                 primary_subtitle: $subtitle,
                 is_checked_in_today: $hasActiveConsultation,
                 has_active_consultation: $hasActiveConsultation,
@@ -129,7 +130,7 @@ class MaternalQueueDTOFactory
 
             return new MaternalQueueDTO(
                 patient_id: $patient->id,
-                patient_name: trim($patient->last_name.', '.$patient->first_name.' '.($patient->middle_initial ?? '')),
+                patient_name: self::patientName($patient),
                 patient_code: $patient->patient_code,
                 program_type: 'fp',
                 risk_level: 'normal',
@@ -146,7 +147,7 @@ class MaternalQueueDTOFactory
         });
     }
 
-    public static function fromConsultations(Collection $records, array $activeConsultationMap): Collection
+    public static function fromConsultations(Collection $records): Collection
     {
         return $records->map(function ($consultation) {
             $patient = $consultation->patient;
@@ -157,7 +158,7 @@ class MaternalQueueDTOFactory
 
             return new MaternalQueueDTO(
                 patient_id: $patient->id,
-                patient_name: trim($patient->last_name.', '.$patient->first_name.' '.($patient->middle_initial ?? '')),
+                patient_name: self::patientName($patient),
                 patient_code: $patient->patient_code,
                 program_type: 'triage',
                 risk_level: 'normal',

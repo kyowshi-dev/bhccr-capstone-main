@@ -83,15 +83,7 @@ final class MaternalIntakeService
                 ->update($updates);
         }
 
-        $vitalsPayload = VitalsService::fromInput($intake) + [
-            'consultation_id' => $consultationId,
-            'phase' => 'triage',
-            'captured_by' => $worker->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ];
-
-        DB::table('vitals')->insert($vitalsPayload);
+        $this->insertTriageVitals($consultationId, $intake, $worker);
 
         $this->clearCaches();
 
@@ -123,19 +115,22 @@ final class MaternalIntakeService
             'updated_at' => now(),
         ]);
 
-        $vitalsPayload = $vitalsForRisk + [
+        $this->insertTriageVitals($consultationId, $intake, $worker);
+
+        $this->clearCaches();
+
+        return $consultationId;
+    }
+
+    private function insertTriageVitals(int $consultationId, array $intake, HealthWorker $worker): void
+    {
+        DB::table('vitals')->insert(VitalsService::fromInput($intake) + [
             'consultation_id' => $consultationId,
             'phase' => 'triage',
             'captured_by' => $worker->id,
             'created_at' => now(),
             'updated_at' => now(),
-        ];
-
-        DB::table('vitals')->insert($vitalsPayload);
-
-        $this->clearCaches();
-
-        return $consultationId;
+        ]);
     }
 
     private function clearCaches(): void
