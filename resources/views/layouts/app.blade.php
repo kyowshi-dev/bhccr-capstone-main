@@ -55,107 +55,89 @@
                 </span>
             </div>
 
-            <nav class="flex-1 p-3 pt-2 space-y-1 overflow-y-auto" 
-                 x-data="{ 
-                     recordsOpen: false, 
-                     servicesOpen: false, 
-                     managementOpen: false, 
-                     adminOpen: false,
-                     maternalOpen: false,
-                     initDropdowns() {
-                         const current = window.location.pathname;
-                         this.recordsOpen = ['patient', 'household'].some(r => current.includes(r));
-                         this.servicesOpen = ['consultation', 'immunization', 'referral'].some(r => current.includes(r));
-                         this.managementOpen = ['medicine', 'report'].some(r => current.includes(r));
-                         this.adminOpen = current.includes('user');
-                         this.maternalOpen = current.includes('maternal');
-                     }
-                 }" 
-                 x-init="initDropdowns()">
-                
+            <nav class="flex-1 p-3 pt-2 space-y-1 overflow-y-auto" aria-label="Main navigation">
+
                 @php
                     /** @var \App\Models\User|null $authUser */
                     $authUser = auth()->user();
-                    $currentUrl = request()->url();
-                    $swalError = "Swal.fire({title: 'Unauthorized', text: 'Please contact the administrator if you believe this is a mistake.', icon: 'error'}); return false;";
+                    $can = fn (string $perm) => $authUser !== null && $authUser->hasPermission($perm);
                 @endphp
 
-                <a href="{{ route('dashboard') }}" aria-current="{{ $currentUrl === route('dashboard') ? 'page' : 'false' }}" aria-label="Dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
+                <a href="{{ route('dashboard') }}" aria-current="{{ request()->routeIs('dashboard') ? 'page' : 'false' }}" aria-label="Dashboard" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 text-ink-muted hover:bg-black/5">
                     <i class="fa-solid fa-house text-base opacity-70" aria-hidden="true"></i>
                     <span>Dashboard</span>
                 </a>
 
-                @if ($authUser && ($authUser->hasPermission('patients') || $authUser->hasPermission('household')))
-                    <x-layouts.nav-group state="recordsOpen" label="Registries" icon="fa-solid fa-address-book">
-                        <x-layouts.nav-link url="{{ route('patients.index') }}" label="Patients" icon="fa-solid fa-user-injured"
-                                            :active="$currentUrl === route('patients.index')"
-                                            :permission="$authUser->hasPermission('patients')"
-                                            :swal-error="$swalError" />
-                        <x-layouts.nav-link url="{{ route('households.index') }}" label="Household" icon="fa-solid fa-house-chimney"
-                                            :active="$currentUrl === route('households.index')"
-                                            :permission="$authUser->hasPermission('household')"
-                                            :swal-error="$swalError" />
-                    </x-layouts.nav-group>
+                @if ($can('patients') || $can('household') || $can('zones'))
+                    <p class="mt-3 pt-3 border-t border-white/10 px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/50">Community</p>
+
+                    @if ($can('patients'))
+                        <x-layouts.nav-link url="{{ route('patients.index') }}" label="Residents (Patients)" icon="fa-solid fa-user-injured"
+                                            :active="request()->routeIs('patients*')" />
+                    @endif
+
+                    @if ($can('household'))
+                        <x-layouts.nav-link url="{{ route('households.index') }}" label="Household & Census" icon="fa-solid fa-house-chimney"
+                                            :active="request()->routeIs('households*')" />
+                    @endif
+
+                    @if ($can('zones'))
+                        <x-layouts.nav-link url="{{ route('zones.index') }}" label="Purok / Zone Coverage" icon="fa-solid fa-map-location-dot"
+                                            :active="request()->routeIs('zones*')" />
+                    @endif
                 @endif
 
-                <x-layouts.nav-group state="servicesOpen" label="Clinical Services" icon="fa-solid fa-user-doctor">
-                    <x-layouts.nav-link url="{{ route('consultations.index') }}" label="Check-ups" icon="fa-solid fa-stethoscope"
-                                        :active="$currentUrl === route('consultations.index')"
-                                        :permission="$authUser->hasPermission('consultations')"
-                                        :swal-error="$swalError" />
-                    <x-layouts.nav-link url="{{ route('immunizations.index') }}" label="Immunizations" icon="fa-solid fa-syringe"
-                                        :active="$currentUrl === route('immunizations.index')"
-                                        :permission="$authUser->hasPermission('immunizations')"
-                                        :swal-error="$swalError" />
-                    <x-layouts.nav-link url="{{ route('referrals.index') }}" label="Referrals" icon="fa-solid fa-arrow-up-right-from-square"
-                                        :active="$currentUrl === route('referrals.index')"
-                                        :permission="$authUser->hasPermission('consultations')"
-                                        :swal-error="$swalError" />
-                </x-layouts.nav-group>
+                @if ($can('consultations') || $can('immunizations') || $can('maternal'))
+                    <p class="mt-3 pt-3 border-t border-white/10 px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/50">Health Care Services</p>
 
-                @if ($authUser && $authUser->hasPermission('maternal'))
-                    <x-layouts.nav-group state="maternalOpen" label="Maternal Care" icon="fa-solid fa-person-pregnant">
-                        <x-layouts.nav-link url="{{ route('maternal.prenatal.index') }}" label="Prenatal" icon="fa-solid fa-baby-carriage"
-                                            :active="str_starts_with($currentUrl, route('maternal.prenatal.index'))" />
-                        <x-layouts.nav-link url="{{ route('maternal.postnatal.index') }}" label="Postnatal" icon="fa-solid fa-child-reaching"
-                                            :active="str_starts_with($currentUrl, route('maternal.postnatal.index'))" />
-                        <x-layouts.nav-link url="{{ route('maternal.family-planning.index') }}" label="Family Planning" icon="fa-solid fa-hand-holding-heart"
-                                            :active="str_starts_with($currentUrl, route('maternal.family-planning.index'))" />
-                    </x-layouts.nav-group>
+                    @if ($can('consultations'))
+                        <x-layouts.nav-link url="{{ route('consultations.index') }}" label="Consultations & Check-ups" icon="fa-solid fa-stethoscope"
+                                            :active="request()->routeIs('consultations*')" />
+                    @endif
+
+                    @if ($can('immunizations'))
+                        <x-layouts.nav-link url="{{ route('immunizations.index') }}" label="Vaccinations" icon="fa-solid fa-syringe"
+                                            :active="request()->routeIs('immunizations*')" />
+                    @endif
+
+                    @if ($can('maternal'))
+                        <x-layouts.nav-link url="{{ route('maternal.prenatal.index') }}" label="Maternal Care & Family Planning" icon="fa-solid fa-person-pregnant"
+                                            :active="request()->routeIs('maternal*')" />
+                    @endif
+
+                    @if ($can('consultations'))
+                        <x-layouts.nav-link url="{{ route('referrals.index') }}" label="Referrals" icon="fa-solid fa-arrow-up-right-from-square"
+                                            :active="request()->routeIs('referrals*')" />
+                    @endif
                 @endif
 
-                <div class="border-t border-white/10 my-2"></div>
+                @if ($can('medicines') || $can('reports'))
+                    <p class="mt-3 pt-3 border-t border-white/10 px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/50">Reports & Inventory</p>
 
-                @if ($authUser && ($authUser->hasPermission('medicines') || $authUser->hasPermission('reports')))
-                    <x-layouts.nav-group state="managementOpen" label="Facility Management" icon="fa-solid fa-layer-group">
-                        @if ($authUser->hasPermission('medicines'))
-                            <x-layouts.nav-link url="{{ route('medicines.index') }}" label="Medicines Lists" icon="fa-solid fa-pills"
-                                                :active="$currentUrl === route('medicines.index')" />
-                        @endif
-                        @if ($authUser->hasPermission('reports'))
-                            <x-layouts.nav-link url="{{ route('reports.index') }}" label="Reports" icon="fa-solid fa-file-lines"
-                                                :active="$currentUrl === route('reports.index')" />
-                        @endif
-                    </x-layouts.nav-group>
+                    @if ($can('medicines'))
+                        <x-layouts.nav-link url="{{ route('medicines.index') }}" label="Medicine Directory" icon="fa-solid fa-pills"
+                                            :active="request()->routeIs('medicines*')" />
+                    @endif
+
+                    @if ($can('reports'))
+                        <x-layouts.nav-link url="{{ route('reports.index') }}" label="RHU & LGU Reports" icon="fa-solid fa-file-lines"
+                                            :active="request()->routeIs('reports*')" />
+                    @endif
                 @endif
 
-                @if ($authUser && $authUser->hasPermission('users'))
-                    <x-layouts.nav-group state="adminOpen" label="Administration" icon="fa-solid fa-user-gear">
-                        <x-layouts.nav-link url="{{ route('users.index') }}" label="User Management" icon="fa-solid fa-users"
-                                            :active="$currentUrl === route('users.index')" />
-                        <x-layouts.nav-link url="{{ route('roles.index') }}" label="Role Manager" icon="fa-solid fa-user-shield"
-                                            :active="$currentUrl === route('roles.index')" />
-                        <x-layouts.nav-link url="{{ route('zones.index') }}" label="Manage Purok" icon="fa-solid fa-map-marker-alt"
-                                            :active="$currentUrl === route('zones.index')"
-                                            :permission="$authUser->hasPermission('zones')"
-                                            :swal-error="$swalError" />
-                    </x-layouts.nav-group>
+                <p class="mt-3 pt-3 border-t border-white/10 px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/50">
+                    Administration <span class="normal-case tracking-normal font-medium text-[9px] text-white/40">(Admin/Midwife only)</span>
+                </p>
+
+                @if ($can('users'))
+                    <x-layouts.nav-link url="{{ route('users.index') }}" label="Users & Role Permissions" icon="fa-solid fa-user-gear"
+                                        :active="request()->routeIs('users*')" />
+                    <x-layouts.nav-link url="{{ route('roles.index') }}" label="Role Manager" icon="fa-solid fa-user-shield"
+                                        :active="request()->routeIs('roles*')" />
                 @endif
 
-                <div class="border-t border-white/10 my-2"></div>
-
-                <x-layouts.nav-link url="{{ route('settings.index') }}" label="Settings" icon="fa-solid fa-gear" icon-size="text-base opacity-70"
-                                    :active="$currentUrl === route('settings.index')" />
+                <x-layouts.nav-link url="{{ route('settings.index') }}" label="System Settings & Backups" icon="fa-solid fa-gear"
+                                    :active="request()->routeIs('settings*')" />
             </nav>
         </aside>
 

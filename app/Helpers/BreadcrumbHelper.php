@@ -44,14 +44,14 @@ class BreadcrumbHelper
             case 'patients.index':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Patients', 'url' => null],
+                    ['name' => 'Resident Records', 'url' => null],
                 ];
                 break;
 
             case 'patients.create':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Patients', 'url' => route('patients.index')],
+                    ['name' => 'Resident Records', 'url' => route('patients.index')],
                     ['name' => 'Add Patient', 'url' => null],
                 ];
                 break;
@@ -59,7 +59,7 @@ class BreadcrumbHelper
             case 'patients.show':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Patients', 'url' => route('patients.index')],
+                    ['name' => 'Resident Records', 'url' => route('patients.index')],
                     ['name' => 'Patient Details', 'url' => null],
                 ];
                 break;
@@ -98,30 +98,30 @@ class BreadcrumbHelper
             case 'immunizations.index':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Immunizations', 'url' => null],
+                    ['name' => 'Vaccinations', 'url' => null],
                 ];
                 break;
 
             case 'immunizations.patient':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Patients', 'url' => route('patients.index')],
+                    ['name' => 'Resident Records', 'url' => route('patients.index')],
                     ['name' => 'Patient Details', 'url' => route('patients.show', request()->route('id'))],
-                    ['name' => 'Immunizations', 'url' => null],
+                    ['name' => 'Vaccinations', 'url' => null],
                 ];
                 break;
 
             case 'medicines.index':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Medicines', 'url' => null],
+                    ['name' => 'Medicine Directory', 'url' => null],
                 ];
                 break;
 
             case 'medicines.create':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Medicines', 'url' => route('medicines.index')],
+                    ['name' => 'Medicine Directory', 'url' => route('medicines.index')],
                     ['name' => 'Add Medicine', 'url' => null],
                 ];
                 break;
@@ -129,7 +129,7 @@ class BreadcrumbHelper
             case 'medicines.show':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Medicines', 'url' => route('medicines.index')],
+                    ['name' => 'Medicine Directory', 'url' => route('medicines.index')],
                     ['name' => 'Medicine Details', 'url' => null],
                 ];
                 break;
@@ -137,7 +137,7 @@ class BreadcrumbHelper
             case 'medicines.edit':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Medicines', 'url' => route('medicines.index')],
+                    ['name' => 'Medicine Directory', 'url' => route('medicines.index')],
                     ['name' => 'Medicine Details', 'url' => route('medicines.show', request()->route('id'))],
                     ['name' => 'Edit Medicine', 'url' => null],
                 ];
@@ -199,14 +199,14 @@ class BreadcrumbHelper
             case 'zones.index':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Zones', 'url' => null],
+                    ['name' => 'Zone Coverage', 'url' => null],
                 ];
                 break;
 
             case 'zones.create':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Zones', 'url' => route('zones.index')],
+                    ['name' => 'Zone Coverage', 'url' => route('zones.index')],
                     ['name' => 'Add Zone', 'url' => null],
                 ];
                 break;
@@ -214,7 +214,7 @@ class BreadcrumbHelper
             case 'zones.show':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Zones', 'url' => route('zones.index')],
+                    ['name' => 'Zone Coverage', 'url' => route('zones.index')],
                     ['name' => 'Zone Details', 'url' => null],
                 ];
                 break;
@@ -222,7 +222,7 @@ class BreadcrumbHelper
             case 'zones.edit':
                 $breadcrumbs = [
                     ['name' => 'Dashboard', 'url' => route('dashboard')],
-                    ['name' => 'Zones', 'url' => route('zones.index')],
+                    ['name' => 'Zone Coverage', 'url' => route('zones.index')],
                     ['name' => 'Zone Details', 'url' => route('zones.show', request()->route('id'))],
                     ['name' => 'Edit Zone', 'url' => null],
                 ];
