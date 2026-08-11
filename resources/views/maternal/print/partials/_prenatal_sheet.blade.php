@@ -1,5 +1,5 @@
 {{--
-    Prenatal Record — print sheet
+    Prenatal Record - print sheet
     Expects: $pregnancy (Pregnancy, loaded with patient.household.zone, visits)
 --}}
 @php
@@ -48,7 +48,7 @@
             </td>
             <td colspan="2">
                 <p class="field-label">Zone / Purok</p>
-                <p class="field-value">Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '—' }}</p>
+                <p class="field-value">Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '-' }}</p>
             </td>
             <td colspan="2">
                 <p class="field-label">Spouse / Partner</p>
@@ -160,7 +160,7 @@
     </table>
 
     <div class="form-footer form-footer-flex">
-        <span>Barangay Health Center — Sta. Ana</span>
+        <span>Barangay Health Center - Sta. Ana</span>
         <span>Registered: {{ $pregnancy->created_at->format('M d, Y g:i A') }}</span>
     </div>
 </section>

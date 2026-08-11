@@ -1,5 +1,5 @@
 {{--
-    Individual Treatment Record (ITR) Section — iClinicSys FORM 2
+    Individual Treatment Record (ITR) Section - iClinicSys FORM 2
 --}}
 @php
     $consultDate = $consultationAt ?? \Carbon\Carbon::parse($consultation->updated_at ?? $consultation->created_at);
@@ -21,7 +21,7 @@
             $line .= ' ('.$dx->diagnosis_code.')';
         }
         if ($dx->remarks) {
-            $line .= ' — '.$dx->remarks;
+            $line .= ' - '.$dx->remarks;
         }
 
         return $line;
@@ -255,7 +255,7 @@
                 <table class="form-table nested-table" style="border:0; height:100%;">
                     <tr>
                         <td class="label-cell" style="width:14%; border-top:0; border-left:0; border-bottom:0; font-size:7pt;">Medication /<br>Treatment:</td>
-                        <td class="field-value-sm whitespace-pre" style="border-top:0; border-right:0; border-bottom:0;">{{ $medicationText ?: ($consultation->notes ?? '—') }}</td>
+                        <td class="field-value-sm whitespace-pre" style="border-top:0; border-right:0; border-bottom:0;">{{ $medicationText ?: ($consultation->notes ?? '-') }}</td>
                     </tr>
                 </table>
             </td>

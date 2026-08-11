@@ -57,7 +57,7 @@
 
     <div class="shrink-0 flex items-center gap-1.5">
         @if($currentAction)
-            @if(auth()->user()->hasPermission('maternal.log_visit'))
+            @if(auth()->user()->hasPermission('maternal'))
                 <button type="button"
                         onclick="window.dispatchEvent(new CustomEvent('maternal-quick-open', { detail: { id: {{ $item->patient_id }}, patientId: {{ $item->patient_id }}, action: '{{ $currentAction['action'] }}', hasActive: {{ $item->is_checked_in_today ? 'true' : 'false' }}, patientName: '{{ addslashes($item->patient_name) }}' } }))"
                         class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white transition hover:opacity-90"

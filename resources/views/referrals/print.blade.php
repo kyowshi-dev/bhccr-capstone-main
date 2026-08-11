@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Referral Slip — R{{ str_pad($referral->id, 4, '0', STR_PAD_LEFT) }}</title>
+    <title>Referral Slip - R{{ str_pad($referral->id, 4, '0', STR_PAD_LEFT) }}</title>
     <style>
         @page {
             size: 850px 722px;
@@ -83,7 +83,7 @@
                     {{ fullName($patient->last_name ?? null, $patient->first_name ?? null, $patient->middle_name ?? null, $patient->suffix ?? null) }}
                 </p>
                 <p style="font-size:11px;color:#6b7280;margin:4px 0 0;">
-                    Form size: 850 × 722 px — use 100% scale when printing.
+                    Form size: 850 × 722 px - use 100% scale when printing.
                 </p>
             </div>
             <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">

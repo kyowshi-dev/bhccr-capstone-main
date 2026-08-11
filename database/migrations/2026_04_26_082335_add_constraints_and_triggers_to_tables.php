@@ -22,7 +22,7 @@ return new class extends Migration
             $table->unique(['first_name', 'last_name', 'middle_name', 'date_of_birth'], 'unique_patient_record');
         });
 
-        // 2. Add Triggers (MySQL only — raw SQL is not supported on SQLite test runner)
+        // 2. Add Triggers (MySQL only - raw SQL is not supported on SQLite test runner)
         if (DB::connection()->getDriverName() !== 'sqlite') {
             DB::unprepared('
                 CREATE TRIGGER auto_capitalize_insert

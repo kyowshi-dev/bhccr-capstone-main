@@ -93,8 +93,8 @@ class SessionTimeoutTest extends TestCase
         Auth::forgetGuards();
         session()->flush();
 
-        // The public session-status endpoint reports the expiry as JSON — never
-        // as an HTML redirect — so the frontend can render the modal deterministically.
+        // The public session-status endpoint reports the expiry as JSON - never
+        // as an HTML redirect - so the frontend can render the modal deterministically.
         $this->getJson(route('session.status'))
             ->assertOk()
             ->assertJsonPath('active', false)

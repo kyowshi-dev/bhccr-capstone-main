@@ -1,6 +1,6 @@
 @extends(request()->query('bare') ? 'layouts.bare' : 'layouts.app')
 
-@section('title', 'Immunization — ' . fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix))
+@section('title', 'Immunization - ' . fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix))
 
 @section('content')
 @php
@@ -10,7 +10,7 @@
     $alertNoShow = collect($schedule)->filter(fn ($i) => ($statuses[$i->vaccine->id] ?? null) === 'no_show')->count();
     $purok = $patient->household?->zone?->zone_number ?? 'No purok';
     [$y, $m, $d] = $patient->ageDetail !== null ? array_pad($patient->ageDetail, 3, 0) : [null, null, null];
-    $ageText = $y !== null ? "{$y}y {$m}m {$d}d" : '—';
+    $ageText = $y !== null ? "{$y}y {$m}m {$d}d" : '-';
 @endphp
 
 <div class="space-y-5 lg:space-y-6" x-data="{}">
@@ -22,7 +22,7 @@
                 <p class="text-xs font-medium mb-1" style="color: var(--ink-muted);">Patient immunization record</p>
             @endif
             <div class="flex flex-wrap items-center gap-3">
-                <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">Immunization — {{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }}</h1>
+                <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">Immunization - {{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }}</h1>
                 @include('immunizations.partials._age-chip', ['patient' => $patient])
             </div>
             <p class="text-sm mt-1" style="color: var(--ink-muted);">
@@ -61,7 +61,7 @@
         <div class="rounded-xl border px-4 py-3 text-sm" style="background: var(--danger-soft); border-color: var(--danger); color: var(--danger);">
             <i class="fa-solid fa-circle-exclamation mr-1.5" aria-hidden="true"></i>
             @if ($alertOverdue > 0){{ $alertOverdue }} vaccine{{ $alertOverdue === 1 ? '' : 's' }} overdue.@endif
-            @if ($alertNoShow > 0)@if ($alertOverdue > 0) @endif{{ $alertNoShow }} marked no-show — follow up.@endif
+            @if ($alertNoShow > 0)@if ($alertOverdue > 0) @endif{{ $alertNoShow }} marked no-show - follow up.@endif
         </div>
     @endif
 
@@ -192,8 +192,8 @@
                                 <td class="px-3 lg:px-4 py-2 lg:py-3 whitespace-nowrap" style="color: var(--ink);">{{ \Carbon\Carbon::parse($r->date_given)->format('M d, Y') }}</td>
                                 <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $r->vaccine_name }}</td>
                                 <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $r->dose_number }}</td>
-                                <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink);">{{ $r->temp_recorded ?? '—' }}</td>
-                                <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ $r->administered_by_name ?? '—' }}</td>
+                                <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink);">{{ $r->temp_recorded ?? '-' }}</td>
+                                <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ $r->administered_by_name ?? '-' }}</td>
                                 <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
                                     @if ($r->no_show)
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">

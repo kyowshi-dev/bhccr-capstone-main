@@ -41,7 +41,7 @@
             </span>
             <div class="min-w-0 flex-1">
                 <p class="kpi-card__label truncate">Active Prenatal</p>
-                <p class="kpi-card__value" x-text="counts.prenatal ?? {{ $prenatalRegistrants ?? 0 }}">—</p>
+                <p class="kpi-card__value" x-text="counts.prenatal ?? {{ $prenatalRegistrants ?? 0 }}">-</p>
             </div>
         </div>
         {{-- Due This Month --}}
@@ -63,7 +63,7 @@
             </span>
             <div class="min-w-0 flex-1">
                 <p class="kpi-card__label truncate">Postnatal Due</p>
-                <p class="kpi-card__value" x-text="counts.postnatal ?? {{ $postnatalDue ?? 0 }}">—</p>
+                <p class="kpi-card__value" x-text="counts.postnatal ?? {{ $postnatalDue ?? 0 }}">-</p>
             </div>
         </div>
         {{-- Family Planning --}}
@@ -74,7 +74,7 @@
             </span>
             <div class="min-w-0 flex-1">
                 <p class="kpi-card__label truncate">FP Scheduled</p>
-                <p class="kpi-card__value" x-text="counts.fp ?? {{ $fpScheduled ?? 0 }}">—</p>
+                <p class="kpi-card__value" x-text="counts.fp ?? {{ $fpScheduled ?? 0 }}">-</p>
             </div>
         </div>
         {{-- High Risk --}}
@@ -85,7 +85,7 @@
             </span>
             <div class="min-w-0 flex-1">
                 <p class="kpi-card__label truncate">Watchlist</p>
-                <p class="kpi-card__value" x-text="counts.watchlist ?? {{ $highRiskReferrals ?? 0 }}">—</p>
+                <p class="kpi-card__value" x-text="counts.watchlist ?? {{ $highRiskReferrals ?? 0 }}">-</p>
             </div>
         </div>
     </div>
@@ -111,7 +111,7 @@
             <div class="grid grid-cols-2 gap-2">
                 <div class="rounded-xl border p-3" style="background: var(--bg-surface); border-color: var(--border);">
                     <p class="text-[10px] font-semibold uppercase tracking-wide" style="color: var(--ink-muted);">Active Prenatal</p>
-                    <p class="font-display font-semibold text-lg" style="color: var(--ink);" x-text="counts.prenatal ?? {{ $prenatalRegistrants ?? 0 }}">—</p>
+                    <p class="font-display font-semibold text-lg" style="color: var(--ink);" x-text="counts.prenatal ?? {{ $prenatalRegistrants ?? 0 }}">-</p>
                 </div>
                 <div class="rounded-xl border p-3" style="background: var(--bg-surface); border-color: var(--border);">
                     <p class="text-[10px] font-semibold uppercase tracking-wide" style="color: var(--ink-muted);">Due This Month</p>
@@ -119,11 +119,11 @@
                 </div>
                 <div class="rounded-xl border p-3" style="background: var(--bg-surface); border-color: var(--border);">
                     <p class="text-[10px] font-semibold uppercase tracking-wide" style="color: var(--ink-muted);">Postnatal Due</p>
-                    <p class="font-display font-semibold text-lg" style="color: var(--ink);" x-text="counts.postnatal ?? {{ $postnatalDue ?? 0 }}">—</p>
+                    <p class="font-display font-semibold text-lg" style="color: var(--ink);" x-text="counts.postnatal ?? {{ $postnatalDue ?? 0 }}">-</p>
                 </div>
                 <div class="rounded-xl border p-3" style="background: var(--bg-surface); border-color: var(--border);">
                     <p class="text-[10px] font-semibold uppercase tracking-wide" style="color: var(--ink-muted);">FP Scheduled</p>
-                    <p class="font-display font-semibold text-lg" style="color: var(--ink);" x-text="counts.fp ?? {{ $fpScheduled ?? 0 }}">—</p>
+                    <p class="font-display font-semibold text-lg" style="color: var(--ink);" x-text="counts.fp ?? {{ $fpScheduled ?? 0 }}">-</p>
                 </div>
             </div>
         </div>
@@ -184,7 +184,7 @@
                         </a>
                         <div class="my-1 border-t" style="border-color: var(--border);"></div>
                     @endif
-                    @if(auth()->user()->hasPermission('maternal.log_visit'))
+                    @if(auth()->user()->hasPermission('maternal'))
                         <button type="button" @click="intakeOpen = false; startQuickIntake('log_prenatal_visit')"
                                 class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-xs font-medium transition hover:bg-black/[0.03]"
                                 style="color: var(--ink);">

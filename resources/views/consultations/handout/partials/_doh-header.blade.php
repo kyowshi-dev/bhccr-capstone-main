@@ -1,7 +1,7 @@
 {{--
     Shared DOH / iClinicSys form header.
-    $formTitle — e.g. PATIENT ENROLMENT RECORD
-    $serialDigits — number of digit boxes for Family Serial Number (default 5)
+    $formTitle - e.g. PATIENT ENROLMENT RECORD
+    $serialDigits - number of digit boxes for Family Serial Number (default 5)
 --}}
 @php
     $formTitle ??= 'FORM';

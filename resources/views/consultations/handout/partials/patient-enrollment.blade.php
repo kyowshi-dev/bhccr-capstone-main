@@ -1,5 +1,5 @@
 {{--
-    Patient Enrollment Section — iClinicSys FORM 1
+    Patient Enrollment Section - iClinicSys FORM 1
 --}}
 @php
     use Illuminate\Support\Str;

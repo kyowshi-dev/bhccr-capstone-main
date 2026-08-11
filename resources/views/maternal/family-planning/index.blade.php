@@ -11,6 +11,8 @@
         </div>
     </div>
 
+    <x-maternal-nav-tabs />
+
     <form method="GET" action="{{ route('maternal.family-planning.index') }}" class="flex flex-wrap items-center gap-2">
         <div>
             <label for="filter_zone" class="sr-only">Filter by purok</label>
@@ -81,12 +83,12 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Zone {{ $client->patient->household?->zone?->zone_number ?? $client->patient->household?->zone_id ?? '—' }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Zone {{ $client->patient->household?->zone?->zone_number ?? $client->patient->household?->zone_id ?? '-' }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap" style="color: var(--ink-muted);">{{ \App\Models\FamilyPlanningClient::TYPES[$client->type_of_client] ?? $client->type_of_client }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap font-medium" style="color: var(--ink);">{{ $client->method }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     @if (! $client->is_active || $client->schedule_next_visit === null)
-                                        <span style="color: var(--ink-subtle);">—</span>
+                                        <span style="color: var(--ink-subtle);">-</span>
                                     @elseif ($overdue)
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
                                             <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Overdue {{ \Carbon\Carbon::parse($client->schedule_next_visit)->format('M d') }}

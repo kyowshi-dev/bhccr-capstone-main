@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Postnatal — '.fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix))
+@section('title', 'Postnatal - '.fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix))
 
 @section('content')
 @php
@@ -16,7 +16,7 @@
             <div>
                 <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">{{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }}</h1>
                 <p class="text-sm mt-1" style="color: var(--ink-muted);">
-                    {{ $patient->sex }}, {{ $patient->age }} y/o · Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '—' }}
+                    {{ $patient->sex }}, {{ $patient->age }} y/o &middot; Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '-' }}
                 </p>
             </div>
         </div>
@@ -26,82 +26,79 @@
         </a>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        <div class="lg:col-span-1 space-y-4 lg:space-y-6">
-            @if ($current !== null)
-                <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
-                    <div class="flex items-center justify-between mb-3">
-                        <h2 class="font-display font-semibold text-lg" style="color: var(--ink);">Latest delivery</h2>
-                        <button type="button" @click="$dispatch('open-edit-postnatal')"
-                                class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition hover:bg-black/[0.05]"
-                                style="color: var(--accent-blue);">
-                            <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit
-                        </button>
-                    </div>
-                    <dl class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Delivered</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ $current->delivery_date->format('M d, Y') }} · {{ \Carbon\Carbon::parse($current->delivery_time)->format('g:i A') }}</dd>
+    @if ($current !== null)
+        <x-card>
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h2 class="font-display font-semibold text-lg" style="color: var(--ink);">Latest delivery</h2>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
+                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i> {{ \App\Models\PostnatalRecord::OUTCOMES[$current->pregnancy_outcome] ?? $current->pregnancy_outcome }}
+                    </span>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" @click="$dispatch('open-edit-postnatal')"
+                            class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-black/[0.05]"
+                            style="border-color: var(--border); color: var(--accent-blue);">
+                        <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit
+                    </button>
+                    <a href="{{ route('maternal.postnatal.print', $current->id) }}" target="_blank"
+                       class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-black/[0.05]"
+                       style="border-color: var(--border); color: var(--ink-muted);">
+                        <i class="fa-solid fa-print" aria-hidden="true"></i> Print
+                    </a>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <x-stat label="Delivered">{{ $current->delivery_date->format('M d, Y') }} &middot; {{ \Carbon\Carbon::parse($current->delivery_time)->format('g:i A') }}</x-stat>
+                <x-stat label="Place / Mode">{{ \App\Models\PostnatalRecord::PLACES[$current->place_delivered] ?? $current->place_delivered }} &middot; {{ \App\Models\PostnatalRecord::MODES[$current->mode_of_delivery] ?? $current->mode_of_delivery }}</x-stat>
+                <x-stat label="Attendant">{{ \App\Models\PostnatalRecord::ATTENDANTS[$current->attendant_at_birth] ?? $current->attendant_at_birth }}</x-stat>
+                <x-stat label="Prenatal visits">{{ $current->prenatal_visits_completed ?? '-' }}</x-stat>
+                <x-stat label="Breastfeeding">{{ $current->breastfeeding_date->format('M d, Y') }} &middot; {{ \Carbon\Carbon::parse($current->breastfeeding_time)->format('g:i A') }}</x-stat>
+                @if ($current->pregnancy_outcome === \App\Models\PostnatalRecord::OUTCOME_LIVE_BIRTH && $current->childPatient !== null)
+                    <div class="col-span-2 sm:col-span-3 lg:col-span-4 rounded-lg border p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" style="border-color: var(--border);">
+                        <div class="text-sm">
+                            <p class="text-[10px] uppercase tracking-wide font-semibold" style="color: var(--ink-muted);">Newborn enrolled</p>
+                            <p class="font-medium" style="color: var(--ink);">{{ fullName($current->childPatient->last_name, $current->childPatient->first_name, $current->childPatient->middle_name, $current->childPatient->suffix) }}</p>
                         </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Outcome</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ \App\Models\PostnatalRecord::OUTCOMES[$current->pregnancy_outcome] ?? $current->pregnancy_outcome }}</dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Place / Mode</dt>
-                            <dd class="font-medium text-right" style="color: var(--ink);">
-                                {{ \App\Models\PostnatalRecord::PLACES[$current->place_delivered] ?? $current->place_delivered }}
-                                · {{ \App\Models\PostnatalRecord::MODES[$current->mode_of_delivery] ?? $current->mode_of_delivery }}
-                            </dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Attendant</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ \App\Models\PostnatalRecord::ATTENDANTS[$current->attendant_at_birth] ?? $current->attendant_at_birth }}</dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Prenatal visits</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ $current->prenatal_visits_completed ?? '—' }}</dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Breastfeeding</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ $current->breastfeeding_date->format('M d, Y') }} · {{ \Carbon\Carbon::parse($current->breastfeeding_time)->format('g:i A') }}</dd>
-                        </div>
-                    </dl>
-
-                    @if (! empty($current->danger_signs_mother))
-                        <div class="mt-4 rounded-lg p-3 text-xs font-semibold" style="background: var(--amber-soft); color: var(--amber);">
-                            <i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i> Mother danger signs: {{ implode(', ', $current->danger_signs_mother) }}
-                        </div>
-                    @endif
-                    @if ($current->pregnancy_outcome === \App\Models\PostnatalRecord::OUTCOME_LIVE_BIRTH && ! empty($current->danger_signs_baby))
-                        <div class="mt-2 rounded-lg p-3 text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
-                            <i class="fa-solid fa-circle-exclamation mr-1" aria-hidden="true"></i> Baby danger signs: {{ implode(', ', $current->danger_signs_baby) }}
-                        </div>
-                    @endif
-
-                    @if ($current->pregnancy_outcome === \App\Models\PostnatalRecord::OUTCOME_LIVE_BIRTH && $current->childPatient !== null)
-                        <div class="mt-4 pt-3 border-t flex items-center justify-between" style="border-color: var(--border);">
-                            <div class="text-sm">
-                                <p class="text-xs font-medium" style="color: var(--ink-muted);">Newborn enrolled</p>
-                                <p class="font-medium" style="color: var(--ink);">{{ fullName($current->childPatient->last_name, $current->childPatient->first_name, $current->childPatient->middle_name, $current->childPatient->suffix) }}</p>
-                            </div>
-                            <a href="{{ route('immunizations.patient', $current->childPatient->id) }}" class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition hover:bg-black/[0.05]"
-                               style="border-color: var(--border); color: var(--accent-blue);">
-                                <i class="fa-solid fa-syringe" aria-hidden="true"></i> Immunizations
-                            </a>
-                        </div>
-                    @endif
-
-                    <div class="mt-4 pt-3 border-t flex flex-wrap gap-2" style="border-color: var(--border);">
-                        <a href="{{ route('maternal.postnatal.print', $current->id) }}" target="_blank"
-                           class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-black/[0.05]"
-                           style="border-color: var(--border); color: var(--ink-muted);">
-                            <i class="fa-solid fa-print" aria-hidden="true"></i> Print
+                        <a href="{{ route('immunizations.patient', $current->childPatient->id) }}" class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition hover:bg-black/[0.05]"
+                           style="border-color: var(--border); color: var(--accent-blue);">
+                            <i class="fa-solid fa-syringe" aria-hidden="true"></i> Immunizations
                         </a>
                     </div>
+                @endif
+            </div>
+            @if (! empty($current->danger_signs_mother) || ($current->pregnancy_outcome === \App\Models\PostnatalRecord::OUTCOME_LIVE_BIRTH && ! empty($current->danger_signs_baby)))
+                <div class="mt-4 pt-3 border-t flex flex-wrap gap-2" style="border-color: var(--border);">
+                    @if (! empty($current->danger_signs_mother))
+                        <span class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold" style="background: var(--amber-soft); color: var(--amber);">
+                            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Mother: {{ implode(', ', $current->danger_signs_mother) }}
+                        </span>
+                    @endif
+                    @if ($current->pregnancy_outcome === \App\Models\PostnatalRecord::OUTCOME_LIVE_BIRTH && ! empty($current->danger_signs_baby))
+                        <span class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
+                            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Baby: {{ implode(', ', $current->danger_signs_baby) }}
+                        </span>
+                    @endif
                 </div>
+            @endif
+        </x-card>
+    @else
+        <x-card class="border-dashed p-6 text-center">
+            <i class="fa-solid fa-child-reaching text-2xl mb-2" style="color: var(--ink-subtle);" aria-hidden="true"></i>
+            <p class="font-semibold text-sm" style="color: var(--ink);">No postnatal record</p>
+            <p class="text-xs mt-1 mb-4" style="color: var(--ink-muted);">Record the delivery to start the postpartum schedule.</p>
+            <button type="button" @click="$dispatch('open-store-postnatal')"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md w-full sm:w-auto"
+                    style="background: var(--primary);">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Record delivery
+            </button>
+        </x-card>
+    @endif
 
-                <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
+    @if ($current !== null)
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+            <div class="lg:col-span-1 space-y-4 lg:space-y-6">
+                <x-card>
                     <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">Postpartum schedule</h2>
                     @php
                         $slots = [
@@ -111,30 +108,28 @@
                             ['col' => 'postpartum_28d_date', 'window' => 28, 'label' => '28 days'],
                         ];
                     @endphp
-                    <ul class="space-y-2">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                         @foreach ($slots as $slot)
                             @php
                                 $targetDate = \Carbon\Carbon::parse($current->delivery_date)->addDays($slot['window']);
                                 $done = $current->{$slot['col']} !== null;
                                 $overdue = ! $done && $targetDate->lt(\Carbon\Carbon::today());
                             @endphp
-                            <li class="flex items-center justify-between rounded-lg border px-3 py-2.5 text-sm" style="border-color: var(--border);">
-                                <span class="flex items-center gap-2 font-medium" style="color: var(--ink);">
-                                    <i class="fa-solid {{ $done ? 'fa-circle-check' : ($overdue ? 'fa-circle-exclamation' : 'fa-regular fa-calendar') }}"
-                                       aria-hidden="true" style="color: {{ $done ? 'var(--primary)' : ($overdue ? 'var(--danger)' : 'var(--accent-blue)') }};"></i>
-                                    {{ $slot['label'] }} visit
-                                </span>
-                                @if ($done)
-                                    <span class="text-xs font-semibold" style="color: var(--primary);">{{ \Carbon\Carbon::parse($current->{$slot['col']})->format('M d, Y') }}</span>
-                                @else
-                                    <span class="text-xs font-semibold {{ $overdue ? '' : '' }}" style="color: {{ $overdue ? 'var(--danger)' : 'var(--ink-muted)' }};">
-                                        {{ $overdue ? 'Overdue · ' : 'Due · ' }}{{ $targetDate->format('M d, Y') }}
-                                    </span>
-                                @endif
-                            </li>
+                            <div class="rounded-lg border p-3" style="border-color: var(--border);">
+                                <p class="text-[10px] uppercase tracking-wide font-semibold" style="color: var(--ink-muted);">{{ $slot['label'] }} visit</p>
+                                <p class="mt-1 text-sm font-semibold" style="color: {{ $done ? 'var(--primary)' : ($overdue ? 'var(--danger)' : 'var(--accent-blue)') }};">
+                                    <i class="fa-solid {{ $done ? 'fa-circle-check' : ($overdue ? 'fa-circle-exclamation' : 'fa-regular fa-calendar') }}" aria-hidden="true"></i>
+                                    @if ($done)
+                                        {{ \Carbon\Carbon::parse($current->{$slot['col']})->format('M d, Y') }}
+                                    @else
+                                        {{ $overdue ? 'Overdue' : 'Due' }} {{ $targetDate->format('M d') }}
+                                    @endif
+                                </p>
+                            </div>
                         @endforeach
-                    </ul>
-                    <form method="POST" action="{{ route('maternal.postnatal.complete-visit', $current->id) }}" class="mt-3 space-y-3"
+                    </div>
+                    <form method="POST" action="{{ route('maternal.postnatal.complete-visit', $current->id) }}" class="mt-4 pt-4 border-t space-y-3"
+                          style="border-color: var(--border);"
                           x-data="ppSuggest('{{ $current->delivery_date->format('Y-m-d') }}')" x-init="$nextTick(suggest)">
                         @csrf
                         <div>
@@ -161,66 +156,52 @@
                             <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save visit
                         </button>
                     </form>
-                </div>
-            @else
-                <div class="rounded-xl border border-dashed p-6 text-center" style="background: var(--bg-surface); border-color: var(--border);">
-                    <i class="fa-solid fa-child-reaching text-2xl mb-2" style="color: var(--ink-subtle);" aria-hidden="true"></i>
-                    <p class="font-semibold text-sm" style="color: var(--ink);">No postnatal record</p>
-                    <p class="text-xs mt-1 mb-4" style="color: var(--ink-muted);">Record the delivery to start the postpartum schedule.</p>
-                    <button type="button" @click="$dispatch('open-store-postnatal')"
-                            class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md w-full"
-                            style="background: var(--primary);">
-                        <i class="fa-solid fa-plus" aria-hidden="true"></i> Record delivery
-                    </button>
-                </div>
-            @endif
-        </div>
+                </x-card>
+            </div>
 
-        <div class="lg:col-span-2 space-y-4 lg:space-y-6">
-            @if ($records->isEmpty())
-                <div class="rounded-xl border overflow-hidden" style="background: var(--bg-surface); border-color: var(--border);">
+            <div class="lg:col-span-2 space-y-4 lg:space-y-6">
+                <x-card class="overflow-hidden">
                     <h2 class="font-display font-semibold text-lg px-4 pt-4" style="color: var(--ink);">Delivery history</h2>
-                    <p class="px-4 py-6 text-sm" style="color: var(--ink-subtle);">No deliveries recorded for this patient.</p>
-                </div>
-            @else
-                <div class="rounded-xl border overflow-hidden" style="background: var(--bg-surface); border-color: var(--border);">
-                    <h2 class="font-display font-semibold text-lg px-4 pt-4" style="color: var(--ink);">Delivery history</h2>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left mt-2">
-                            <thead class="border-b" style="background: var(--teal-soft);">
-                                <tr class="text-xs uppercase tracking-wide" style="color: var(--ink-muted);">
-                                    <th class="px-4 py-2.5 font-semibold whitespace-nowrap">Delivered</th>
-                                    <th class="px-4 py-2.5 font-semibold whitespace-nowrap">Outcome</th>
-                                    <th class="px-4 py-2.5 font-semibold whitespace-nowrap hidden md:table-cell">Mode</th>
-                                    <th class="px-4 py-2.5 font-semibold whitespace-nowrap">Baby</th>
-                                    <th class="px-4 py-2.5 font-semibold whitespace-nowrap"></th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y" style="border-color: var(--border);">
-                                @foreach ($records as $record)
-                                    <tr class="hover:bg-black/[0.03]">
-                                        <td class="px-4 py-2.5 whitespace-nowrap font-medium" style="color: var(--ink);">{{ $record->delivery_date->format('M d, Y') }}</td>
-                                        <td class="px-4 py-2.5" style="color: var(--ink-muted);">{{ \App\Models\PostnatalRecord::OUTCOMES[$record->pregnancy_outcome] ?? $record->pregnancy_outcome }}</td>
-                                        <td class="px-4 py-2.5 hidden md:table-cell" style="color: var(--ink-muted);">{{ \App\Models\PostnatalRecord::MODES[$record->mode_of_delivery] ?? $record->mode_of_delivery }}</td>
-                                        <td class="px-4 py-2.5" style="color: var(--ink-muted);">
-                                            @if ($record->pregnancy_outcome === \App\Models\PostnatalRecord::OUTCOME_LIVE_BIRTH)
-                                                {{ $record->child_first_name }} {{ $record->child_last_name }}
-                                            @else
-                                                —
-                                            @endif
-                                        </td>
-                                        <td class="px-4 py-2.5 text-right">
-                                            <a href="{{ route('maternal.postnatal.print', $record->id) }}" target="_blank" class="text-xs font-semibold hover:underline" style="color: var(--accent-blue);">Print</a>
-                                        </td>
+                    @if ($records->isEmpty())
+                        <p class="px-4 py-6 text-sm" style="color: var(--ink-subtle);">No deliveries recorded for this patient.</p>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left mt-2">
+                                <thead class="border-b" style="background: var(--teal-soft);">
+                                    <tr class="text-xs uppercase tracking-wide" style="color: var(--ink-muted);">
+                                        <th class="px-4 py-2.5 font-semibold whitespace-nowrap">Delivered</th>
+                                        <th class="px-4 py-2.5 font-semibold whitespace-nowrap">Outcome</th>
+                                        <th class="px-4 py-2.5 font-semibold whitespace-nowrap hidden md:table-cell">Mode</th>
+                                        <th class="px-4 py-2.5 font-semibold whitespace-nowrap">Baby</th>
+                                        <th class="px-4 py-2.5 font-semibold whitespace-nowrap"></th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            @endif
+                                </thead>
+                                <tbody class="divide-y" style="border-color: var(--border);">
+                                    @foreach ($records as $record)
+                                        <tr class="hover:bg-black/[0.03]">
+                                            <td class="px-4 py-2.5 whitespace-nowrap font-medium" style="color: var(--ink);">{{ $record->delivery_date->format('M d, Y') }}</td>
+                                            <td class="px-4 py-2.5" style="color: var(--ink-muted);">{{ \App\Models\PostnatalRecord::OUTCOMES[$record->pregnancy_outcome] ?? $record->pregnancy_outcome }}</td>
+                                            <td class="px-4 py-2.5 hidden md:table-cell" style="color: var(--ink-muted);">{{ \App\Models\PostnatalRecord::MODES[$record->mode_of_delivery] ?? $record->mode_of_delivery }}</td>
+                                            <td class="px-4 py-2.5" style="color: var(--ink-muted);">
+                                                @if ($record->pregnancy_outcome === \App\Models\PostnatalRecord::OUTCOME_LIVE_BIRTH)
+                                                    {{ $record->child_first_name }} {{ $record->child_last_name }}
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td class="px-4 py-2.5 text-right">
+                                                <a href="{{ route('maternal.postnatal.print', $record->id) }}" target="_blank" class="text-xs font-semibold hover:underline" style="color: var(--accent-blue);">Print</a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </x-card>
+            </div>
         </div>
-    </div>
+    @endif
 </div>
 
 <x-modal name="store-postnatal-modal" title="Record delivery"
@@ -235,7 +216,7 @@
                     <option value="">None</option>
                     @foreach ($activePregnancies as $preg)
                         <option value="{{ $preg->id }}" @selected(old('pregnancy_id') == $preg->id)>
-                            LMP {{ $preg->lmp?->format('M d, Y') }} · EDC {{ $preg->edc?->format('M d, Y') }}
+                            LMP {{ $preg->lmp?->format('M d, Y') }} &middot; EDC {{ $preg->edc?->format('M d, Y') }}
                         </option>
                     @endforeach
                 </select>

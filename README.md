@@ -2,7 +2,7 @@
 
 # BHCIS System Sta. Ana
 
-**Barangay Health Center Information System** — a DOH-aligned capstone system for Sta. Ana that complements the barangay's paper-log workflow with digital maternal tracking, child & adult immunization management, consultations & referrals, prescriptions, and barangay health reports.
+**Barangay Health Center Information System** - a DOH-aligned capstone system for Sta. Ana that complements the barangay's paper-log workflow with digital maternal tracking, child & adult immunization management, consultations & referrals, prescriptions, and barangay health reports.
 
 PHP 8.2+ · Laravel 12 · Blade + Tailwind CSS v4 · MySQL
 
@@ -13,9 +13,9 @@ PHP 8.2+ · Laravel 12 · Blade + Tailwind CSS v4 · MySQL
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Configuration](#configuration)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+    - [Configuration](#configuration)
 - [Running the App](#running-the-app)
 - [Scripts](#scripts)
 - [Project Structure](#project-structure)
@@ -27,25 +27,25 @@ PHP 8.2+ · Laravel 12 · Blade + Tailwind CSS v4 · MySQL
 
 ## Features
 
-- **Consultations & Referrals** — intake, vitals (versioned), diagnoses, prescriptions, consultation finalization, outward referrals with status tracking, and printable DOH-style referral forms.
-- **Maternal Care** — prenatal profile & pregnancy tracking, prenatal visit records, postpartum/postnatal visits, obstetric history, and family planning client management with visit logging.
-- **Immunizations** — child & adult immunization schedules, vaccine administration, marked-as-done tracking, no-show handling, and infant enrollment.
-- **Households & Patients** — zone-based household registry, patient records, shared-searchable records, encryption of sensitive PHI.
-- **Reports** — morbidity, maternal care, immunization, family planning, NCD, and referral reports with DOH-style PDF downloads and CSV export for households.
-- **Administration** — user/role management, data-driven permissions, application settings, notifications, audit-logged actions.
-- **ICD-11 Diagnosis Lookup** — remote WHO ICD API with automatic fallback to a local `diagnosis_lookup` table when the API is disabled/unreachable.
-- **DOH-style Print Handouts & PDF Forms** — black 1px border, fixed-grid print layouts generated via Spatie Laravel PDF + Browsershot/DOMPDF.
+- **Consultations & Referrals** - intake, vitals (versioned), diagnoses, prescriptions, consultation finalization, outward referrals with status tracking, and printable DOH-style referral forms.
+- **Maternal Care** - prenatal profile & pregnancy tracking, prenatal visit records, postpartum/postnatal visits, obstetric history, and family planning client management with visit logging.
+- **Immunizations** - child & adult immunization schedules, vaccine administration, marked-as-done tracking, no-show handling, and infant enrollment.
+- **Households & Patients** - zone-based household registry, patient records, shared-searchable records, encryption of sensitive PHI.
+- **Reports** - morbidity, maternal care, immunization, family planning, NCD, and referral reports with DOH-style PDF downloads and CSV export for households.
+- **Administration** - user/role management, data-driven permissions, application settings, notifications, audit-logged actions.
+- **ICD-11 Diagnosis Lookup** - remote WHO ICD API with automatic fallback to a local `diagnosis_lookup` table when the API is disabled/unreachable.
+- **DOH-style Print Handouts & PDF Forms** - black 1px border, fixed-grid print layouts generated via Spatie Laravel PDF + Browsershot/DOMPDF.
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Backend | [Laravel 12](https://laravel.com), PHP 8.2+ |
-| Frontend | [Blade](https://laravel.com/docs/blade), [Tailwind CSS v4](https://tailwindcss.com), Vite, Alpine-style Sweetalert2 UI |
-| Frontend libs | ApexCharts, Font Awesome 7, SweetAlert2 |
-| PDFs | `spatie/laravel-pdf` + `browsershot`/puppeteer, `barryvdh/laravel-dompdf` |
-| Database | MySQL (SQLite for tests) |
-| Tooling | Laravel Pint, Larastan/PHPStan, PHPUnit, Laravel Sail, Laravel Pail |
+| Layer         | Technology                                                                                                             |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Backend       | [Laravel 12](https://laravel.com), PHP 8.2+                                                                            |
+| Frontend      | [Blade](https://laravel.com/docs/blade), [Tailwind CSS v4](https://tailwindcss.com), Vite, Alpine-style Sweetalert2 UI |
+| Frontend libs | ApexCharts, Font Awesome 7, SweetAlert2                                                                                |
+| PDFs          | `spatie/laravel-pdf` + `browsershot`/puppeteer, `barryvdh/laravel-dompdf`                                              |
+| Database      | MySQL (SQLite for tests)                                                                                               |
+| Tooling       | Laravel Pint, Larastan/PHPStan, PHPUnit, Laravel Sail, Laravel Pail                                                    |
 
 ## Getting Started
 
@@ -73,16 +73,16 @@ php artisan db:seed
 
 Copy `.env.example` to `.env` (done automatically by `composer run setup`) and set:
 
-| Variable | Description |
-|----------|-------------|
-| `APP_KEY` | Generated by `php artisan key:generate` |
-| `SESSION_ENCRYPT` | `true` encrypts PHI-bearing session payloads at rest |
-| `SESSION_SECURE_COOKIE` | `true` when serving over HTTPS |
-| `BHCIS_ICD_API_ENABLED` | `true` uses the remote WHO ICD API for diagnosis lookup |
-| `BHCIS_ICD_API_BASE_URL` / `BHCIS_ICD_API_TOKEN_URL` | ICD API endpoints (defaults: WHO `id.who.int`) |
-| `BHCIS_ICD_API_CLIENT_ID` / `BHCIS_ICD_API_CLIENT_SECRET` | Your WHO ICD API credentials (never commit) |
+| Variable                                                  | Description                                             |
+| --------------------------------------------------------- | ------------------------------------------------------- |
+| `APP_KEY`                                                 | Generated by `php artisan key:generate`                 |
+| `SESSION_ENCRYPT`                                         | `true` encrypts PHI-bearing session payloads at rest    |
+| `SESSION_SECURE_COOKIE`                                   | `true` when serving over HTTPS                          |
+| `BHCIS_ICD_API_ENABLED`                                   | `true` uses the remote WHO ICD API for diagnosis lookup |
+| `BHCIS_ICD_API_BASE_URL` / `BHCIS_ICD_API_TOKEN_URL`      | ICD API endpoints (defaults: WHO `id.who.int`)          |
+| `BHCIS_ICD_API_CLIENT_ID` / `BHCIS_ICD_API_CLIENT_SECRET` | Your WHO ICD API credentials (never commit)             |
 
-> **Security:** Never deploy with `APP_DEBUG=true` — it leaks stack traces, env vars and PHI. Obtain your own ICD API credentials from WHO ([id.who.int](https://id.who.int)).
+> **Security:** Never deploy with `APP_DEBUG=true` - it leaks stack traces, env vars and PHI. Obtain your own ICD API credentials from WHO ([id.who.int](https://id.who.int)).
 
 ## Development
 
@@ -94,13 +94,13 @@ Runs `php artisan serve`, the queue listener, Laravel Pail logs, and Vite dev se
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `composer run dev` | Serve app + queue + logs + Vite in parallel |
-| `composer run test` | `config:clear` + `php artisan test` |
-| `composer run phpstan` | PHPStan static analysis (Larastan) |
-| `vendor/bin/pint --dirty` | Laravel Pint code style fixer |
-| `npm run build` | Build production frontend assets (required after Blade/JS changes) |
+| Command                   | Description                                                        |
+| ------------------------- | ------------------------------------------------------------------ |
+| `composer run dev`        | Serve app + queue + logs + Vite in parallel                        |
+| `composer run test`       | `config:clear` + `php artisan test`                                |
+| `composer run phpstan`    | PHPStan static analysis (Larastan)                                 |
+| `vendor/bin/pint --dirty` | Laravel Pint code style fixer                                      |
+| `npm run build`           | Build production frontend assets (required after Blade/JS changes) |
 
 ## Project Structure
 

@@ -35,7 +35,7 @@ class PatientSeeder extends Seeder
         $patients = [];
         $zoneNumbers = DB::table('zones')->pluck('zone_number', 'id')->toArray();
 
-        // Generate 20 dummy patients — one per seeded household.
+        // Generate 20 dummy patients - one per seeded household.
         for ($i = 0; $i < 20; $i++) {
             $zoneId = rand(1, count($zoneNumbers));
             $householdId = DB::table('households')->insertGetId([

@@ -173,7 +173,7 @@
 
     @if ($showResultsReady ?? false)
         @include('dashboard.partials.results-ready', [
-            'panelTitle' => 'Recent completed — print handouts',
+            'panelTitle' => 'Recent completed - print handouts',
             'panelSubtitle' => 'Today’s finalized consultations. Print Rx and diagnosis summaries for patient pickup.',
             'showFilters' => true,
             'filterAction' => route('dashboard'),

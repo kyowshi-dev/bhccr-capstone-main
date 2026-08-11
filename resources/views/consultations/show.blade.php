@@ -93,9 +93,9 @@
         $consultationVitalsSummary = $latestVitals?->summary ?? '';
     @endphp
     <div id="consultationReferralContext"
-         data-patient-name="{{ e($consultationPatientName ?: '—') }}"
-         data-patient-meta="{{ e($consultationPatientMeta ?: '—') }}"
-         data-vitals="{{ e($consultationVitalsSummary ?: '—') }}"
+         data-patient-name="{{ e($consultationPatientName ?: '-') }}"
+         data-patient-meta="{{ e($consultationPatientMeta ?: '-') }}"
+         data-vitals="{{ e($consultationVitalsSummary ?: '-') }}"
          data-referral-context-url="{{ route('consultations.referral-context', $consultation->id) }}"
          class="hidden"></div>
 
@@ -111,10 +111,10 @@
 
             <div class="max-h-[75vh] overflow-auto p-4">
                 <div class="mb-3 rounded-lg bg-teal-soft px-3 py-2 text-xs" style="color: var(--ink-muted);">
-                    Latest Reading: BP {{ $latestVitals?->bp_systolic ?? '—' }}/{{ $latestVitals?->bp_diastolic ?? '—' }} ·
-                    Temp {{ $latestVitals?->temperature_c ?? '—' }}°C ·
-                    Wt {{ $latestVitals?->weight_kg ?? '—' }}kg ·
-                    Ht {{ $latestVitals?->height_cm ?? '—' }}cm
+                    Latest Reading: BP {{ $latestVitals?->bp_systolic ?? '-' }}/{{ $latestVitals?->bp_diastolic ?? '-' }} ·
+                    Temp {{ $latestVitals?->temperature_c ?? '-' }}°C ·
+                    Wt {{ $latestVitals?->weight_kg ?? '-' }}kg ·
+                    Ht {{ $latestVitals?->height_cm ?? '-' }}cm
                 </div>
 
                 <table class="w-full text-xs">
@@ -134,10 +134,10 @@
                             <tr class="border-b" style="border-color: var(--border); color: var(--ink);">
                                 <td class="px-2 py-2">{{ \Carbon\Carbon::parse($vitalVersion->created_at)->format('M j g:i A') }}</td>
                                 <td class="px-2 py-2 uppercase">{{ $vitalVersion->phase ?? 'triage' }}</td>
-                                <td class="px-2 py-2">{{ $vitalVersion->bp_systolic ?? '—' }}/{{ $vitalVersion->bp_diastolic ?? '—' }}</td>
-                                <td class="px-2 py-2">{{ $vitalVersion->temperature_c ?? '—' }}°C</td>
+                                <td class="px-2 py-2">{{ $vitalVersion->bp_systolic ?? '-' }}/{{ $vitalVersion->bp_diastolic ?? '-' }}</td>
+                                <td class="px-2 py-2">{{ $vitalVersion->temperature_c ?? '-' }}°C</td>
                                 <td class="px-2 py-2">{{ fullName($vitalVersion->captured_by_last_name ?? null, $vitalVersion->captured_by_first_name ?? null) ?: 'N/A' }}</td>
-                                <td class="px-2 py-2" style="color: var(--ink-muted);">{{ $vitalVersion->notes ?? '—' }}</td>
+                                <td class="px-2 py-2" style="color: var(--ink-muted);">{{ $vitalVersion->notes ?? '-' }}</td>
                                 <td class="px-2 py-2">
                                     <div class="flex items-center gap-2">
                                         <details>
@@ -295,8 +295,8 @@
                                         @endif
                                     </td>
                                     <td class="px-3 py-2">{{ $rx->dosage }}{{ $rx->frequency ? ' · '.$rx->frequency : '' }}</td>
-                                    <td class="px-3 py-2">{{ $rx->duration ?? '—' }}</td>
-                                    <td class="px-3 py-2">{{ $rx->quantity ?? '—' }}</td>
+                                    <td class="px-3 py-2">{{ $rx->duration ?? '-' }}</td>
+                                    <td class="px-3 py-2">{{ $rx->quantity ?? '-' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -422,7 +422,7 @@
                                     <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border);">
                                         <span class="font-medium" style="color: var(--ink);">{{ \Carbon\Carbon::parse($pv->visit_date)->format('M d, Y') }}</span>
                                         <span class="text-xs" style="color: var(--ink-muted);">
-                                            FH {{ $pv->fundic_height_cm ?? '—' }} cm · FHT {{ $pv->fetal_heart_tone_bpm ?? '—' }} bpm
+                                            FH {{ $pv->fundic_height_cm ?? '-' }} cm · FHT {{ $pv->fetal_heart_tone_bpm ?? '-' }} bpm
                                         </span>
                                     </div>
                                 @endforeach

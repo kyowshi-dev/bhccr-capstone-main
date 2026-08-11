@@ -120,7 +120,7 @@ final class ReferralService
             $parts = [];
 
             if ($summary->bp_systolic !== null || $summary->bp_diastolic !== null) {
-                $parts[] = 'BP '.($summary->bp_systolic ?? '—').'/'.($summary->bp_diastolic ?? '—').' mmHg';
+                $parts[] = 'BP '.($summary->bp_systolic ?? '-').'/'.($summary->bp_diastolic ?? '-').' mmHg';
             }
 
             if ($summary->temperature_c !== null) {
@@ -139,9 +139,9 @@ final class ReferralService
         }
 
         return [
-            'patient_name' => trim($name) ?: '—',
-            'patient_meta' => $metaParts ? implode(' · ', $metaParts) : '—',
-            'vitals_summary' => $vitalsSummary ?: '—',
+            'patient_name' => trim($name) ?: '-',
+            'patient_meta' => $metaParts ? implode(' · ', $metaParts) : '-',
+            'vitals_summary' => $vitalsSummary ?: '-',
         ];
     }
 

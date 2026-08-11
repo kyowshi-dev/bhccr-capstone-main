@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Family Planning — '.fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix))
+@section('title', 'Family Planning - '.fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix))
 
 @section('content')
 @php
@@ -16,7 +16,7 @@
             <div>
                 <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">{{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }}</h1>
                 <p class="text-sm mt-1" style="color: var(--ink-muted);">
-                    {{ $patient->sex }}, {{ $patient->age }} y/o · Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '—' }}
+                    {{ $patient->sex }}, {{ $patient->age }} y/o &middot; Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '-' }}
                 </p>
             </div>
         </div>
@@ -26,118 +26,107 @@
         </a>
     </div>
 
+    @if ($client !== null)
+        <x-card>
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h2 class="font-display font-semibold text-lg" style="color: var(--ink);">Current client</h2>
+                    @if ($client->is_active)
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
+                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Active
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--amber-soft); color: var(--amber);">
+                            <i class="fa-solid fa-circle-user" aria-hidden="true"></i> Inactive
+                        </span>
+                    @endif
+                </div>
+                <button type="button" @click="$dispatch('open-edit-client')"
+                        class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-black/[0.05]"
+                        style="border-color: var(--border); color: var(--accent-blue);">
+                    <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit
+                </button>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <x-stat label="Type">{{ \App\Models\FamilyPlanningClient::TYPES[$client->type_of_client] ?? $client->type_of_client }}</x-stat>
+                <x-stat label="Method">{{ $client->method }}</x-stat>
+                @if ($client->schedule_next_visit)
+                    <x-stat label="Next follow-up">
+                        @if ($overdue)
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
+                                <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Overdue {{ \Carbon\Carbon::parse($client->schedule_next_visit)->format('M d') }}
+                            </span>
+                        @else
+                            <span style="color: var(--ink-muted);">{{ \Carbon\Carbon::parse($client->schedule_next_visit)->format('M d, Y') }}</span>
+                        @endif
+                    </x-stat>
+                @endif
+                @if ($client->drop_out_reason)
+                    <div class="col-span-2 sm:col-span-3 lg:col-span-4 rounded-lg p-3 text-xs font-semibold" style="background: var(--amber-soft); color: var(--amber);">
+                        <i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i> Drop-out reason: {{ $client->drop_out_reason }}
+                    </div>
+                @endif
+            </div>
+        </x-card>
+    @else
+        <x-card class="border-dashed p-6 text-center">
+            <i class="fa-solid fa-hand-holding-heart text-2xl mb-2" style="color: var(--ink-subtle);" aria-hidden="true"></i>
+            <p class="font-semibold text-sm" style="color: var(--ink);">Not an FP client</p>
+            <p class="text-xs mt-1 mb-4" style="color: var(--ink-muted);">No active or past family planning record for this patient.</p>
+            <button type="button" @click="$dispatch('open-register-client')"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md w-full sm:w-auto"
+                    style="background: var(--primary);">
+                <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Register client
+            </button>
+        </x-card>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         <div class="lg:col-span-1 space-y-4 lg:space-y-6">
             @if ($client !== null)
-                <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
-                    <div class="flex items-center justify-between mb-3">
-                        <h2 class="font-display font-semibold text-lg" style="color: var(--ink);">Current client</h2>
-                        <button type="button" @click="$dispatch('open-edit-client')"
-                                class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition hover:bg-black/[0.05]"
-                                style="color: var(--accent-blue);">
-                            <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit
-                        </button>
-                    </div>
-                    <dl class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Type</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ \App\Models\FamilyPlanningClient::TYPES[$client->type_of_client] ?? $client->type_of_client }}</dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Method</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ $client->method }}</dd>
-                        </div>
-                        @if ($client->drop_out_reason)
-                            <div class="flex justify-between items-start gap-3">
-                                <dt class="text-xs font-medium" style="color: var(--ink-muted);">Drop-out reason</dt>
-                                <dd class="font-medium text-right text-xs" style="color: var(--amber);">{{ $client->drop_out_reason }}</dd>
-                            </div>
-                        @endif
-                        <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--border);">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Status</dt>
-                            <dd>
-                                @if ($client->is_active)
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
-                                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Active
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--amber-soft); color: var(--amber);">
-                                        <i class="fa-solid fa-circle-user" aria-hidden="true"></i> Inactive
-                                    </span>
-                                @endif
-                            </dd>
-                        </div>
-                        @if ($client->schedule_next_visit)
-                            <div class="flex justify-between items-center">
-                                <dt class="text-xs font-medium" style="color: var(--ink-muted);">Next follow-up</dt>
-                                <dd>
-                                    @if ($overdue)
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
-                                            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Overdue {{ \Carbon\Carbon::parse($client->schedule_next_visit)->format('M d') }}
-                                        </span>
-                                    @else
-                                        <span class="font-medium" style="color: var(--ink);">{{ \Carbon\Carbon::parse($client->schedule_next_visit)->format('M d, Y') }}</span>
-                                    @endif
-                                </dd>
-                            </div>
-                        @endif
-                    </dl>
-                </div>
-
-                <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
+                <x-card>
                     <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">Record follow-up visit</h2>
-                    <form method="POST" action="{{ route('maternal.family-planning.visits.store', $client->id) }}" class="space-y-4">
+                    <form method="POST" action="{{ route('maternal.family-planning.visits.store', $client->id) }}" class="space-y-3">
                         @csrf
                         <div>
-                            <label for="visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: #b91c1c;">*</span></label>
+                            <label for="visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: var(--danger);">*</span></label>
                             <input id="visit_date" type="date" name="visit_date" value="{{ old('visit_date', now()->toDateString()) }}" max="{{ now()->toDateString() }}"
                                    class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                    style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                            @error('visit_date') <p class="mt-1 text-xs font-medium" style="color: #b91c1c;">{{ $message }}</p> @enderror
+                            @error('visit_date') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
                         </div>
 
                         @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'fp_'])
 
                         <div>
-                            <label for="method" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Method <span style="color: #b91c1c;">*</span></label>
+                            <label for="method" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Method <span style="color: var(--danger);">*</span></label>
                             <select id="method" name="method" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                     style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                                 @foreach (\App\Models\FamilyPlanningClient::METHODS as $option)
                                     <option value="{{ $option }}" @selected(old('method', $client->method) === $option)>{{ $option }}</option>
                                 @endforeach
                             </select>
-                            @error('method') <p class="mt-1 text-xs font-medium" style="color: #b91c1c;">{{ $message }}</p> @enderror
+                            @error('method') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="schedule_next_visit" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Next follow-up</label>
                             <input id="schedule_next_visit" type="date" name="schedule_next_visit" value="{{ old('schedule_next_visit', $client->schedule_next_visit?->format('Y-m-d')) }}"
                                    class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                    style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                            @error('schedule_next_visit') <p class="mt-1 text-xs font-medium" style="color: #b91c1c;">{{ $message }}</p> @enderror
+                            @error('schedule_next_visit') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
                         </div>
                         <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md"
                                 style="background: var(--primary);">
                             <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save visit
                         </button>
                     </form>
-                </div>
-            @else
-                <div class="rounded-xl border border-dashed p-6 text-center" style="background: var(--bg-surface); border-color: var(--border);">
-                    <i class="fa-solid fa-hand-holding-heart text-2xl mb-2" style="color: var(--ink-subtle);" aria-hidden="true"></i>
-                    <p class="font-semibold text-sm" style="color: var(--ink);">Not an FP client</p>
-                    <p class="text-xs mt-1 mb-4" style="color: var(--ink-muted);">No active or past family planning record for this patient.</p>
-                    <button type="button" @click="$dispatch('open-register-client')"
-                            class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md w-full"
-                            style="background: var(--primary);">
-                        <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Register client
-                    </button>
-                </div>
+                </x-card>
             @endif
         </div>
 
         <div class="lg:col-span-2 space-y-4 lg:space-y-6">
             @if ($clients->count() > 1)
-                <div class="rounded-xl border overflow-hidden" style="background: var(--bg-surface); border-color: var(--border);">
+                <x-card class="overflow-hidden">
                     <h2 class="font-display font-semibold text-lg px-4 pt-4" style="color: var(--ink);">Past records</h2>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left mt-2">
@@ -164,10 +153,10 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </x-card>
             @endif
 
-            <div class="rounded-xl border overflow-hidden" style="background: var(--bg-surface); border-color: var(--border);">
+            <x-card class="overflow-hidden">
                 <h2 class="font-display font-semibold text-lg px-4 pt-4" style="color: var(--ink);">Visit history</h2>
                 @if ($visitHistory->isEmpty())
                     <p class="px-4 py-6 text-sm" style="color: var(--ink-subtle);">No follow-up visits recorded yet.</p>
@@ -186,14 +175,14 @@
                                     <tr class="hover:bg-black/[0.03]">
                                         <td class="px-4 py-2.5 whitespace-nowrap font-medium" style="color: var(--ink);">{{ $visit->visit_date->format('M d, Y') }}</td>
                                         <td class="px-4 py-2.5" style="color: var(--ink-muted);">{{ $visit->method }}</td>
-                                        <td class="px-4 py-2.5 whitespace-nowrap" style="color: var(--ink-muted);">{{ $visit->schedule_next_visit?->format('M d, Y') ?? '—' }}</td>
+                                        <td class="px-4 py-2.5 whitespace-nowrap" style="color: var(--ink-muted);">{{ $visit->schedule_next_visit?->format('M d, Y') ?? '-' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
                 @endif
-            </div>
+            </x-card>
 
             @if ($client !== null)
                 <div class="flex justify-end">

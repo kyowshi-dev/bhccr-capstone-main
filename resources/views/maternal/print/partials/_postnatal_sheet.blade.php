@@ -1,5 +1,5 @@
 {{--
-    Postpartum Care Record — print sheet
+    Postpartum Care Record - print sheet
     Expects: $record (PostnatalRecord, loaded with patient.household.zone, pregnancy, childPatient)
 --}}
 @php
@@ -44,7 +44,7 @@
             </td>
             <td colspan="2">
                 <p class="field-label">Zone / Purok</p>
-                <p class="field-value">Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '—' }}</p>
+                <p class="field-value">Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '-' }}</p>
             </td>
             <td colspan="5">
                 <p class="field-label">Residential Address <span class="field-help">(Tirahan)</span></p>
@@ -157,7 +157,7 @@
     </table>
 
     <div class="form-footer form-footer-flex">
-        <span>Barangay Health Center — Sta. Ana</span>
+        <span>Barangay Health Center - Sta. Ana</span>
         <span>Recorded: {{ $record->created_at->format('M d, Y g:i A') }}</span>
     </div>
 </section>

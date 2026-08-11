@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iClinicSys Handout — C{{ str_pad($consultation->id, 4, '0', STR_PAD_LEFT) }}</title>
+    <title>iClinicSys Handout - C{{ str_pad($consultation->id, 4, '0', STR_PAD_LEFT) }}</title>
     @include('consultations.handout.partials._form-styles')
     <style>
         [x-cloak] { display: none !important; }
@@ -23,15 +23,15 @@
             <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
                 <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#374151;cursor:pointer;">
                     <input type="checkbox" x-model="showEnrollment">
-                    Form 1 — Patient Enrollment
+                    Form 1 - Patient Enrollment
                 </label>
                 <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#374151;cursor:pointer;">
                     <input type="checkbox" x-model="showItr">
-                    Form 2 — Individual Treatment Record
+                    Form 2 - Individual Treatment Record
                 </label>
                 <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#374151;cursor:pointer;">
                     <input type="checkbox" x-model="showItr2">
-                    Form 2 (Page 2) — ITR 2
+                    Form 2 (Page 2) - ITR 2
                 </label>
                 <a href="{{ route('consultations.handout.pdf', ['consultation' => $consultation->id]) }}"
                    target="_blank" rel="noopener"

@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
         // All passwords: password123
         $this->call(CreateInitialUsersSeeder::class);
 
-        // 4. DIAGNOSIS — common PH diseases for local search testing
+        // 4. DIAGNOSIS - common PH diseases for local search testing
         $diagnoses = [
             ['diagnosis_code' => 'J00', 'diagnosis_name' => 'Acute Nasopharyngitis (Common Cold)', 'category' => 'Respiratory'],
             ['diagnosis_code' => 'J06.9', 'diagnosis_name' => 'Acute Upper Respiratory Infection (URTI)', 'category' => 'Respiratory'],
@@ -39,7 +39,7 @@ class DatabaseSeeder extends Seeder
         ];
         DB::table('diagnosis_lookup')->insertOrIgnore($diagnoses);
 
-        // 5. MEDICINES — basic RHU formulary
+        // 5. MEDICINES - basic RHU formulary
         $medicines = [
             ['name' => 'Paracetamol'],
             ['name' => 'Amoxicillin'],
@@ -87,7 +87,7 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // 7. VACCINES — EPI / immunization lookup
+        // 7. VACCINES - EPI / immunization lookup
         $this->call(VaccineSeeder::class);
 
         // 8. ICD-10 diagnosis codes (requires icd102019syst_codes.sql in storage/app/ or BHCIS_ICD_SQL_PATH)

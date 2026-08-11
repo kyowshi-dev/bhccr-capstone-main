@@ -96,7 +96,7 @@ return [
     /*
      * DOMPDF driver configuration.
      *
-     * Pure PHP PDF generation — no external binaries required.
+     * Pure PHP PDF generation - no external binaries required.
      * Requires the dompdf/dompdf package:
      * composer require dompdf/dompdf
      */

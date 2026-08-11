@@ -33,7 +33,7 @@ class VaccineSeeder extends Seeder
             [
                 'vaccine_code' => 'HEPA_B_GT24',
                 'vaccine_name' => 'Hepa B (≥ 24 hrs)',
-                'description' => 'Late birth dose — give as soon as possible',
+                'description' => 'Late birth dose - give as soon as possible',
                 'category' => 'Child',
                 'group_key' => 'HEPA_B',
                 'sort_order' => 3,
@@ -73,7 +73,7 @@ class VaccineSeeder extends Seeder
             [
                 'vaccine_code' => 'MCV_AMV',
                 'vaccine_name' => 'MCV (AMV)',
-                'description' => '9 months — measles containing vaccine',
+                'description' => '9 months - measles containing vaccine',
                 'category' => 'Child',
                 'group_key' => null,
                 'sort_order' => 7,
@@ -83,7 +83,7 @@ class VaccineSeeder extends Seeder
             [
                 'vaccine_code' => 'MCV_MMR',
                 'vaccine_name' => 'MCV (MMR)',
-                'description' => '12 months — measles, mumps, rubella',
+                'description' => '12 months - measles, mumps, rubella',
                 'category' => 'Child',
                 'group_key' => null,
                 'sort_order' => 8,
@@ -93,7 +93,7 @@ class VaccineSeeder extends Seeder
             [
                 'vaccine_code' => 'ROTA',
                 'vaccine_name' => 'ROTA',
-                'description' => '6 and 10 weeks — complete by 8 months',
+                'description' => '6 and 10 weeks - complete by 8 months',
                 'category' => 'Child',
                 'group_key' => null,
                 'sort_order' => 9,
@@ -123,7 +123,7 @@ class VaccineSeeder extends Seeder
             [
                 'vaccine_code' => 'PNEUMONIA',
                 'vaccine_name' => 'Pneumonia',
-                'description' => 'As needed — single dose',
+                'description' => 'As needed - single dose',
                 'category' => 'Adult',
                 'group_key' => null,
                 'sort_order' => 12,
@@ -133,7 +133,7 @@ class VaccineSeeder extends Seeder
             [
                 'vaccine_code' => 'FLU',
                 'vaccine_name' => 'Influenza',
-                'description' => 'Annual — adults',
+                'description' => 'Annual - adults',
                 'category' => 'Adult',
                 'group_key' => null,
                 'sort_order' => 13,
@@ -143,7 +143,7 @@ class VaccineSeeder extends Seeder
             [
                 'vaccine_code' => 'PNEUMOCOCCAL',
                 'vaccine_name' => 'Pneumococcal',
-                'description' => 'Adult schedule — as needed',
+                'description' => 'Adult schedule - as needed',
                 'category' => 'Adult',
                 'group_key' => null,
                 'sort_order' => 14,

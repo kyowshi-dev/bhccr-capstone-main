@@ -109,12 +109,12 @@
 
                         <div>
                             <label for="weight" class="block text-xs lg:text-sm font-medium mb-1" style="color: var(--ink-muted);">Weight (kg) <span style="color: #b91c1c;">*</span></label>
-                            <input type="number" step="0.1" name="weight" id="weight" value="{{ old('weight', $previousVitals->weight_kg ?? '') }}" min="0" max="500" placeholder="—" class="w-full px-3 lg:px-4 py-2 rounded-lg border text-center text-sm focus:outline-none focus:ring-2" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);" required>
+                            <input type="number" step="0.1" name="weight" id="weight" value="{{ old('weight', $previousVitals->weight_kg ?? '') }}" min="0" max="500" placeholder="-" class="w-full px-3 lg:px-4 py-2 rounded-lg border text-center text-sm focus:outline-none focus:ring-2" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);" required>
                         </div>
 
                         <div>
                             <label for="height" class="block text-xs lg:text-sm font-medium mb-1" style="color: var(--ink-muted);">Height (cm) <span style="color: #b91c1c;">*</span></label>
-                            <input type="number" step="0.1" name="height" id="height" value="{{ old('height', $previousVitals->height_cm ?? '') }}" min="0" max="300" placeholder="—" class="w-full px-3 lg:px-4 py-2 rounded-lg border text-center text-sm focus:outline-none focus:ring-2" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);" required>
+                            <input type="number" step="0.1" name="height" id="height" value="{{ old('height', $previousVitals->height_cm ?? '') }}" min="0" max="300" placeholder="-" class="w-full px-3 lg:px-4 py-2 rounded-lg border text-center text-sm focus:outline-none focus:ring-2" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);" required>
                         </div>
 
                         <div>

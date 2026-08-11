@@ -63,8 +63,8 @@
                                 @forelse ($medicines as $medicine)
                                     <tr class="transition-colors hover:bg-black/[0.02]">
                                         <td class="w-10 px-2 py-2 lg:py-3 text-center" style="color: var(--ink);"><input type="checkbox" name="ids[]" value="{{ $medicine->id }}" class="row-checkbox align-middle"></td>
-                                        <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $medicine->name ?? '—' }}</td>
-                                        <td class="px-3 lg:px-4 py-2 lg:py-3 hidden xl:table-cell" style="color: var(--ink-muted);">{{ $medicine->form ?? '—' }}</td>
+                                        <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $medicine->name ?? '-' }}</td>
+                                        <td class="px-3 lg:px-4 py-2 lg:py-3 hidden xl:table-cell" style="color: var(--ink-muted);">{{ $medicine->form ?? '-' }}</td>
                                         <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
                                             <a href="{{ route('medicines.show', $medicine->id) }}" class="text-sm font-medium hover:underline" style="color: var(--primary);">View</a>
                                             <span class="mx-2" style="color: var(--ink-muted);">·</span>

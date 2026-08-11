@@ -79,7 +79,7 @@ class Vitals extends Model
             get: function () {
                 $parts = [];
                 if ($this->bp_systolic !== null || $this->bp_diastolic !== null) {
-                    $parts[] = 'BP '.($this->bp_systolic ?? '—').'/'.($this->bp_diastolic ?? '—').' mmHg';
+                    $parts[] = 'BP '.($this->bp_systolic ?? '-').'/'.($this->bp_diastolic ?? '-').' mmHg';
                 }
                 if ($this->temperature_c !== null) {
                     $parts[] = 'Temp '.$this->temperature_c.'°C';

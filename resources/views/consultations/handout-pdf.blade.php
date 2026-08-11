@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>iClinicSys Handout — C{{ str_pad($consultation->id, 4, '0', STR_PAD_LEFT) }}</title>
+    <title>iClinicSys Handout - C{{ str_pad($consultation->id, 4, '0', STR_PAD_LEFT) }}</title>
     @include('consultations.handout.partials._form-styles')
 </head>
 <body>

@@ -11,7 +11,7 @@ return new class extends Migration
      * Repair philhealth_no values left in plaintext by an outdated database import.
      *
      * The App\Models\Patient model uses the resilient EncryptedString cast, so a
-     * stale dump no longer crashes patient pages — but any plaintext national IDs
+     * stale dump no longer crashes patient pages - but any plaintext national IDs
      * must still be encrypted at rest (RA 10173 / HIPAA). This migration is
      * idempotent: rows that already decrypt are skipped, rows that do not are
      * encrypted in place via the query builder (bypassing the model cast).

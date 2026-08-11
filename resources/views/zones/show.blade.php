@@ -100,7 +100,7 @@
                         @forelse ($households as $household)
                             <tr class="transition-colors hover:bg-black/[0.02]">
                                 <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $household->family_name_head }}</td>
-                                <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink-muted);">{{ $household->contact_number ?? '—' }}</td>
+                                <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink-muted);">{{ $household->contact_number ?? '-' }}</td>
                                 <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ $household->member_count ?? 0 }}</td>
                             </tr>
                         @empty

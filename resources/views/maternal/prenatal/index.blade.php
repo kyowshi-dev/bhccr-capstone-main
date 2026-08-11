@@ -11,6 +11,8 @@
         </div>
     </div>
 
+    <x-maternal-nav-tabs />
+
     <form method="GET" action="{{ route('maternal.prenatal.index') }}" class="flex flex-wrap items-center gap-2">
         <div>
             <label for="filter_zone" class="sr-only">Filter by purok</label>
@@ -79,22 +81,22 @@
                                         {{ fullName($pregnancy->patient->last_name, $pregnancy->patient->first_name, $pregnancy->patient->middle_name, $pregnancy->patient->suffix) }}
                                     </a>
                                 </td>
-                                <td class="px-4 py-3 whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Zone {{ $pregnancy->patient->household?->zone?->zone_number ?? $pregnancy->patient->household?->zone_id ?? '—' }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Zone {{ $pregnancy->patient->household?->zone?->zone_number ?? $pregnancy->patient->household?->zone_id ?? '-' }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap" style="color: var(--ink-muted);">G{{ $pregnancy->gravidity }} P{{ $pregnancy->parity }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap font-medium" style="color: var(--ink);">{{ $edcDate?->format('M d, Y') ?? '—' }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap font-medium" style="color: var(--ink);">{{ $edcDate?->format('M d, Y') ?? '-' }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap" style="color: var(--ink-muted);">
                                     @if ($pregnancy->aog_weeks !== null)
                                         {{ $pregnancy->aog_weeks }} wk{{ $pregnancy->aog_weeks == 1 ? '' : 's' }}
                                     @elseif ($edcDate !== null)
                                         {{ max(0, \Carbon\Carbon::today()->diffInWeeks(\Carbon\Carbon::parse($edcDate)->subDays(280))) }} wks
                                     @else
-                                        —
+                                        -
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap" style="color: var(--ink-muted);">{{ $pregnancy->visits->count() }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     @if ($nextVisit === null)
-                                        <span style="color: var(--ink-subtle);">—</span>
+                                        <span style="color: var(--ink-subtle);">-</span>
                                     @elseif (\Carbon\Carbon::parse($nextVisit)->lt(\Carbon\Carbon::today()))
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
                                             <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Overdue {{ \Carbon\Carbon::parse($nextVisit)->format('M d') }}

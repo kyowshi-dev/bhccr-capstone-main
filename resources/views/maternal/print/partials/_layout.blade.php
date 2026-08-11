@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $pageTitle }} — BHCIS Sta. Ana</title>
+    <title>{{ $pageTitle }} - BHCIS Sta. Ana</title>
     @include('consultations.handout.partials._form-styles')
 </head>
 <body class="preview-body text-black">
     <div class="no-print sticky top-0 z-10 border-b border-gray-300 bg-white px-4 py-3" style="font-family: system-ui, sans-serif;">
         <div style="max-width:760px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between;">
             <div>
-                <p style="font-size:14px;font-weight:600;color:#1f2937;margin:0;">BHCIS Sta. Ana — {{ $pageTitle }}</p>
+                <p style="font-size:14px;font-weight:600;color:#1f2937;margin:0;">BHCIS Sta. Ana - {{ $pageTitle }}</p>
                 <p style="font-size:12px;color:#6b7280;margin:0;">{{ $subtitle ?? '' }}</p>
             </div>
             <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">

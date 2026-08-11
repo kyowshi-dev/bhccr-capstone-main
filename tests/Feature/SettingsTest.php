@@ -37,7 +37,7 @@ class SettingsTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Account management');
-        $response->assertDontSee('Backups');
+        $response->assertDontSee('Export the database for backup or transfer');
     }
 
     public function test_user_with_users_permission_sees_backups_card(): void

@@ -148,7 +148,7 @@ class Patient extends Model
             'has_4ps' => 'boolean',
             'has_nhts' => 'boolean',
             'is_immunization_enrolled' => 'boolean',
-            // PhilHealth number is a national ID — encrypt at rest (RA 10173 / HIPAA).
+            // PhilHealth number is a national ID - encrypt at rest (RA 10173 / HIPAA).
             // EncryptedString tolerates legacy plaintext left by outdated DB imports.
             'philhealth_no' => EncryptedString::class,
         ];

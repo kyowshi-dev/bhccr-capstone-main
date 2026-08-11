@@ -56,7 +56,7 @@ final class HouseholdPdfService
             $html .= '<tr>';
             $html .= '<td>'.htmlspecialchars((string) $household->zone_number).'</td>';
             $html .= '<td>'.htmlspecialchars($household->family_name_head).'</td>';
-            $html .= '<td>'.htmlspecialchars($household->contact_number ?? '—').'</td>';
+            $html .= '<td>'.htmlspecialchars($household->contact_number ?? '-').'</td>';
             $html .= '<td style="text-align: center;">'.($memberCounts[$household->id] ?? 0).'</td>';
             $html .= '<td>'.Carbon::parse($household->created_at)->format('M d, Y').'</td>';
             $html .= '</tr>';

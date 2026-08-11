@@ -25,7 +25,7 @@
                 <div>
                     <label for="assigned_worker_id" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Assign health worker</label>
                     <select id="assigned_worker_id" name="assigned_worker_id" class="w-full rounded-lg border py-2 px-3 text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">
-                        <option value="">— Select a worker —</option>
+                        <option value="">- Select a worker -</option>
                         @foreach ($healthWorkers as $worker)
                             <option value="{{ $worker->id }}" {{ old('assigned_worker_id', $zone->assigned_worker_id) == $worker->id ? 'selected' : '' }}>
                                 {{ fullName($worker->last_name, $worker->first_name) }}

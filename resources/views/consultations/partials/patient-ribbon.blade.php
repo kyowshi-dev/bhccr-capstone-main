@@ -35,18 +35,18 @@
             <div class="mt-3 grid grid-cols-2 gap-3">
                 <div>
                     <p class="text-sm font-semibold" style="color: {{ $bpAlert ? 'var(--danger)' : 'var(--ink)' }};">
-                        BP: {{ $latestVitals?->bp_systolic ?? '—' }}/{{ $latestVitals?->bp_diastolic ?? '—' }}
+                        BP: {{ $latestVitals?->bp_systolic ?? '-' }}/{{ $latestVitals?->bp_diastolic ?? '-' }}
                     </p>
                     <p class="text-sm font-semibold mt-1" style="color: {{ $tempAlert ? 'var(--danger)' : 'var(--ink)' }};">
-                        Temp: {{ $latestVitals?->temperature_c ?? '—' }}°C
+                        Temp: {{ $latestVitals?->temperature_c ?? '-' }}°C
                     </p>
                 </div>
                 <div>
                     <p class="text-sm font-semibold text-[var(--ink)]">
-                        Weight: {{ $latestVitals?->weight_kg ?? '—' }} kg
+                        Weight: {{ $latestVitals?->weight_kg ?? '-' }} kg
                     </p>
                     <p class="text-sm font-semibold mt-1 text-[var(--ink)]">
-                        Height: {{ $latestVitals?->height_cm ?? '—' }} cm
+                        Height: {{ $latestVitals?->height_cm ?? '-' }} cm
                     </p>
                 </div>
             </div>

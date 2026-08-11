@@ -220,7 +220,7 @@
                                 {{ ucfirst($household->family_name_head) }}
                             </td>
                             <td class="px-3 lg:px-4 py-2.5 lg:py-3" style="color: var(--ink-muted);">
-                                {{ $household->contact_number ?: '—' }}
+                                {{ $household->contact_number ?: '-' }}
                             </td>
                             <td class="px-3 lg:px-4 py-2.5 lg:py-3 text-center" style="color: var(--ink-muted);">
                                 <span class="inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-semibold"
@@ -229,7 +229,7 @@
                                 </span>
                             </td>
                             <td class="px-3 lg:px-4 py-2.5 lg:py-3" style="color: var(--ink-muted);">
-                                {{ $household->created_at ? \Illuminate\Support\Carbon::parse($household->created_at)->format('M d, Y') : '—' }}
+                                {{ $household->created_at ? \Illuminate\Support\Carbon::parse($household->created_at)->format('M d, Y') : '-' }}
                             </td>
                             <td class="px-3 lg:px-4 py-2.5 lg:py-3 text-right whitespace-nowrap space-x-1 flex justify-end items-center">
                                 <a href="{{ route('households.edit', $household->id) }}"

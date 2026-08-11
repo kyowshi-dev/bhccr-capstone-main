@@ -2,7 +2,7 @@
     $showFilters = $showFilters ?? true;
     $filterAction = $filterAction ?? route('dashboard');
     $panelTitle = $panelTitle ?? 'Results ready';
-    $panelSubtitle = $panelSubtitle ?? 'Completed consultations — print handouts for patients picking up Rx or diagnosis summaries.';
+    $panelSubtitle = $panelSubtitle ?? 'Completed consultations - print handouts for patients picking up Rx or diagnosis summaries.';
     $layout = $layout ?? 'block';
     $isAccordion = $layout === 'accordion';
 @endphp

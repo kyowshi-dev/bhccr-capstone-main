@@ -1,5 +1,5 @@
 {{--
-    Individual Treatment Record (ITR 2) — Family Planning / Prenatal / Immunization / Postpartum
+    Individual Treatment Record (ITR 2) - Family Planning / Prenatal / Immunization / Postpartum
     iClinicSys FORM 2, Page 2
 --}}
 @php

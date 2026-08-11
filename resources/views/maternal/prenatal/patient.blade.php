@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Prenatal — '.fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix))
+@section('title', 'Prenatal - '.fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix))
 
 @section('content')
 @php
@@ -17,7 +17,7 @@
             <div>
                 <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">{{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }}</h1>
                 <p class="text-sm mt-1" style="color: var(--ink-muted);">
-                    {{ $patient->sex }}, {{ $patient->age }} y/o · Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '—' }}
+                    {{ $patient->sex }}, {{ $patient->age }} y/o &middot; Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '-' }}
                 </p>
             </div>
         </div>
@@ -27,97 +27,94 @@
         </a>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        <div class="lg:col-span-1 space-y-4 lg:space-y-6">
-            @if ($active !== null)
-                <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
-                    <div class="flex items-center justify-between mb-3">
-                        <h2 class="font-display font-semibold text-lg" style="color: var(--ink);">Current pregnancy</h2>
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
-                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Active
-                        </span>
-                    </div>
-                    <dl class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Gravida / Para</dt>
-                            <dd class="font-medium" style="color: var(--ink);">G{{ $active->gravidity }} P{{ $active->parity }} (T{{ $active->term }} P{{ $active->preterm }} L{{ $active->livebirth }} A{{ $active->abortion }})</dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">LMP</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ $active->lmp?->format('M d, Y') }}</dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">EDC</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ $active->edc?->format('M d, Y') }}</dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">AOG</dt>
-                            <dd class="font-medium" style="color: var(--ink);">
-                                @if ($active->aog_weeks !== null)
-                                    {{ $active->aog_weeks }} weeks
-                                @elseif ($active->edc !== null)
-                                    {{ max(0, \Carbon\Carbon::today()->diffInWeeks(\Carbon\Carbon::parse($active->edc)->subDays(280))) }} weeks
-                                @else
-                                    —
-                                @endif
-                            </dd>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Syphilis (RPR)</dt>
-                            <dd>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
-                                      style="{{ $active->syphilis_result === 'positive' ? 'background: var(--danger-soft); color: var(--danger);' : 'background: var(--teal-soft); color: var(--primary);' }}">
-                                    <i class="fa-solid {{ $active->syphilis_result === 'positive' ? 'fa-triangle-exclamation' : 'fa-circle-check' }}" aria-hidden="true"></i>
-                                    {{ ucfirst($active->syphilis_result) }}
-                                </span>
-                            </dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Penicillin</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ ucfirst($active->penicillin) }}</dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">TT dose</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ $active->tt_date?->format('M d, Y') ?? '—' }}</dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Iron taken</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ $active->iron_taken ? 'Yes' : 'No' }}</dd>
-                        </div>
-                        @if ($active->others)
-                            <div class="flex justify-between items-start gap-3">
-                                <dt class="text-xs font-medium" style="color: var(--ink-muted);">Others</dt>
-                                <dd class="text-xs text-right" style="color: var(--ink-muted);">{{ $active->others }}</dd>
-                            </div>
-                        @endif
-                    </dl>
-                    <div class="mt-4 pt-3 border-t flex flex-wrap gap-2" style="border-color: var(--border);">
-                        <button type="button" @click="$dispatch('open-edit-pregnancy')"
-                                class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-black/[0.05]"
-                                style="border-color: var(--border); color: var(--accent-blue);">
-                            <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit pregnancy
-                        </button>
-                        <a href="{{ route('maternal.pregnancies.print', $active->id) }}" target="_blank"
-                           class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-black/[0.05]"
-                           style="border-color: var(--border); color: var(--ink-muted);">
-                            <i class="fa-solid fa-print" aria-hidden="true"></i> Print
-                        </a>
-                    </div>
+    @if ($active !== null)
+        @php
+            $latestVisit = $active->visits->sortByDesc('visit_date')->first();
+            $nextVisitDate = $latestVisit?->next_visit_date;
+        @endphp
+        <x-card>
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h2 class="font-display font-semibold text-lg" style="color: var(--ink);">Current pregnancy</h2>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
+                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Active
+                    </span>
                 </div>
-            @else
-                <div class="rounded-xl border border-dashed p-6 text-center" style="background: var(--bg-surface); border-color: var(--border);">
-                    <i class="fa-solid fa-baby-carriage text-2xl mb-2" style="color: var(--ink-subtle);" aria-hidden="true"></i>
-                    <p class="font-semibold text-sm" style="color: var(--ink);">No active pregnancy</p>
-                    <p class="text-xs mt-1 mb-4" style="color: var(--ink-muted);">Register the current pregnancy to start tracking prenatal visits.</p>
-                    <button type="button" @click="$dispatch('open-register-pregnancy')"
-                            class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md w-full"
-                            style="background: var(--primary);">
-                        <i class="fa-solid fa-plus" aria-hidden="true"></i> Register pregnancy
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" @click="$dispatch('open-edit-pregnancy')"
+                            class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-black/[0.05]"
+                            style="border-color: var(--border); color: var(--accent-blue);">
+                        <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit pregnancy
                     </button>
+                    <a href="{{ route('maternal.pregnancies.print', $active->id) }}" target="_blank"
+                       class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-black/[0.05]"
+                       style="border-color: var(--border); color: var(--ink-muted);">
+                        <i class="fa-solid fa-print" aria-hidden="true"></i> Print
+                    </a>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <x-stat label="Gravida / Para">G{{ $active->gravidity }} P{{ $active->parity }} <span class="text-xs font-normal" style="color: var(--ink-muted);">(T{{ $active->term }} P{{ $active->preterm }} L{{ $active->livebirth }} A{{ $active->abortion }})</span></x-stat>
+                <x-stat label="LMP">{{ $active->lmp?->format('M d, Y') ?? '-' }}</x-stat>
+                <x-stat label="EDC">{{ $active->edc?->format('M d, Y') ?? '-' }}</x-stat>
+                <x-stat label="AOG">
+                    @if ($active->aog_weeks !== null)
+                        {{ $active->aog_weeks }} weeks
+                    @elseif ($active->edc !== null)
+                        {{ max(0, \Carbon\Carbon::today()->diffInWeeks(\Carbon\Carbon::parse($active->edc)->subDays(280))) }} weeks
+                    @else
+                        -
+                    @endif
+                </x-stat>
+                <x-stat label="Syphilis (RPR)">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+                          style="{{ $active->syphilis_result === 'positive' ? 'background: var(--danger-soft); color: var(--danger);' : 'background: var(--teal-soft); color: var(--primary);' }}">
+                        <i class="fa-solid {{ $active->syphilis_result === 'positive' ? 'fa-triangle-exclamation' : 'fa-circle-check' }}" aria-hidden="true"></i>
+                        {{ ucfirst($active->syphilis_result) }}
+                    </span>
+                </x-stat>
+                <x-stat label="Penicillin">{{ ucfirst($active->penicillin) }}</x-stat>
+                <x-stat label="TT dose">{{ $active->tt_date?->format('M d, Y') ?? '-' }}</x-stat>
+                <x-stat label="Iron taken">{{ $active->iron_taken ? 'Yes' : 'No' }}</x-stat>
+                @if ($nextVisitDate)
+                    <x-stat label="Next visit">
+                        @if (\Carbon\Carbon::parse($nextVisitDate)->lt(\Carbon\Carbon::today()))
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
+                                <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Overdue {{ \Carbon\Carbon::parse($nextVisitDate)->format('M d') }}
+                            </span>
+                        @elseif (\Carbon\Carbon::parse($nextVisitDate)->lte(\Carbon\Carbon::today()->addDays(7)))
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
+                                <i class="fa-solid fa-calendar-day" aria-hidden="true"></i> {{ \Carbon\Carbon::parse($nextVisitDate)->format('M d') }}
+                            </span>
+                        @else
+                            <span style="color: var(--ink-muted);">{{ \Carbon\Carbon::parse($nextVisitDate)->format('M d, Y') }}</span>
+                        @endif
+                    </x-stat>
+                @endif
+            </div>
+            @if ($active->others)
+                <div class="mt-4 pt-3 border-t" style="border-color: var(--border);">
+                    <p class="text-[10px] uppercase tracking-wide font-semibold" style="color: var(--ink-muted);">Others</p>
+                    <p class="text-sm mt-0.5" style="color: var(--ink-muted);">{{ $active->others }}</p>
                 </div>
             @endif
+        </x-card>
+    @else
+        <x-card class="border-dashed p-6 text-center">
+            <i class="fa-solid fa-baby-carriage text-2xl mb-2" style="color: var(--ink-subtle);" aria-hidden="true"></i>
+            <p class="font-semibold text-sm" style="color: var(--ink);">No active pregnancy</p>
+            <p class="text-xs mt-1 mb-4" style="color: var(--ink-muted);">Register the current pregnancy to start tracking prenatal visits.</p>
+            <button type="button" @click="$dispatch('open-register-pregnancy')"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md w-full sm:w-auto"
+                    style="background: var(--primary);">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Register pregnancy
+            </button>
+        </x-card>
+    @endif
 
-            <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+        <div class="lg:col-span-1 space-y-4 lg:space-y-6">
+            <x-card>
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="font-display font-semibold text-lg" style="color: var(--ink);">Obstetric history</h2>
                     <button type="button" @click="$dispatch('open-profile')"
@@ -129,50 +126,45 @@
                 @if ($profile === null)
                     <p class="text-sm" style="color: var(--ink-subtle);">No obstetric history recorded yet.</p>
                 @else
-                    <dl class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Menarche</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ $profile->menarche_age ?? '—' }} y/o</dd>
+                    <div class="grid grid-cols-2 gap-4">
+                        <x-stat label="Menarche">{{ $profile->menarche_age ?? '-' }} y/o</x-stat>
+                        <x-stat label="Menstrual period">
+                            {{ $profile->period_duration_days !== null && $profile->cycle_interval_days !== null
+                                ? $profile->period_duration_days.'d / '.$profile->cycle_interval_days.'d cycle'
+                                : '-' }}
+                        </x-stat>
+                        <x-stat label="Sexual onset">{{ $profile->onset_sexual_intercourse_age ?? '-' }} y/o</x-stat>
+                        <x-stat label="Birth control">{{ $profile->birth_control_method ?? '-' }}</x-stat>
+                        <div class="col-span-2">
+                            <x-stat label="Menopause">{{ ucfirst($profile->menopause) }}</x-stat>
                         </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Menstrual period</dt>
-                            <dd class="font-medium" style="color: var(--ink);">
-                                {{ $profile->period_duration_days !== null && $profile->cycle_interval_days !== null
-                                    ? $profile->period_duration_days.'d / '.$profile->cycle_interval_days.'d cycle'
-                                    : '—' }}
-                            </dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Sexual onset</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ $profile->onset_sexual_intercourse_age ?? '—' }} y/o</dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Birth control</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ $profile->birth_control_method ?? '—' }}</dd>
-                        </div>
-                        <div class="flex justify-between">
-                            <dt class="text-xs font-medium" style="color: var(--ink-muted);">Menopause</dt>
-                            <dd class="font-medium" style="color: var(--ink);">{{ ucfirst($profile->menopause) }}</dd>
-                        </div>
-                    </dl>
+                    </div>
                 @endif
-            </div>
+            </x-card>
         </div>
 
         <div class="lg:col-span-2 space-y-4 lg:space-y-6">
             @if ($active !== null)
-                <div class="rounded-xl border overflow-hidden" style="background: var(--bg-surface); border-color: var(--border);">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 lg:p-5">
+                <x-card class="overflow-hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">Record prenatal visit</h2>
-                            <form method="POST" action="{{ route('maternal.prenatal.visits.store', $active->id) }}" class="space-y-4">
+                            <form method="POST" action="{{ route('maternal.prenatal.visits.store', $active->id) }}" class="space-y-3">
                                 @csrf
-                                <div>
-                                    <label for="visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: #b91c1c;">*</span></label>
-                                    <input id="visit_date" type="date" name="visit_date" value="{{ old('visit_date', now()->toDateString()) }}" max="{{ now()->toDateString() }}"
-                                           class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                                           style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                                    @error('visit_date') <p class="mt-1 text-xs font-medium" style="color: #b91c1c;">{{ $message }}</p> @enderror
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label for="visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: var(--danger);">*</span></label>
+                                        <input id="visit_date" type="date" name="visit_date" value="{{ old('visit_date', now()->toDateString()) }}" max="{{ now()->toDateString() }}"
+                                               class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                                               style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);" required>
+                                        @error('visit_date') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
+                                    </div>
+                                    <div>
+                                        <label for="next_visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Next visit</label>
+                                        <input id="next_visit_date" type="date" name="next_visit_date" value="{{ old('next_visit_date') }}"
+                                               class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                                               style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                                    </div>
                                 </div>
 
                                 @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'pv_'])
@@ -190,12 +182,6 @@
                                                class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                                style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                                     </div>
-                                </div>
-                                <div>
-                                    <label for="next_visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Next visit</label>
-                                    <input id="next_visit_date" type="date" name="next_visit_date" value="{{ old('next_visit_date') }}"
-                                           class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                                           style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                                 </div>
                                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md"
                                         style="background: var(--primary);">
@@ -223,9 +209,9 @@
                                             @foreach ($active->visits->sortByDesc('visit_date') as $visit)
                                                 <tr class="hover:bg-black/[0.03]">
                                                     <td class="px-3 py-2 whitespace-nowrap font-medium" style="color: var(--ink);">{{ $visit->visit_date->format('M d, Y') }}</td>
-                                                    <td class="px-3 py-2" style="color: var(--ink-muted);">{{ $visit->fundic_height_cm ?? '—' }}</td>
-                                                    <td class="px-3 py-2" style="color: var(--ink-muted);">{{ $visit->fetal_heart_tone_bpm ?? '—' }}</td>
-                                                    <td class="px-3 py-2 whitespace-nowrap" style="color: var(--ink-muted);">{{ $visit->next_visit_date?->format('M d, Y') ?? '—' }}</td>
+                                                    <td class="px-3 py-2" style="color: var(--ink-muted);">{{ $visit->fundic_height_cm ?? '-' }}</td>
+                                                    <td class="px-3 py-2" style="color: var(--ink-muted);">{{ $visit->fetal_heart_tone_bpm ?? '-' }}</td>
+                                                    <td class="px-3 py-2 whitespace-nowrap" style="color: var(--ink-muted);">{{ $visit->next_visit_date?->format('M d, Y') ?? '-' }}</td>
                                                     <td class="px-3 py-2 text-right">
                                                         <button type="button" @click="$dispatch('open-edit-visit', {
                                                             id: {{ $visit->id }},
@@ -245,10 +231,10 @@
                             @endif
                         </div>
                     </div>
-                </div>
+                </x-card>
             @endif
 
-            <div class="rounded-xl border overflow-hidden" style="background: var(--bg-surface); border-color: var(--border);">
+            <x-card class="overflow-hidden">
                 <h2 class="font-display font-semibold text-lg px-4 pt-4" style="color: var(--ink);">Pregnancy history</h2>
                 @if ($pregnancies->isEmpty())
                     <p class="px-4 py-6 text-sm" style="color: var(--ink-subtle);">No pregnancies recorded.</p>
@@ -267,7 +253,7 @@
                                 @foreach ($pregnancies as $preg)
                                     <tr class="hover:bg-black/[0.03]">
                                         <td class="px-4 py-2.5 whitespace-nowrap font-medium" style="color: var(--ink);">{{ $preg->lmp?->format('M d, Y') }}</td>
-                                        <td class="px-4 py-2.5 whitespace-nowrap" style="color: var(--ink-muted);">{{ $preg->edc?->format('M d, Y') ?? '—' }}</td>
+                                        <td class="px-4 py-2.5 whitespace-nowrap" style="color: var(--ink-muted);">{{ $preg->edc?->format('M d, Y') ?? '-' }}</td>
                                         <td class="px-4 py-2.5" style="color: var(--ink-muted);">{{ $preg->visits->count() }}</td>
                                         <td class="px-4 py-2.5">
                                             @if ($preg->status === \App\Models\Pregnancy::STATUS_ACTIVE)
@@ -284,7 +270,7 @@
                         </table>
                     </div>
                 @endif
-            </div>
+            </x-card>
         </div>
     </div>
 </div>
@@ -526,7 +512,7 @@
                 <label for="birth_control_method" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Birth control method</label>
                 <select id="birth_control_method" name="birth_control_method" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                         style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                    <option value="">—</option>
+                    <option value="">-</option>
                     @foreach (\App\Models\MaternalProfile::BIRTH_CONTROL_METHODS as $option)
                         <option value="{{ $option }}" @selected(old('birth_control_method', $profile?->birth_control_method) === $option)>{{ $option }}</option>
                     @endforeach

@@ -17,18 +17,18 @@
 
 ### Color Palette
 
-| Role | Hex | CSS Variable |
-|------|-----|--------------|
-| Primary | `#0284C7` | `--color-primary` |
-| On Primary | `#FFFFFF` | `--color-on-primary` |
-| Secondary | `#0891B2` | `--color-secondary` |
-| Accent/CTA | `#16A34A` | `--color-accent` |
-| Background | `#F0F9FF` | `--color-background` |
-| Foreground | `#0C4A6E` | `--color-foreground` |
-| Muted | `#E8F2F8` | `--color-muted` |
-| Border | `#BAE6FD` | `--color-border` |
+| Role        | Hex       | CSS Variable          |
+| ----------- | --------- | --------------------- |
+| Primary     | `#0284C7` | `--color-primary`     |
+| On Primary  | `#FFFFFF` | `--color-on-primary`  |
+| Secondary   | `#0891B2` | `--color-secondary`   |
+| Accent/CTA  | `#16A34A` | `--color-accent`      |
+| Background  | `#F0F9FF` | `--color-background`  |
+| Foreground  | `#0C4A6E` | `--color-foreground`  |
+| Muted       | `#E8F2F8` | `--color-muted`       |
+| Border      | `#BAE6FD` | `--color-border`      |
 | Destructive | `#DC2626` | `--color-destructive` |
-| Ring | `#0284C7` | `--color-ring` |
+| Ring        | `#0284C7` | `--color-ring`        |
 
 **Color Notes:** Clinical blue + health green + alert red
 
@@ -40,31 +40,32 @@
 - **Google Fonts:** [Lora + Raleway](https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Raleway:wght@300;400;500;600;700&display=swap)
 
 **CSS Import:**
+
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Raleway:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Raleway:wght@300;400;500;600;700&display=swap");
 ```
 
 ### Spacing Variables
 
-*Density: 5/10 — Standard*
+_Density: 5/10 - Standard_
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--space-xs` | `4px` / `0.25rem` | Tight gaps |
-| `--space-sm` | `8px` / `0.5rem` | Icon gaps, inline spacing |
-| `--space-md` | `16px` / `1rem` | Standard padding |
-| `--space-lg` | `24px` / `1.5rem` | Section padding |
-| `--space-xl` | `32px` / `2rem` | Large gaps |
-| `--space-2xl` | `48px` / `3rem` | Section margins |
-| `--space-3xl` | `64px` / `4rem` | Hero padding |
+| Token         | Value             | Usage                     |
+| ------------- | ----------------- | ------------------------- |
+| `--space-xs`  | `4px` / `0.25rem` | Tight gaps                |
+| `--space-sm`  | `8px` / `0.5rem`  | Icon gaps, inline spacing |
+| `--space-md`  | `16px` / `1rem`   | Standard padding          |
+| `--space-lg`  | `24px` / `1.5rem` | Section padding           |
+| `--space-xl`  | `32px` / `2rem`   | Large gaps                |
+| `--space-2xl` | `48px` / `3rem`   | Section margins           |
+| `--space-3xl` | `64px` / `4rem`   | Hero padding              |
 
 ### Shadow Depths
 
-| Level | Value | Usage |
-|-------|-------|-------|
-| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)` | Subtle lift |
-| `--shadow-md` | `0 4px 6px rgba(0,0,0,0.1)` | Cards, buttons |
-| `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)` | Modals, dropdowns |
+| Level         | Value                          | Usage                       |
+| ------------- | ------------------------------ | --------------------------- |
+| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)`   | Subtle lift                 |
+| `--shadow-md` | `0 4px 6px rgba(0,0,0,0.1)`    | Cards, buttons              |
+| `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)`  | Modals, dropdowns           |
 | `--shadow-xl` | `0 20px 25px rgba(0,0,0,0.15)` | Hero images, featured cards |
 
 ---
@@ -76,30 +77,30 @@
 ```css
 /* Primary Button */
 .btn-primary {
-  background: #16A34A;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
+    background: #16a34a;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 200ms ease;
+    cursor: pointer;
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+    opacity: 0.9;
+    transform: translateY(-1px);
 }
 
 /* Secondary Button */
 .btn-secondary {
-  background: transparent;
-  color: #0284C7;
-  border: 2px solid #0284C7;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
+    background: transparent;
+    color: #0284c7;
+    border: 2px solid #0284c7;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 200ms ease;
+    cursor: pointer;
 }
 ```
 
@@ -107,17 +108,17 @@
 
 ```css
 .card {
-  background: #F0F9FF;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: var(--shadow-md);
-  transition: all 200ms ease;
-  cursor: pointer;
+    background: #f0f9ff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    transition: all 200ms ease;
+    cursor: pointer;
 }
 
 .card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
 }
 ```
 
@@ -125,17 +126,17 @@
 
 ```css
 .input {
-  padding: 12px 16px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 200ms ease;
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 200ms ease;
 }
 
 .input:focus {
-  border-color: #0284C7;
-  outline: none;
-  box-shadow: 0 0 0 3px #0284C720;
+    border-color: #0284c7;
+    outline: none;
+    box-shadow: 0 0 0 3px #0284c720;
 }
 ```
 
@@ -143,17 +144,17 @@
 
 ```css
 .modal-overlay {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
 }
 
 .modal {
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: var(--shadow-xl);
-  max-width: 500px;
-  width: 90%;
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: var(--shadow-xl);
+    max-width: 500px;
+    width: 90%;
 }
 ```
 
@@ -181,10 +182,20 @@
 
 ## Motion
 
-**Scroll Reveal** (Subtle) — Trigger: scroll (viewport enter) | Duration: 300-400ms | Easing: `power1.out`
+**Scroll Reveal** (Subtle) - Trigger: scroll (viewport enter) | Duration: 300-400ms | Easing: `power1.out`
 
 ```js
-gsap.from(el, { opacity: 0, y: 12, duration: 0.35, ease: 'power1.out', scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none reverse' } });
+gsap.from(el, {
+    opacity: 0,
+    y: 12,
+    duration: 0.35,
+    ease: "power1.out",
+    scrollTrigger: {
+        trigger: el,
+        start: "top 90%",
+        toggleActions: "play none none reverse",
+    },
+});
 ```
 
 **Framework notes:** Requires the ScrollTrigger plugin registered once via gsap.registerPlugin(ScrollTrigger)
@@ -203,12 +214,12 @@ gsap.from(el, { opacity: 0, y: 12, duration: 0.35, ease: 'power1.out', scrollTri
 
 ### Additional Forbidden Patterns
 
-- ❌ **Emojis as icons** — Use SVG icons (Heroicons, Lucide, Simple Icons)
-- ❌ **Missing cursor:pointer** — All clickable elements must have cursor:pointer
-- ❌ **Layout-shifting hovers** — Avoid scale transforms that shift layout
-- ❌ **Low contrast text** — Maintain 4.5:1 minimum contrast ratio
-- ❌ **Instant state changes** — Always use transitions (150-300ms)
-- ❌ **Invisible focus states** — Focus states must be visible for a11y
+- ❌ **Emojis as icons** - Use SVG icons (Heroicons, Lucide, Simple Icons)
+- ❌ **Missing cursor:pointer** - All clickable elements must have cursor:pointer
+- ❌ **Layout-shifting hovers** - Avoid scale transforms that shift layout
+- ❌ **Low contrast text** - Maintain 4.5:1 minimum contrast ratio
+- ❌ **Instant state changes** - Always use transitions (150-300ms)
+- ❌ **Invisible focus states** - Focus states must be visible for a11y
 
 ---
 

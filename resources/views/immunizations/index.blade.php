@@ -103,7 +103,7 @@
                 <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">Infant coverage (0–11 mo)</p>
                 <div class="flex items-end justify-between gap-3">
                     <p class="text-2xl font-display font-semibold leading-none" style="color: var(--ink);">
-                        {{ is_null($infantCoveragePercent) ? '—' : $infantCoveragePercent.'%' }}
+                        {{ is_null($infantCoveragePercent) ? '-' : $infantCoveragePercent.'%' }}
                     </p>
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
                         {{ number_format($infantTotal) }} infants
@@ -247,7 +247,7 @@
                                             <div class="text-xs mt-0.5" style="color: var(--ink-muted);">Dose {{ $entry['dose_number'] }}</div>
                                         </td>
                                         <td class="px-3 lg:px-4 py-3 whitespace-nowrap hidden sm:table-cell" style="color: var(--ink);">
-                                            {{ $entry['due_date']?->format('M d, Y') ?? '—' }}
+                                            {{ $entry['due_date']?->format('M d, Y') ?? '-' }}
                                         </td>
                                         <td class="px-3 lg:px-4 py-3 hidden md:table-cell">
                                             <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold" style="background: {{ $badge['bg'] }}; color: {{ $badge['fg'] }};">
@@ -353,7 +353,7 @@
                                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">In progress</span>
                                         @endif
                                     </td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ ucwords((string) $r->worker_name) ?: '—' }}</td>
+                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ ucwords((string) $r->worker_name) ?: '-' }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
                                         <button type="button" class="text-sm font-medium hover:underline" style="color: var(--primary);" @click="openPatient({{ (int) $r->patient_id }}, @js(fullName($r->last_name, $r->first_name)))">
                                             Open
@@ -413,7 +413,7 @@
                                         </button>
                                     </td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 whitespace-nowrap" style="color: var(--ink);">
-                                        {{ $dueDate?->format('M d, Y') ?? '—' }}
+                                        {{ $dueDate?->format('M d, Y') ?? '-' }}
                                         @if ($dueDate && $dueDate->lt($today))
                                             <span class="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
                                                 <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Overdue
@@ -483,7 +483,7 @@
                                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">In progress</span>
                                         @endif
                                     </td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ ucwords((string) $r->worker_name) ?: '—' }}</td>
+                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ ucwords((string) $r->worker_name) ?: '-' }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
                                         <button type="button" class="text-sm font-medium hover:underline" style="color: var(--primary);" @click="openPatient({{ (int) $r->patient_id }}, @js(fullName($r->last_name, $r->first_name)))">
                                             Open
@@ -587,7 +587,7 @@
             confirmMarkDone(form, patientLabel, vaccineLabel, doseNumber) {
                 Swal.fire({
                     title: 'Mark as done?',
-                    html: `<p class="text-sm">${vaccineLabel} (dose ${doseNumber}) for <strong>${patientLabel}</strong> was given — e.g. at a hospital or another facility. The date is recorded as <strong>today</strong> unless an actual date is entered on the patient page.</p>`,
+                    html: `<p class="text-sm">${vaccineLabel} (dose ${doseNumber}) for <strong>${patientLabel}</strong> was given - e.g. at a hospital or another facility. The date is recorded as <strong>today</strong> unless an actual date is entered on the patient page.</p>`,
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Yes, mark done',

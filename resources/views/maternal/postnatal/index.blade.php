@@ -11,6 +11,8 @@
         </div>
     </div>
 
+    <x-maternal-nav-tabs />
+
     <form method="GET" action="{{ route('maternal.postnatal.index') }}" class="flex flex-wrap items-center gap-2">
         <div>
             <label for="filter_zone" class="sr-only">Filter by purok</label>
@@ -94,7 +96,7 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Zone {{ $record->patient->household?->zone?->zone_number ?? $record->patient->household?->zone_id ?? '—' }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Zone {{ $record->patient->household?->zone?->zone_number ?? $record->patient->household?->zone_id ?? '-' }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap font-medium" style="color: var(--ink);">{{ $record->delivery_date->format('M d, Y') }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap" style="color: var(--ink-muted);">{{ \App\Models\PostnatalRecord::OUTCOMES[$record->pregnancy_outcome] ?? $record->pregnancy_outcome }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap">

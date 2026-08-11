@@ -185,7 +185,7 @@ class ImmunizationController extends Controller
             $record = $this->service->administer($patient, $vaccine, [
                 'date_given' => null,
                 'temp_recorded' => null,
-                'notes' => 'Marked as done — administered elsewhere',
+                'notes' => 'Marked as done - administered elsewhere',
                 'override_reason' => null,
                 'administered_elsewhere' => true,
                 'administered_by' => $this->currentWorkerId(),
@@ -196,7 +196,7 @@ class ImmunizationController extends Controller
 
         return redirect()
             ->route('immunizations.index')
-            ->with('success', $vaccine->vaccine_name.' (dose '.$record->dose_number.') marked as done — recorded as '.$record->date_given->format('M j, Y').'.');
+            ->with('success', $vaccine->vaccine_name.' (dose '.$record->dose_number.') marked as done - recorded as '.$record->date_given->format('M j, Y').'.');
     }
 
     public function enrollInfant(StoreInfantWithHouseholdRequest $request): RedirectResponse

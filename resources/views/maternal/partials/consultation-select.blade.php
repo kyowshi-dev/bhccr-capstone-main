@@ -14,7 +14,7 @@
            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
         @if ($nullable)
-            <option value="">— None —</option>
+            <option value="">- None -</option>
         @endif
         @forelse ($consultations as $consultation)
             <option value="{{ $consultation->id }}" @selected((string) $selected === (string) $consultation->id)>

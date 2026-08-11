@@ -1,5 +1,5 @@
 {{--
-    Family Planning Client Record — print sheet
+    Family Planning Client Record - print sheet
     Expects: $client (FamilyPlanningClient, loaded with patient.household.zone, visits)
 --}}
 @php
@@ -50,7 +50,7 @@
             </td>
             <td colspan="3">
                 <p class="field-label">Zone / Purok</p>
-                <p class="field-value">Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '—' }}</p>
+                <p class="field-value">Zone {{ $patient->household?->zone?->zone_number ?? $patient->household?->zone_id ?? '-' }}</p>
             </td>
         </tr>
         <tr>
@@ -161,7 +161,7 @@
     </table>
 
     <div class="form-footer form-footer-flex">
-        <span>Barangay Health Center — Sta. Ana</span>
+        <span>Barangay Health Center - Sta. Ana</span>
         <span>Recorded: {{ $client->created_at->format('M d, Y g:i A') }}</span>
     </div>
 </section>
