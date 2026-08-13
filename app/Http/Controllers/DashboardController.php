@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\DTOs\MaternalQueueDTO;
 use App\Models\User;
 use App\Services\DashboardChartsService;
 use App\Services\DashboardQueryService;
-use App\Services\MaternalQueueAggregatorService;
+use App\Services\MaternalQueryService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -49,27 +48,14 @@ class DashboardController extends Controller
 
     private function midwifeDashboard(Request $request, User $user, Carbon $today): View
     {
-        $handoutData = $this->handoutData($request, $user, limit: 8, defaultToToday: true);
+        $counts = app(MaternalQueryService::class)->overviewCounts();
 
-        $aggregator = app(MaternalQueueAggregatorService::class);
-        $kpis = $aggregator->kpis();
-        $items = $aggregator->aggregate();
-        $initialItems = $items->groupBy(fn ($dto) => $dto->patient_id)
-            ->map(fn ($group) => MaternalQueueDTO::forGroupedCard($group))
-            ->filter()
-            ->values();
-
-        return view('dashboard_midwife_v2', array_merge($handoutData, [
-            'showResultsReady' => $user->canViewDashboardHandouts(),
-            'prenatalRegistrants' => $kpis['prenatalRegistrants'],
-            'dueThisMonth' => $kpis['dueThisMonth'],
-            'postnatalDue' => $kpis['postnatalDue'],
-            'highRiskReferrals' => $kpis['highRiskReferrals'],
-            'fpScheduled' => $kpis['fpScheduled'],
-            'layout' => 'accordion',
-            'items' => $initialItems,
-            'initialTab' => 'all',
-        ]));
+        return view('dashboard_midwife_v2', [
+            'activePregnancies' => $counts['activePregnancies'],
+            'postnatalMothers' => $counts['postnatalMothers'],
+            'fpClients' => $counts['fpClients'],
+            'followUpsDue' => $counts['followUpsDue'],
+        ]);
     }
 
     private function nurseDashboard(Request $request, User $user, Carbon $today): View

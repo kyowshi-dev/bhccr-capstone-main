@@ -122,6 +122,6 @@ class MaternalPermissionTest extends TestCase
 
         $this->get(route('dashboard'))
             ->assertOk()
-            ->assertViewHas('prenatalRegistrants');
+            ->assertViewHas('activePregnancies');
     }
 }

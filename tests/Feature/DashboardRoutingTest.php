@@ -46,9 +46,9 @@ class DashboardRoutingTest extends TestCase
         $this->actingAs($midwife)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Maternal Dashboard')
-            ->assertSee('Active Prenatal')
-            ->assertSee('Results Ready');
+            ->assertSee('Maternal & Family Planning Register')
+            ->assertSee('Active Pregnancies')
+            ->assertDontSee('Results Ready');
     }
 
     public function test_nurse_role_gets_nurse_dashboard(): void
