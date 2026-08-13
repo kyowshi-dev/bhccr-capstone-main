@@ -8,6 +8,7 @@ use App\Http\Requests\StorePostnatalRequest;
 use App\Http\Requests\UpdatePostnatalRequest;
 use App\Models\Patient;
 use App\Models\PostnatalRecord;
+use App\Models\Pregnancy;
 use App\Models\Zone;
 use App\Services\MaternalIntakeService;
 use App\Services\MaternalQueryService;
@@ -15,7 +16,6 @@ use App\Services\PostnatalService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PostnatalController extends Controller
@@ -30,13 +30,14 @@ class PostnatalController extends Controller
 
     public function index(Request $request): View
     {
-        $records = $this->query->postnatalRecords($request->only('zone_id', 'search'));
+        $records = $this->query->postnatalRecords($request->only('zone_id', 'search', 'status'));
 
         return view('maternal.postnatal.index', [
             'records' => $records,
             'zones' => Zone::orderBy('zone_number')->get(),
             'zoneId' => $request->input('zone_id'),
             'search' => $request->input('search'),
+            'status' => $request->input('status', 'active'),
         ]);
     }
 
@@ -46,7 +47,7 @@ class PostnatalController extends Controller
             'patient' => $patient->load(['household.zone']),
             'records' => $this->query->postnatalForPatient($patient),
             'activePregnancies' => $patient->pregnancies()
-                ->where('status', 'active')
+                ->where('status', Pregnancy::STATUS_ACTIVE)
                 ->orderByDesc('lmp')
                 ->get(),
             'consultations' => $patient->consultations()
@@ -58,11 +59,7 @@ class PostnatalController extends Controller
 
     public function store(StorePostnatalRequest $request, Patient $patient): RedirectResponse
     {
-        try {
-            $record = $this->service->store($patient, $request->validated(), $this->currentWorkerId());
-        } catch (ValidationException $e) {
-            return back()->withErrors($e->errors())->withInput();
-        }
+        $record = $this->service->store($patient, $request->validated(), $this->currentWorkerId());
 
         $child = $record->fresh()?->childPatient;
 
@@ -70,57 +67,36 @@ class PostnatalController extends Controller
             ? ' Child enrolled as '.fullName($child->last_name, $child->first_name, $child->middle_name, $child->suffix).'.'
             : '';
 
-        return redirect()
-            ->route('maternal.postnatal.patient', $patient->id)
-            ->with('success', 'Postnatal record saved.'.$childMessage);
+        return $this->redirectToPatient($record, 'Postnatal record saved.'.$childMessage);
     }
 
     public function update(UpdatePostnatalRequest $request, PostnatalRecord $record): RedirectResponse
     {
-        try {
-            $this->service->update($record, $request->validated());
-        } catch (ValidationException $e) {
-            return back()->withErrors($e->errors())->withInput();
-        }
+        $this->service->update($record, $request->validated());
 
-        return redirect()
-            ->route('maternal.postnatal.patient', $record->patient_id)
-            ->with('success', 'Postnatal record updated.');
+        return $this->redirectToPatient($record, 'Postnatal record updated.');
     }
 
     public function completePostpartumVisit(CompletePostpartumVisitRequest $request, PostnatalRecord $record): RedirectResponse
     {
-        $slot = $request->input('slot');
-        $date = Carbon::parse($request->input('date'))->startOfDay();
-
-        if ($date->lt(Carbon::parse($record->delivery_date)->startOfDay())) {
-            return redirect()
-                ->route('maternal.postnatal.patient', $record->patient_id)
-                ->withErrors([
-                    'slot' => 'The visit date cannot be before the delivery date.',
-                ])->withInput();
-        }
-
         $worker = $this->resolveWorker();
-        $patient = $record->patient;
         $pregnancy = $record->pregnancy ?? null;
 
         $consultationId = $this->intakeService->recordEncounter(
-            $patient,
+            $record->patient,
             'Postpartum',
             $request->validated(),
             $worker,
             $pregnancy,
+            $request->integer('consultation_id') ?: null,
         );
 
         $record->update([
-            $slot => $date->toDateString(),
+            $request->validated('slot') => Carbon::parse($request->validated('date'))->startOfDay()->toDateString(),
             'consultation_id' => $consultationId,
         ]);
 
-        return redirect()
-            ->route('maternal.postnatal.patient', $record->patient_id)
-            ->with('success', 'Postpartum visit recorded.');
+        return $this->redirectToPatient($record, 'Postpartum visit recorded.');
     }
 
     public function print(PostnatalRecord $record): View
@@ -128,5 +104,12 @@ class PostnatalController extends Controller
         return view('maternal.print.postnatal', [
             'record' => $record->load(['patient.household.zone', 'pregnancy', 'childPatient']),
         ]);
+    }
+
+    private function redirectToPatient(PostnatalRecord $record, string $message): RedirectResponse
+    {
+        return redirect()
+            ->route('maternal.postnatal.patient', $record->patient_id)
+            ->with('success', $message);
     }
 }

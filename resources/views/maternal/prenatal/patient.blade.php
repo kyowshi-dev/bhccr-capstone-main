@@ -167,6 +167,12 @@
                                     </div>
                                 </div>
 
+                                @include('maternal.partials.consultation-select', [
+                                    'fieldName' => 'consultation_id',
+                                    'consultations' => $consultations,
+                                    'selected' => old('consultation_id'),
+                                ])
+
                                 @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'pv_'])
 
                                 <div class="grid grid-cols-2 gap-3">

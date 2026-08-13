@@ -205,9 +205,11 @@
 </div>
 
 <x-modal name="store-postnatal-modal" title="Record delivery"
+         x-data="{{ old('intent') === 'store-postnatal' ? '{ open: true }' : '{ open: false }' }}"
          x-on:open-store-postnatal.window="open = true" x-on:close.window="open = false">
     <form method="POST" action="{{ route('maternal.postnatal.store', $patient->id) }}" class="space-y-3" x-data="{ outcome: @js(old('pregnancy_outcome', '')) }">
         @csrf
+        <input type="hidden" name="intent" value="store-postnatal">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
                 <label for="pn_pregnancy_id" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Link pregnancy (optional)</label>
@@ -309,7 +311,7 @@
                 <div class="grid grid-cols-2 gap-1.5 rounded-lg border p-3" style="border-color: var(--border);">
                     @foreach (\App\Models\PostnatalRecord::DANGER_SIGNS_BABY as $sign)
                         <label class="flex items-center gap-2 text-xs" style="color: var(--ink);">
-                            <input type="checkbox" name="danger_signs_baby[]" value="{{ $sign }}" @checked(in_array($sign, old('danger_signs_baby', []), true)) class="rounded focus:ring-2" style="--tw-ring-color: var(--accent-blue);">
+                            <input type="checkbox" name="danger_signs_baby[]" value="{{ $sign }}" @checked(in_array($sign, old('danger_signs_baby', []), true)) :disabled="outcome !== 'live_birth'" class="rounded focus:ring-2" style="--tw-ring-color: var(--accent-blue);">
                             {{ $sign }}
                         </label>
                     @endforeach
@@ -341,25 +343,25 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label for="pn_child_last_name" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Last name <span style="color: var(--danger);">*</span></label>
-                    <input id="pn_child_last_name" type="text" name="child_last_name" value="{{ old('child_last_name', $patient->last_name) }}"
+                    <input id="pn_child_last_name" type="text" name="child_last_name" value="{{ old('child_last_name', $patient->last_name) }}" :disabled="outcome !== 'live_birth'"
                            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                 </div>
                 <div>
                     <label for="pn_child_first_name" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">First name <span style="color: var(--danger);">*</span></label>
-                    <input id="pn_child_first_name" type="text" name="child_first_name" value="{{ old('child_first_name') }}"
+                    <input id="pn_child_first_name" type="text" name="child_first_name" value="{{ old('child_first_name') }}" :disabled="outcome !== 'live_birth'"
                            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                 </div>
                 <div>
                     <label for="pn_child_middle_name" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Middle name</label>
-                    <input id="pn_child_middle_name" type="text" name="child_middle_name" value="{{ old('child_middle_name') }}"
+                    <input id="pn_child_middle_name" type="text" name="child_middle_name" value="{{ old('child_middle_name') }}" :disabled="outcome !== 'live_birth'"
                            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                 </div>
                 <div>
                     <label for="pn_child_sex" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Sex <span style="color: var(--danger);">*</span></label>
-                    <select id="pn_child_sex" name="child_sex" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                    <select id="pn_child_sex" name="child_sex" :disabled="outcome !== 'live_birth'" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                             style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                         <option value="M" @selected(old('child_sex') === 'M')>Male</option>
                         <option value="F" @selected(old('child_sex') === 'F')>Female</option>
@@ -369,13 +371,13 @@
             <div class="grid grid-cols-2 gap-3 mt-3">
                 <div>
                     <label for="pn_child_birth_weight_kg" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Birth weight (kg)</label>
-                    <input id="pn_child_birth_weight_kg" type="number" step="0.01" min="0" max="20" name="child_birth_weight_kg" value="{{ old('child_birth_weight_kg') }}"
+                    <input id="pn_child_birth_weight_kg" type="number" step="0.01" min="0" max="20" name="child_birth_weight_kg" value="{{ old('child_birth_weight_kg') }}" :disabled="outcome !== 'live_birth'"
                            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                 </div>
                 <div>
                     <label for="pn_child_birth_length_cm" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Birth length (cm)</label>
-                    <input id="pn_child_birth_length_cm" type="number" step="0.1" min="0" max="99.9" name="child_birth_length_cm" value="{{ old('child_birth_length_cm') }}"
+                    <input id="pn_child_birth_length_cm" type="number" step="0.1" min="0" max="99.9" name="child_birth_length_cm" value="{{ old('child_birth_length_cm') }}" :disabled="outcome !== 'live_birth'"
                            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                 </div>
@@ -394,10 +396,12 @@
 
 @if ($current !== null)
     <x-modal name="edit-postnatal-modal" title="Edit postnatal record"
+             x-data="{{ old('intent') === 'edit-postnatal' ? '{ open: true }' : '{ open: false }' }}"
              x-on:open-edit-postnatal.window="open = true" x-on:close.window="open = false">
         <form method="POST" action="{{ route('maternal.postnatal.update', $current->id) }}" class="space-y-3" x-data="{ outcome: @js($current->pregnancy_outcome) }">
             @csrf
             @method('PUT')
+            <input type="hidden" name="intent" value="edit-postnatal">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label for="ep_pregnancy_outcome" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Outcome <span style="color: var(--danger);">*</span></label>
@@ -501,10 +505,10 @@
                     <label class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Baby danger signs</label>
                     <div class="grid grid-cols-2 gap-1.5 rounded-lg border p-3" style="border-color: var(--border);">
                         @foreach (\App\Models\PostnatalRecord::DANGER_SIGNS_BABY as $sign)
-                            <label class="flex items-center gap-2 text-xs" style="color: var(--ink);">
-                                <input type="checkbox" name="danger_signs_baby[]" value="{{ $sign }}" @checked(in_array($sign, $current->danger_signs_baby ?? [], true)) class="rounded focus:ring-2" style="--tw-ring-color: var(--accent-blue);">
-                                {{ $sign }}
-                            </label>
+                        <label class="flex items-center gap-2 text-xs" style="color: var(--ink);">
+                            <input type="checkbox" name="danger_signs_baby[]" value="{{ $sign }}" @checked(in_array($sign, $current->danger_signs_baby ?? [], true)) :disabled="outcome !== 'live_birth'" class="rounded focus:ring-2" style="--tw-ring-color: var(--accent-blue);">
+                            {{ $sign }}
+                        </label>
                         @endforeach
                     </div>
                 </div>

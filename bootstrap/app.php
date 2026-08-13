@@ -25,6 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Apply DisableBackCache to all authenticated routes
         // This prevents back-button bypass after logout (OWASP A01)
         $middleware->appendToGroup('web', DisableBackCache::class);
+
+        // Trust forwarding headers from tunnel proxies (ngrok, Cloudflare Tunnel)
+        // so generated URLs use https:// when the app is reached through them
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         /**

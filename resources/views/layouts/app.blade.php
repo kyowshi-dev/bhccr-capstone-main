@@ -13,7 +13,7 @@
 
 </head>
 
-<body x-data="{ sidebarOpen: false, desktopSidebarOpen: localStorage.getItem('desktop-sidebar-open') !== '0', showVitalsModal: false }" 
+<body x-data="{ sidebarOpen: false, showVitalsModal: false }" 
       :class="{ 'overflow-hidden': sidebarOpen }" 
       class="min-h-screen overflow-x-hidden font-sans text-ink antialiased bg-page" 
       x-on:open-vitals-modal.window="showVitalsModal = true" 
@@ -33,8 +33,8 @@
              style="display: none;">
         </div>
 
-        <aside :class="[sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0', desktopSidebarOpen ? 'lg:w-64 lg:border-r lg:shadow-md' : 'lg:w-0 lg:border-r-0 lg:shadow-none']" 
-               class="app-sidebar transform fixed lg:sticky top-0 h-screen overflow-y-auto w-64 shrink-0 flex flex-col z-50 transition-all duration-300 ease-out border-r border-border shadow-md">
+        <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'" 
+               class="app-sidebar transform fixed lg:sticky top-0 h-[calc(100vh/var(--app-zoom,1))] overflow-y-auto w-64 shrink-0 flex flex-col z-50 transition-all duration-300 ease-out border-r border-border shadow-md">
             
             <div class="flex items-center justify-between p-4 lg:p-5 border-b border-border">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5">
@@ -147,12 +147,6 @@
                     style="background: linear-gradient(180deg, #0b4438 0%, #0a3d32 100%);">
                 <button @click="sidebarOpen = true" class="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors text-white/90">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                </button>
-
-                <button @click="desktopSidebarOpen = !desktopSidebarOpen; localStorage.setItem('desktop-sidebar-open', desktopSidebarOpen ? '1' : '0')"
-                        class="hidden lg:inline-flex p-2 rounded-lg hover:bg-white/10 transition-colors text-white/90"
-                        :title="desktopSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'">
-                    <i class="fa-solid text-sm" :class="desktopSidebarOpen ? 'fa-angles-left' : 'fa-angles-right'" aria-hidden="true"></i>
                 </button>
 
                 <div class="ml-auto flex items-center gap-4">

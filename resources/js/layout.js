@@ -1160,3 +1160,39 @@ window.closeConsultationOutwardReferralWizard =
     closeConsultationOutwardReferralWizard;
 window.outwardReferralWizardGoNext = outwardReferralWizardGoNext;
 window.outwardReferralWizardGoBack = outwardReferralWizardGoBack;
+
+// Auto-fit: scale the app to the viewport so smaller desktop displays
+// (e.g. 1280x720) get the density the design assumes (~1440x900).
+// Browser zoom (Ctrl+/-) changes innerWidth and naturally overrides this.
+// Mobile/tablet (< 1024px) and print output are never scaled.
+(function () {
+    var DESIGN_WIDTH = 1440;
+    var DESIGN_HEIGHT = 900;
+    var MIN_SCALE = 0.7;
+
+    function applyViewportFit() {
+        if (window.innerWidth < 1024) {
+            document.documentElement.style.zoom = "1";
+            document.documentElement.style.setProperty("--app-zoom", "1");
+            return;
+        }
+        var scale = Math.min(
+            window.innerWidth / DESIGN_WIDTH,
+            window.innerHeight / DESIGN_HEIGHT,
+        );
+        scale = Math.max(MIN_SCALE, Math.min(1, scale));
+        document.documentElement.style.zoom = scale.toFixed(3);
+        document.documentElement.style.setProperty(
+            "--app-zoom",
+            scale.toFixed(3),
+        );
+    }
+
+    var resizeTimer = null;
+    window.addEventListener("resize", function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(applyViewportFit, 150);
+    });
+    document.addEventListener("DOMContentLoaded", applyViewportFit);
+    applyViewportFit();
+})();

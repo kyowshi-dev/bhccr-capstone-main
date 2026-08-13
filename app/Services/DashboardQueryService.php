@@ -76,7 +76,12 @@ final class DashboardQueryService
         $count = 0;
 
         foreach ($patients as $patient) {
-            foreach ($vaccines as $vaccine) {
+            // Only age-appropriate vaccines count (mirrors the module queues):
+            // adults must not surface as overdue for child schedules and
+            // vice versa.
+            $categories = ($patient->age ?? 0) < 18 ? ['Child', 'Both'] : ['Adult', 'Both'];
+
+            foreach ($vaccines->whereIn('category', $categories) as $vaccine) {
                 $status = $service->statusFor($patient, $vaccine);
 
                 if (in_array($status, ['overdue', 'out_of_window'], true)) {

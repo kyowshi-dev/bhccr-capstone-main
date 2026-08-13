@@ -28,13 +28,14 @@ class FamilyPlanningController extends Controller
 
     public function index(Request $request): View
     {
-        $clients = $this->query->familyPlanningClients($request->only('zone_id', 'search'));
+        $clients = $this->query->familyPlanningClients($request->only('zone_id', 'search', 'status'));
 
         return view('maternal.family-planning.index', [
             'clients' => $clients,
             'zones' => Zone::orderBy('zone_number')->get(),
             'zoneId' => $request->input('zone_id'),
             'search' => $request->input('search'),
+            'status' => $request->input('status', 'active'),
         ]);
     }
 
@@ -88,6 +89,7 @@ class FamilyPlanningController extends Controller
             $request->validated(),
             $worker,
             $pregnancy,
+            $request->integer('consultation_id') ?: null,
         );
 
         $data = $request->validated();

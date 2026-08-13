@@ -91,4 +91,30 @@ class DashboardImmunizationKpiTest extends TestCase
 
         $this->assertGreaterThanOrEqual(1, $count);
     }
+
+    public function test_dashboard_ignores_age_mismatched_vaccine_categories(): void
+    {
+        // Infant with birth doses (BCG + Hepa B) whose only overdue vaccines
+        // are Adult-category (PNEUMONIA / FLU / PNEUMOCOCCAL). The module
+        // queues never surface those for children, so the dashboard KPI must
+        // not count them either.
+        $patient = $this->enrolledPatient(now()->subDays(28));
+
+        foreach (['BCG', 'HEPA_B_24H'] as $code) {
+            $vaccine = Vaccine::where('vaccine_code', $code)->firstOrFail();
+
+            Immunization::create([
+                'patient_id' => $patient->id,
+                'vaccine_id' => $vaccine->id,
+                'dose_number' => 1,
+                'date_given' => $patient->date_of_birth->toDateString(),
+            ]);
+        }
+
+        $count = DashboardQueryService::overdueImmunizations(Carbon::today());
+
+        $this->assertSame(0, $count,
+            'Adult-category vaccines must not count an infant as overdue on the dashboard.'
+        );
+    }
 }

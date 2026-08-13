@@ -14,6 +14,17 @@
     <x-maternal-nav-tabs />
 
     <form method="GET" action="{{ route('maternal.family-planning.index') }}" class="flex flex-wrap items-center gap-2">
+        <div class="inline-flex items-center rounded-lg border p-1" style="border-color: var(--border);">
+            @foreach ([['value' => 'active', 'label' => 'Active'], ['value' => 'all', 'label' => 'Show All']] as $option)
+                <button type="submit" name="status" value="{{ $option['value'] }}"
+                        class="rounded-md px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus:ring-2"
+                        style="{{ ($status ?? 'active') === $option['value']
+                            ? 'background: var(--primary); color: #fff; --tw-ring-color: var(--accent-blue);'
+                            : 'color: var(--ink-muted); --tw-ring-color: var(--accent-blue);' }}">
+                    {{ $option['label'] }}
+                </button>
+            @endforeach
+        </div>
         <div>
             <label for="filter_zone" class="sr-only">Filter by purok</label>
             <select id="filter_zone" name="zone_id" @change="this.form.submit()"

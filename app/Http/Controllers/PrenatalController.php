@@ -109,6 +109,7 @@ class PrenatalController extends Controller
             $request->validated(),
             $worker,
             $pregnancy,
+            $request->integer('consultation_id') ?: null,
         );
 
         $data = $request->validated();

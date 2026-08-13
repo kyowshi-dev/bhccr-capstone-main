@@ -60,6 +60,7 @@
                         <tr class="text-xs uppercase tracking-wide" style="color: var(--ink-muted);">
                             <th class="px-4 py-3 font-semibold whitespace-nowrap">Patient</th>
                             <th class="px-4 py-3 font-semibold whitespace-nowrap hidden md:table-cell">Zone</th>
+                            <th class="px-4 py-3 font-semibold whitespace-nowrap">Risk</th>
                             <th class="px-4 py-3 font-semibold whitespace-nowrap">G/P</th>
                             <th class="px-4 py-3 font-semibold whitespace-nowrap">EDC</th>
                             <th class="px-4 py-3 font-semibold whitespace-nowrap">AOG</th>
@@ -82,6 +83,15 @@
                                     </a>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Zone {{ $pregnancy->patient->household?->zone?->zone_number ?? $pregnancy->patient->household?->zone_id ?? '-' }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    @if (! empty($pregnancy->risk_flags))
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold" style="background: var(--amber-soft); color: var(--amber);">
+                                            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> High risk
+                                        </span>
+                                    @else
+                                        <span style="color: var(--ink-subtle);">-</span>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3 whitespace-nowrap" style="color: var(--ink-muted);">G{{ $pregnancy->gravidity }} P{{ $pregnancy->parity }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap font-medium" style="color: var(--ink);">{{ $edcDate?->format('M d, Y') ?? '-' }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap" style="color: var(--ink-muted);">

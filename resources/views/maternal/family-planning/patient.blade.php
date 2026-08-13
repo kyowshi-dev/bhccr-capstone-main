@@ -98,6 +98,12 @@
 
                         @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'fp_'])
 
+                        @include('maternal.partials.consultation-select', [
+                            'fieldName' => 'consultation_id',
+                            'consultations' => $consultations,
+                            'selected' => old('consultation_id'),
+                        ])
+
                         <div>
                             <label for="method" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Method <span style="color: var(--danger);">*</span></label>
                             <select id="method" name="method" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"

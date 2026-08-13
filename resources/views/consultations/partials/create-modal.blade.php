@@ -1,3 +1,7 @@
+@php
+    $canReferToHigherFacility = auth()->check()
+        && strtolower((string) (auth()->user()->role?->role_name ?? '')) !== 'bhw';
+@endphp
 <div class="p-4 lg:p-6" id="consultationCreateModalRoot">
     <div class="flex items-start justify-between gap-3 mb-4 lg:mb-5">
         <div>
@@ -126,12 +130,16 @@
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-2 lg:gap-3 pt-1 border-t" style="border-color: var(--border);">
-                <button type="button" onclick="openOutwardReferralWizard()"
-                        class="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs lg:text-sm font-semibold transition hover:bg-black/[0.03]"
-                        style="border-color: var(--border); color: var(--primary);">
-                    <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-                    Refer to higher facility
-                </button>
+                @if ($canReferToHigherFacility)
+                    <button type="button" onclick="openOutwardReferralWizard()"
+                            class="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs lg:text-sm font-semibold transition hover:bg-black/[0.03]"
+                            style="border-color: var(--border); color: var(--primary);">
+                        <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                        Refer to higher facility
+                    </button>
+                @else
+                    <span aria-hidden="true"></span>
+                @endif
                 
                 <div class="flex flex-wrap items-center gap-2 lg:gap-3">
                     <button type="button" onclick="closeConsultationCreateModal()" class="px-4 lg:px-5 py-2 lg:py-2.5 rounded-xl border font-medium text-xs lg:text-sm transition-colors hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">Cancel</button>
@@ -143,7 +151,8 @@
         </form>
     </div>
 
-    <div id="consultationCreateOutwardWizardView" class="hidden" aria-hidden="true">
+    @if ($canReferToHigherFacility)
+        <div id="consultationCreateOutwardWizardView" class="hidden" aria-hidden="true">
         @include('referrals.partials.outreferrals', [
             'destinationFacilities' => [
                 'Tagoloan Rural Health Unit (RHU)',
@@ -162,5 +171,6 @@
             ],
             'patient' => $patient,
         ])
-    </div>
+        </div>
+    @endif
 </div>
