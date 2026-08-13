@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\PostnatalRecord;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tests\Concerns\AssignsRolesAndPermissions;
 use Tests\TestCase;
@@ -106,7 +107,7 @@ class ConsultationMaternalLinkTest extends TestCase
         );
     }
 
-    public function test_maternal_record_ignores_foreign_patient_consultation_id(): void
+    public function test_maternal_record_rejects_foreign_patient_consultation_id(): void
     {
         $user = $this->createMaternalWorker();
         $patientId = $this->createPatient();
@@ -139,13 +140,197 @@ class ConsultationMaternalLinkTest extends TestCase
             'weight' => 60,
             'height' => 160,
             'consultation_id' => $foreignConsultationId,
+        ])->assertSessionHasErrors('consultation_id');
+
+        $this->assertDatabaseCount('prenatal_visits', 0);
+    }
+
+    public function test_prenatal_visit_origin_consultation_can_be_cleared_on_update(): void
+    {
+        $user = $this->createMaternalWorker();
+        $patientId = $this->createPatient();
+        $pregnancyId = $this->createPregnancy($patientId);
+        $consultationId = $this->createConsultation($patientId);
+
+        $visitId = DB::table('prenatal_visits')->insertGetId([
+            'pregnancy_id' => $pregnancyId,
+            'consultation_id' => $consultationId,
+            'visit_date' => now()->toDateString(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)->put(route('maternal.prenatal.visits.update', $visitId), [
+            'visit_date' => now()->toDateString(),
+            'consultation_id' => '',
         ])->assertRedirect(route('maternal.prenatal.patient', $patientId));
 
-        $this->assertDatabaseCount('prenatal_visits', 1);
+        $this->assertNull(
+            DB::table('prenatal_visits')->where('id', $visitId)->value('consultation_id')
+        );
+    }
 
-        $this->assertNotSame(
-            $foreignConsultationId,
+    public function test_prenatal_visit_creation_creates_consultation_in_doctor_queue(): void
+    {
+        $user = $this->createMaternalWorker();
+        $patientId = $this->createPatient();
+        $pregnancyId = $this->createPregnancy($patientId);
+
+        $this->actingAs($user)->post(route('maternal.prenatal.visits.store', $pregnancyId), [
+            'visit_date' => now()->toDateString(),
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+        ])->assertRedirect(route('maternal.prenatal.patient', $patientId));
+
+        $consultation = DB::table('consultations')->where('patient_id', $patientId)->first();
+
+        $this->assertNotNull($consultation);
+        $this->assertSame('doctor_review', $consultation->status);
+        $this->assertNotNull($consultation->nurse_validated_at);
+        $this->assertSame(
+            (int) DB::table('health_workers')->where('user_id', $user->id)->value('id'),
+            (int) $consultation->nurse_validated_by
+        );
+    }
+
+    public function test_prenatal_visit_attached_to_todays_consultation_resolves_nurse_review(): void
+    {
+        $user = $this->createMaternalWorker();
+        $patientId = $this->createPatient();
+        $pregnancyId = $this->createPregnancy($patientId);
+        $consultationId = $this->createConsultation($patientId);
+
+        $this->actingAs($user)->post(route('maternal.prenatal.visits.store', $pregnancyId), [
+            'visit_date' => now()->toDateString(),
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+        ])->assertRedirect(route('maternal.prenatal.patient', $patientId));
+
+        $this->assertDatabaseCount('consultations', 1);
+
+        $consultation = DB::table('consultations')->where('id', $consultationId)->first();
+
+        $this->assertSame('doctor_review', $consultation->status);
+        $this->assertNotNull($consultation->nurse_validated_at);
+        $this->assertSame('Prenatal', $consultation->purpose_of_visit);
+        $this->assertSame(
+            $consultationId,
             (int) DB::table('prenatal_visits')->where('pregnancy_id', $pregnancyId)->value('consultation_id')
+        );
+    }
+
+    public function test_origin_consultation_from_previous_day_is_honored_and_resolved(): void
+    {
+        $user = $this->createMaternalWorker();
+        $patientId = $this->createPatient();
+        $pregnancyId = $this->createPregnancy($patientId);
+        $consultationId = $this->createConsultation($patientId, now()->subDay());
+
+        $this->actingAs($user)->post(route('maternal.prenatal.visits.store', $pregnancyId), [
+            'visit_date' => now()->toDateString(),
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+            'consultation_id' => $consultationId,
+        ])->assertRedirect(route('maternal.prenatal.patient', $patientId));
+
+        $this->assertDatabaseCount('consultations', 1);
+
+        $this->assertSame(
+            $consultationId,
+            (int) DB::table('prenatal_visits')->where('pregnancy_id', $pregnancyId)->value('consultation_id')
+        );
+        $this->assertSame(
+            'doctor_review',
+            DB::table('consultations')->where('id', $consultationId)->value('status')
+        );
+    }
+
+    public function test_family_planning_visit_resolves_nurse_review_consultation(): void
+    {
+        $user = $this->createMaternalWorker();
+        $patientId = $this->createPatient();
+        $consultationId = $this->createConsultation($patientId);
+
+        $clientId = DB::table('family_planning_clients')->insertGetId([
+            'patient_id' => $patientId,
+            'type_of_client' => 'continuing_user',
+            'method' => 'Pills',
+            'is_active' => true,
+            'recorded_by' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)->post("/maternal/family-planning/{$clientId}/visits", [
+            'visit_date' => now()->toDateString(),
+            'method' => 'Pills',
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+        ])->assertRedirect(route('maternal.family-planning.patient', $patientId));
+
+        $this->assertSame(
+            'doctor_review',
+            DB::table('consultations')->where('id', $consultationId)->value('status')
+        );
+    }
+
+    public function test_postpartum_visit_completion_resolves_nurse_review_consultation(): void
+    {
+        $user = $this->createMaternalWorker();
+        $patientId = $this->createPatient();
+        $consultationId = $this->createConsultation($patientId);
+
+        $record = PostnatalRecord::create([
+            'patient_id' => $patientId,
+            'pregnancy_outcome' => 'live_birth',
+            'place_delivered' => 'health_center',
+            'mode_of_delivery' => 'normal_vaginal',
+            'attendant_at_birth' => 'midwife',
+            'delivery_date' => now()->subDays(2)->toDateString(),
+            'delivery_time' => '08:30',
+            'breastfeeding_date' => now()->subDays(2)->toDateString(),
+            'breastfeeding_time' => '10:00',
+            'child_last_name' => 'Doe',
+            'child_first_name' => 'Baby',
+            'child_sex' => 'M',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('maternal.postnatal.complete-visit', $record->id), [
+                'slot' => 'postpartum_7d_date',
+                'date' => now()->toDateString(),
+                'mode_of_transaction' => 'Walk-in',
+                'nature_of_visit' => 'New Consultation/Case',
+                'bp_systolic' => 120,
+                'bp_diastolic' => 80,
+                'temperature' => 36.5,
+                'weight' => 60,
+                'height' => 160,
+            ])->assertRedirect(route('maternal.postnatal.patient', $patientId));
+
+        $this->assertSame(
+            'doctor_review',
+            DB::table('consultations')->where('id', $consultationId)->value('status')
         );
     }
 
@@ -376,7 +561,27 @@ class ConsultationMaternalLinkTest extends TestCase
         ]);
     }
 
-    private function createConsultation(int $patientId): int
+    private function createPregnancy(int $patientId): int
+    {
+        return DB::table('pregnancies')->insertGetId([
+            'patient_id' => $patientId,
+            'status' => 'active',
+            'gravidity' => 1,
+            'parity' => 0,
+            'term' => 0,
+            'preterm' => 0,
+            'livebirth' => 0,
+            'abortion' => 0,
+            'lmp' => '2026-01-10',
+            'edc' => '2026-10-17',
+            'syphilis_result' => 'negative',
+            'penicillin' => 'no',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function createConsultation(int $patientId, ?Carbon $createdAt = null): int
     {
         $worker = DB::table('health_workers')->orderBy('id')->first();
 
@@ -386,8 +591,8 @@ class ConsultationMaternalLinkTest extends TestCase
             'status' => 'nurse_review',
             'nature_of_visit' => 'Checkup',
             'mode_of_transaction' => 'Walk-in',
-            'created_at' => now(),
-            'updated_at' => now(),
+            'created_at' => $createdAt ?? now(),
+            'updated_at' => $createdAt ?? now(),
         ]);
     }
 }
