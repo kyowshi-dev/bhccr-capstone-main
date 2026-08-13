@@ -261,4 +261,43 @@ class MaternalPostnatalTest extends TestCase
             ->assertOk()
             ->assertViewHas('records');
     }
+
+    public function test_stillbirth_saves_when_newborn_fields_not_submitted(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $payload = $this->validPayload([
+            'pregnancy_outcome' => PostnatalRecord::OUTCOME_STILLBIRTH,
+        ]);
+        unset(
+            $payload['child_last_name'],
+            $payload['child_first_name'],
+            $payload['child_sex'],
+        );
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $payload)
+            ->assertRedirect(route('maternal.postnatal.patient', $mother->id));
+
+        $record = PostnatalRecord::where('patient_id', $mother->id)->firstOrFail();
+
+        $this->assertSame(PostnatalRecord::OUTCOME_STILLBIRTH, $record->pregnancy_outcome);
+        $this->assertNull($record->child_last_name);
+        $this->assertNull($record->child_sex);
+        $this->assertNull($record->child_patient_id);
+    }
+
+    public function test_duplicate_child_rejects_before_creating_orphan_record(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload())->assertRedirect();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload())
+            ->assertSessionHasErrors('child_first_name');
+
+        $this->assertSame(1, PostnatalRecord::where('patient_id', $mother->id)->count());
+        $this->assertSame(2, Patient::where('household_id', $mother->household_id)->count());
+    }
 }

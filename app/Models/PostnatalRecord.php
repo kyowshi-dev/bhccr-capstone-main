@@ -88,36 +88,36 @@ class PostnatalRecord extends Model
 {
     use LogsActivity;
 
-    public const OUTCOME_LIVE_BIRTH = 'live_birth';
+    public const string OUTCOME_LIVE_BIRTH = 'live_birth';
 
-    public const OUTCOME_STILLBIRTH = 'stillbirth';
+    public const string OUTCOME_STILLBIRTH = 'stillbirth';
 
-    public const OUTCOME_ABORTION = 'abortion';
+    public const string OUTCOME_ABORTION = 'abortion';
 
-    public const OUTCOME_OTHERS = 'others';
+    public const string OUTCOME_OTHERS = 'others';
 
-    public const OUTCOMES = [
+    public const array OUTCOMES = [
         self::OUTCOME_LIVE_BIRTH => 'Live Birth',
         self::OUTCOME_STILLBIRTH => 'Stillbirth',
         self::OUTCOME_ABORTION => 'Abortion',
         self::OUTCOME_OTHERS => 'Others',
     ];
 
-    public const PLACES = [
+    public const array PLACES = [
         'home' => 'Home',
         'health_center' => 'Health Center',
         'hospital' => 'Hospital',
         'other_facility' => 'Other Facility',
     ];
 
-    public const MODES = [
+    public const array MODES = [
         'normal_vaginal' => 'Normal Vaginal',
         'cesarean' => 'Cesarean Section',
         'vacuum_forceps' => 'Vacuum / Forceps Assisted',
         'others' => 'Others',
     ];
 
-    public const ATTENDANTS = [
+    public const array ATTENDANTS = [
         'midwife' => 'Midwife',
         'physician' => 'Physician',
         'nurse' => 'Nurse',
@@ -125,7 +125,7 @@ class PostnatalRecord extends Model
         'others' => 'Others',
     ];
 
-    public const DANGER_SIGNS_MOTHER = [
+    public const array DANGER_SIGNS_MOTHER = [
         'Vaginal bleeding',
         'Fever',
         'Severe headache',
@@ -138,7 +138,7 @@ class PostnatalRecord extends Model
         'Others',
     ];
 
-    public const DANGER_SIGNS_BABY = [
+    public const array DANGER_SIGNS_BABY = [
         'Poor feeding',
         'Fever',
         'Hypothermia',
@@ -151,11 +151,24 @@ class PostnatalRecord extends Model
         'Others',
     ];
 
-    public const POSTPARTUM_SLOTS = [
+    public const array POSTPARTUM_SLOTS = [
         'postpartum_24h_date' => 1,
         'postpartum_7d_date' => 7,
         'postpartum_14d_date' => 14,
         'postpartum_28d_date' => 28,
+    ];
+
+    /**
+     * Fields that only make sense when the outcome is a live birth.
+     */
+    public const array NEWBORN_FIELDS = [
+        'child_last_name',
+        'child_first_name',
+        'child_middle_name',
+        'child_sex',
+        'child_birth_length_cm',
+        'child_birth_weight_kg',
+        'child_patient_id',
     ];
 
     protected $fillable = [

@@ -33,7 +33,7 @@ class UpdatePrenatalVisitRequest extends FormRequest
      */
     private function consultationRule(): array
     {
-        $rules = ['required', 'integer'];
+        $rules = ['nullable', 'integer'];
 
         $visit = $this->route('visit');
 

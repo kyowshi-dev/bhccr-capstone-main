@@ -21,15 +21,9 @@ class PostnatalService
     {
         $data['patient_id'] = $mother->id;
         $data['recorded_by'] = $workerId;
-        $data['danger_signs_mother'] = $data['danger_signs_mother'] ?? [];
-        $data['danger_signs_baby'] = $data['danger_signs_baby'] ?? [];
 
-        $pregnancy = $this->resolvePregnancy($mother, $data);
-
-        if ($pregnancy !== null) {
-            $data['prenatal_visits_completed'] ??= $this->prenatalVisitService->countFor($pregnancy);
-            $this->pregnancyService->markDelivered($pregnancy);
-        }
+        $this->prepare($mother, $data);
+        $this->assertNoDuplicateNewborn($data, $mother->household_id);
 
         $record = PostnatalRecord::create($data);
 
@@ -43,27 +37,42 @@ class PostnatalService
      */
     public function update(PostnatalRecord $record, array $data): PostnatalRecord
     {
-        $data['danger_signs_mother'] = $data['danger_signs_mother'] ?? [];
-        $data['danger_signs_baby'] = $data['danger_signs_baby'] ?? [];
-
-        $pregnancy = $this->resolvePregnancy($record->patient, $data);
-
-        if ($pregnancy !== null) {
-            $data['prenatal_visits_completed'] ??= $this->prenatalVisitService->countFor($pregnancy);
-            $this->pregnancyService->markDelivered($pregnancy);
-        }
+        $this->prepare($record->patient, $data);
 
         if ($data['pregnancy_outcome'] !== PostnatalRecord::OUTCOME_LIVE_BIRTH) {
-            foreach (['child_last_name', 'child_first_name', 'child_middle_name', 'child_sex', 'child_birth_length_cm', 'child_birth_weight_kg', 'child_patient_id'] as $field) {
+            foreach (PostnatalRecord::NEWBORN_FIELDS as $field) {
                 $data[$field] = null;
             }
         }
+
+        $this->assertNoDuplicateNewborn($data, $record->patient->household_id, $record->child_patient_id);
 
         $record->update($data);
 
         $this->syncChildPatient($record);
 
         return $record;
+    }
+
+    /**
+     * Normalize input and resolve the linked pregnancy, filling derived
+     * fields and advancing the pregnancy to the delivered state.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function prepare(Patient $mother, array &$data): void
+    {
+        $data['danger_signs_mother'] = $data['danger_signs_mother'] ?? [];
+        $data['danger_signs_baby'] = $data['danger_signs_baby'] ?? [];
+
+        $pregnancy = $this->resolvePregnancy($mother, $data);
+
+        if ($pregnancy === null) {
+            return;
+        }
+
+        $data['prenatal_visits_completed'] ??= $this->prenatalVisitService->countFor($pregnancy);
+        $this->pregnancyService->markDelivered($pregnancy);
     }
 
     /**
@@ -91,6 +100,39 @@ class PostnatalService
     }
 
     /**
+     * Guard against enrolling a newborn that already exists in the household.
+     * Runs before the record is persisted so a rejected save leaves no data.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function assertNoDuplicateNewborn(array $data, ?int $householdId, ?int $excludePatientId = null): void
+    {
+        $lastName = $data['child_last_name'] ?? null;
+        $firstName = $data['child_first_name'] ?? null;
+        $deliveryDate = $data['delivery_date'] ?? null;
+
+        if ($data['pregnancy_outcome'] !== PostnatalRecord::OUTCOME_LIVE_BIRTH
+            || $lastName === null || $firstName === null || $deliveryDate === null || $householdId === null) {
+            return;
+        }
+
+        $duplicate = Patient::where('household_id', $householdId)
+            ->where('first_name', $firstName)
+            ->where('last_name', $lastName)
+            ->whereDate('date_of_birth', $deliveryDate);
+
+        if ($excludePatientId !== null) {
+            $duplicate->where('id', '!=', $excludePatientId);
+        }
+
+        if ($duplicate->exists()) {
+            throw ValidationException::withMessages([
+                'child_first_name' => 'A child with this name and birth date already exists in this household.',
+            ]);
+        }
+    }
+
+    /**
      * Create or keep in sync the linked child `patients` record so the
      * newborn is immediately available to the immunization module.
      * Only live births produce a newborn record.
@@ -105,32 +147,11 @@ class PostnatalService
             ? Patient::find($record->child_patient_id)
             : null;
 
-        $motherName = fullName(
-            $record->patient->last_name,
-            $record->patient->first_name,
-            $record->patient->middle_name,
-            $record->patient->suffix,
-        );
-
-        $attributes = [
-            'first_name' => $record->child_first_name,
-            'last_name' => $record->child_last_name,
-            'middle_name' => $record->child_middle_name,
-            'sex' => $record->child_sex === 'M' ? 'Male' : 'Female',
-            'date_of_birth' => $record->delivery_date,
-            'birth_weight' => $record->child_birth_weight_kg,
-            'guardian_name' => $motherName,
-            'mother_name' => $motherName,
-            'family_relationship' => $record->child_sex === 'M' ? 'Son' : 'Daughter',
-        ];
-
         if ($child !== null) {
-            $child->update($attributes);
+            $child->update($this->newbornAttributes($record));
 
             return;
         }
-
-        $this->assertNoDuplicateChild($record, $attributes);
 
         $child = Patient::create([
             'household_id' => $record->patient->household_id,
@@ -138,27 +159,36 @@ class PostnatalService
             'spouse_name' => '',
             'residential_address' => $record->patient->residential_address ?? '',
             'civil_status' => 'Single',
-            ...$attributes,
+            ...$this->newbornAttributes($record),
         ]);
 
         $record->update(['child_patient_id' => $child->id]);
     }
 
     /**
-     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
      */
-    private function assertNoDuplicateChild(PostnatalRecord $record, array $attributes): void
+    private function newbornAttributes(PostnatalRecord $record): array
     {
-        $duplicate = Patient::where('household_id', $record->patient->household_id)
-            ->where('first_name', $attributes['first_name'])
-            ->where('last_name', $attributes['last_name'])
-            ->whereDate('date_of_birth', $record->delivery_date)
-            ->exists();
+        $motherName = fullName(
+            $record->patient->last_name,
+            $record->patient->first_name,
+            $record->patient->middle_name,
+            $record->patient->suffix,
+        );
 
-        if ($duplicate) {
-            throw ValidationException::withMessages([
-                'child_first_name' => 'A child with this name and birth date already exists in this household.',
-            ]);
-        }
+        $isMale = $record->child_sex === 'M';
+
+        return [
+            'first_name' => $record->child_first_name,
+            'last_name' => $record->child_last_name,
+            'middle_name' => $record->child_middle_name,
+            'sex' => $isMale ? 'Male' : 'Female',
+            'date_of_birth' => $record->delivery_date,
+            'birth_weight' => $record->child_birth_weight_kg,
+            'guardian_name' => $motherName,
+            'mother_name' => $motherName,
+            'family_relationship' => $isMale ? 'Son' : 'Daughter',
+        ];
     }
 }
