@@ -16,8 +16,12 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Spatie\LaravelPdf\Enums\Format;
+use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\LaravelPdf\PdfBuilder;
 
 class ImmunizationController extends Controller
 {
@@ -89,6 +93,55 @@ class ImmunizationController extends Controller
         $patient = Patient::with(['household', 'immunizationRecords'])->findOrFail($id);
 
         return view('immunizations.patient', $this->schedulePayload($patient));
+    }
+
+    /**
+     * DOH-style printable child immunization record card.
+     */
+    public function printRecord($id): View
+    {
+        $this->authorizeImmunizations();
+
+        $patient = Patient::with(['household.zone'])->findOrFail($id);
+
+        return view('immunizations.print-card', $this->printPayload($patient));
+    }
+
+    /**
+     * PDF download of the child immunization record card.
+     */
+    public function downloadPrintCardPdf($id): PdfBuilder
+    {
+        $this->authorizeImmunizations();
+
+        $patient = Patient::with(['household.zone'])->findOrFail($id);
+
+        $filename = 'Child-Immunization-Record-'.Str::slug($patient->first_name.' '.$patient->last_name).'.pdf';
+
+        return Pdf::view('immunizations.print-card-pdf', $this->printPayload($patient))
+            ->format(Format::A4)
+            ->margins(10, 10, 10, 10)
+            ->inline($filename);
+    }
+
+    /**
+     * Card payload: patient, per-vaccine dose records, and the age-appropriate vaccine list.
+     *
+     * @return array<string, mixed>
+     */
+    private function printPayload(Patient $patient): array
+    {
+        $isChild = $patient->age < 18;
+        $allowedCategories = $isChild ? ['Child', 'Both'] : ['Adult', 'Both'];
+
+        return [
+            'patient' => $patient,
+            'records' => ImmunizationQueryService::recordsForPatient($patient->id),
+            'vaccines' => Vaccine::whereIn('category', $allowedCategories)
+                ->with('schedules')
+                ->orderBy('sort_order')
+                ->get(),
+        ];
     }
 
     /**

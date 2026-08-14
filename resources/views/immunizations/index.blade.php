@@ -7,9 +7,9 @@
     $targetDate = \Carbon\Carbon::parse($date);
     $dueDateLabel = $targetDate->isToday() ? 'Due next 7 days' : 'Due from '.$targetDate->format('M d');
     $statusBadges = [
-        'due' => ['bg' => 'var(--accent-blue-soft)', 'fg' => 'var(--accent-blue)', 'icon' => 'fa-regular fa-calendar', 'label' => 'Due'],
-        'overdue' => ['bg' => 'var(--danger-soft)', 'fg' => 'var(--danger)', 'icon' => 'fa-solid fa-circle-exclamation', 'label' => 'Overdue'],
-        'no_show' => ['bg' => 'var(--danger-soft)', 'fg' => 'var(--danger)', 'icon' => 'fa-solid fa-user-clock', 'label' => 'No-show'],
+        'due' => ['bg' => 'var(--accent-blue-soft)', 'fg' => 'var(--accent-blue)'],
+        'overdue' => ['bg' => 'var(--danger-soft)', 'fg' => 'var(--danger)'],
+        'no_show' => ['bg' => 'var(--danger-soft)', 'fg' => 'var(--danger)'],
     ];
 @endphp
 
@@ -171,6 +171,7 @@
             @foreach (['due', 'overdue', 'no_show'] as $queueKey)
                 @php
                     $badge = $statusBadges[$queueKey];
+                    $queueGroups = ($queues[$queueKey] ?? collect())->groupBy(fn (array $entry) => $entry['patient']->id);
                 @endphp
                 <div x-show="activeQueue === '{{ $queueKey }}'" x-cloak class="rounded-xl border overflow-hidden"
                      @if ($queueKey === 'due') style="background: var(--bg-surface-elevated); border-color: var(--border);" @else style="display: none; background: var(--bg-surface-elevated); border-color: var(--border);" @endif>
@@ -179,18 +180,13 @@
                             <thead style="background: var(--teal-soft);">
                                 <tr>
                                     <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Patient</th>
-                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Vaccine</th>
-                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap hidden sm:table-cell" style="color: var(--ink-muted);">Due date</th>
-                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Status</th>
+                                    <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Due doses</th>
                                     <th class="px-3 lg:px-4 py-2 lg:py-3 text-right text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);"></th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-[var(--border)]">
-                                @forelse (($queues[$queueKey] ?? collect()) as $entry)
-                                    @php
-                                        $queuePatient = $entry['patient'];
-                                        $queueVaccine = $entry['vaccine'];
-                                    @endphp
+                                @forelse ($queueGroups as $patientId => $entries)
+                                    @php($queuePatient = $entries->first()['patient'])
                                     <tr class="transition-colors hover:bg-black/[0.02]">
                                         <td class="px-3 lg:px-4 py-3" style="color: var(--ink);">
                                             <a href="{{ route('immunizations.patient', $queuePatient->id) }}" class="hover:underline font-medium" style="color: var(--primary);">
@@ -204,64 +200,51 @@
                                                 </span>
                                             </div>
                                         </td>
-                                        <td class="px-3 lg:px-4 py-3" style="color: var(--ink);">
-                                            <div class="font-medium">{{ $queueVaccine->vaccine_name }}</div>
-                                            <div class="text-xs mt-0.5" style="color: var(--ink-muted);">Dose {{ $entry['dose_number'] }}</div>
-                                        </td>
-                                        <td class="px-3 lg:px-4 py-3 whitespace-nowrap hidden sm:table-cell" style="color: var(--ink);">
-                                            {{ $entry['due_date']?->format('M d, Y') ?? '-' }}
-                                        </td>
-                                        <td class="px-3 lg:px-4 py-3 hidden md:table-cell">
-                                            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold" style="background: {{ $badge['bg'] }}; color: {{ $badge['fg'] }};">
-                                                <i class="{{ $badge['icon'] }}" aria-hidden="true"></i>
-                                                {{ $badge['label'] }}
-                                            </span>
-                                        </td>
-                                        <td class="px-3 lg:px-4 py-3 text-right whitespace-nowrap">
-                                            <div class="inline-flex items-center gap-1.5">
-                                                @if ($queueKey === 'no_show')
-                                                    <form method="POST" action="{{ route('immunizations.no-show') }}" @submit.prevent="confirmClearNoShow($event.target, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)))">
-                                                        @csrf
-                                                        <input type="hidden" name="no_show" value="0">
-                                                        <input type="hidden" name="patient_id" value="{{ $queuePatient->id }}">
-                                                        <input type="hidden" name="vaccine_id" value="{{ $queueVaccine->id }}">
-                                                        <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">
-                                                            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Clear
-                                                        </button>
-                                                    </form>
-                                                @else
-                                                    <form method="POST" action="{{ route('immunizations.no-show') }}" @submit.prevent="confirmNoShow($event.target, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)))">
-                                                        @csrf
-                                                        <input type="hidden" name="no_show" value="1">
-                                                        <input type="hidden" name="patient_id" value="{{ $queuePatient->id }}">
-                                                        <input type="hidden" name="vaccine_id" value="{{ $queueVaccine->id }}">
-                                                        <input type="hidden" name="dose_number" value="{{ $entry['dose_number'] }}">
-                                                        <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">
-                                                            <i class="fa-solid fa-user-clock" aria-hidden="true"></i> No-show
-                                                        </button>
-                                                    </form>
-                                                @endif
-                                                <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="toggleCheckin('checkin_{{ $queueKey }}_{{ $queuePatient->id }}_{{ $loop->index }}', {{ $queuePatient->id }})">
-                                                    <i class="fa-solid fa-syringe" aria-hidden="true"></i> Record dose
-                                                </button>
+                                        <td class="px-3 lg:px-4 py-3">
+                                            <div class="flex flex-wrap items-center gap-1.5">
+                                                @foreach ($entries as $entry)
+                                                    @php($queueVaccine = $entry['vaccine'])
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap" style="background: {{ $badge['bg'] }}; color: {{ $badge['fg'] }};">
+                                                        {{ $queueVaccine->vaccine_name }} · Dose {{ $entry['dose_number'] }}
+                                                        @if ($entry['due_date'] !== null)
+                                                            · {{ $entry['due_date']->format('M j') }}
+                                                        @endif
+                                                    </span>
+                                                    @if ($queueKey === 'no_show')
+                                                        <form method="POST" action="{{ route('immunizations.no-show') }}" @submit.prevent="confirmClearNoShow($event.target, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)))">
+                                                            @csrf
+                                                            <input type="hidden" name="no_show" value="0">
+                                                            <input type="hidden" name="patient_id" value="{{ $queuePatient->id }}">
+                                                            <input type="hidden" name="vaccine_id" value="{{ $queueVaccine->id }}">
+                                                            <button type="submit" title="Clear no-show" aria-label="Clear no-show for {{ $queueVaccine->vaccine_name }}" class="inline-flex h-7 w-7 items-center justify-center rounded-full border text-xs transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">
+                                                                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                @endforeach
                                             </div>
                                         </td>
+                                        <td class="px-3 lg:px-4 py-3 text-right whitespace-nowrap">
+                                            <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="toggleCheckin('checkin_{{ $queueKey }}_{{ $patientId }}', {{ $patientId }})">
+                                                <i class="fa-solid fa-syringe" aria-hidden="true"></i> Record doses
+                                            </button>
+                                        </td>
                                     </tr>
-                                    <tr x-show="expandedPatientId === {{ $queuePatient->id }}"
+                                    <tr x-show="expandedPatientId === {{ $patientId }}"
                                         x-cloak
                                         class="bg-black/[0.01]"
                                         style="display: none;">
-                                        <td colspan="5" class="p-0">
-                                            <div x-show="checkinLoading && expandedPatientId === {{ $queuePatient->id }}" class="flex items-center justify-center gap-2 px-4 py-6">
+                                        <td colspan="3" class="p-0">
+                                            <div x-show="checkinLoading && expandedPatientId === {{ $patientId }}" class="flex items-center justify-center gap-2 px-4 py-6">
                                                 <div class="animate-spin inline-block w-5 h-5 border-2 border-current border-t-transparent rounded-full" style="color: var(--primary);" role="status" aria-label="Loading"></div>
                                                 <p class="text-xs" style="color: var(--ink-muted);">Loading schedule...</p>
                                             </div>
-                                            <div x-ref="checkin_{{ $queueKey }}_{{ $queuePatient->id }}_{{ $loop->index }}"></div>
+                                            <div x-ref="checkin_{{ $queueKey }}_{{ $patientId }}"></div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="px-3 lg:px-4 py-10 text-center">
+                                        <td colspan="3" class="px-3 lg:px-4 py-10 text-center">
                                             <x-empty-state
                                                 :icon="match ($queueKey) {
                                                     'due' => 'fa-regular fa-calendar',
@@ -283,62 +266,8 @@
                 </div>
             @endforeach
 
-            <div x-show="activeQueue === 'recent'" x-cloak class="rounded-xl border overflow-hidden" style="display: none; background: var(--bg-surface-elevated); border-color: var(--border);">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
-                        <thead style="background: var(--teal-soft);">
-                            <tr>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Date</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Patient</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Vaccine</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap hidden sm:table-cell" style="color: var(--ink-muted);">Dose</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Status</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Given by</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-right text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);"></th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[var(--border)]">
-                            @php($today = \Carbon\Carbon::today())
-                            @forelse ($recentRecords as $r)
-                                @php($nextDue = $r->next_due ? \Carbon\Carbon::parse($r->next_due) : null)
-                                <tr class="transition-colors hover:bg-black/[0.02]">
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 whitespace-nowrap" style="color: var(--ink);">{{ \Carbon\Carbon::parse($r->date_given)->format('M d, Y') }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ fullName($r->last_name, $r->first_name) }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $r->vaccine_name }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink-muted);">{{ $r->dose_number }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell">
-                                        @if (! $nextDue)
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">Up to date</span>
-                                        @elseif ($nextDue->lt($today))
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
-                                                <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Overdue
-                                            </span>
-                                        @elseif ($nextDue->isSameDay($today))
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
-                                                <i class="fa-regular fa-calendar" aria-hidden="true"></i> Due today
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">In progress</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ ucwords((string) $r->worker_name) ?: '-' }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
-                                        <a href="{{ route('immunizations.patient', (int) $r->patient_id) }}" class="text-sm font-medium hover:underline" style="color: var(--primary);">
-                                            Open
-                                        </a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="px-3 lg:px-4 py-12 text-center">
-                                        <x-empty-state icon="fa-solid fa-clock-rotate-left" title="No recent records"
-                                                       description="Immunization records will appear here once you start recording doses." />
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+            <div x-show="activeQueue === 'recent'" x-cloak style="display: none;">
+                @include('immunizations.partials._recent-table', ['records' => $recentRecords])
             </div>
         </div>
     @else
@@ -360,61 +289,65 @@
 
             <div x-show="activeTab === 'due'" class="rounded-xl border overflow-hidden" style="background: var(--bg-surface-elevated); border-color: var(--border);">
                 <div class="overflow-x-auto">
+                    @php($dueGroups = ($queues['due'] ?? collect())->groupBy(fn (array $entry) => $entry['patient']->id))
                     <table class="min-w-full text-sm">
                         <thead style="background: var(--teal-soft);">
                             <tr>
                                 <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Patient</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Due date</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap hidden sm:table-cell" style="color: var(--ink-muted);">Dose</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Vaccine</th>
+                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Due doses</th>
                                 <th class="px-3 lg:px-4 py-2 lg:py-3 text-right text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[var(--border)]">
-                            @php($today = \Carbon\Carbon::today())
-                            @forelse ($dueTodayPatients as $p)
-                                @php($dueDate = $p->due_date ? \Carbon\Carbon::parse($p->due_date) : null)
+                            @forelse ($dueGroups as $patientId => $entries)
+                                @php($duePatient = $entries->first()['patient'])
                                 <tr class="transition-colors hover:bg-black/[0.02]">
                                     <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">
-                                        <a href="{{ route('immunizations.patient', (int) $p->patient_id) }}" class="hover:underline font-medium" style="color: var(--primary);">
-                                            {{ fullName($p->last_name, $p->first_name) }}
+                                        <a href="{{ route('immunizations.patient', $duePatient->id) }}" class="hover:underline font-medium" style="color: var(--primary);">
+                                            {{ fullName($duePatient->last_name, $duePatient->first_name, $duePatient->middle_name, $duePatient->suffix) }}
                                         </a>
-                                    </td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 whitespace-nowrap" style="color: var(--ink);">
-                                        {{ $dueDate?->format('M d, Y') ?? '-' }}
-                                        @if ($dueDate && $dueDate->lt($today))
-                                            <span class="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
-                                                <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Overdue
+                                        <div class="flex items-center gap-2 mt-1.5">
+                                            @include('immunizations.partials._age-chip', ['patient' => $duePatient])
+                                            <span class="text-xs" style="color: var(--ink-muted);">
+                                                <i class="fa-solid fa-location-dot mr-0.5" aria-hidden="true"></i>
+                                                {{ $duePatient->household?->zone?->zone_number ?? 'No purok' }}
                                             </span>
-                                        @elseif ($dueDate && $dueDate->isSameDay($today))
-                                            <span class="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
-                                                <i class="fa-regular fa-calendar" aria-hidden="true"></i> Due today
-                                            </span>
-                                        @endif
+                                        </div>
                                     </td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink-muted);">{{ $p->dose_number }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $p->vaccine_name }}</td>
+                                    <td class="px-3 lg:px-4 py-2 lg:py-3">
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            @foreach ($entries as $entry)
+                                                @php($dueVaccine = $entry['vaccine'])
+                                                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
+                                                    {{ $dueVaccine->vaccine_name }} · Dose {{ $entry['dose_number'] }}
+                                                    @if ($entry['due_date'] !== null)
+                                                        · {{ $entry['due_date']->format('M j') }}
+                                                    @endif
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    </td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
-                                        <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="toggleCheckin('checkin_adult_{{ $p->patient_id }}_{{ $loop->index }}', {{ (int) $p->patient_id }})">
-                                            <i class="fa-solid fa-syringe" aria-hidden="true"></i> Record dose
+                                        <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="toggleCheckin('checkin_adult_{{ $patientId }}', {{ $patientId }})">
+                                            <i class="fa-solid fa-syringe" aria-hidden="true"></i> Record doses
                                         </button>
                                     </td>
                                 </tr>
-                                <tr x-show="expandedPatientId === {{ (int) $p->patient_id }}"
+                                <tr x-show="expandedPatientId === {{ $patientId }}"
                                     x-cloak
                                     class="bg-black/[0.01]"
                                     style="display: none;">
-                                    <td colspan="5" class="p-0">
-                                        <div x-show="checkinLoading && expandedPatientId === {{ (int) $p->patient_id }}" class="flex items-center justify-center gap-2 px-4 py-6">
+                                    <td colspan="3" class="p-0">
+                                        <div x-show="checkinLoading && expandedPatientId === {{ $patientId }}" class="flex items-center justify-center gap-2 px-4 py-6">
                                             <div class="animate-spin inline-block w-5 h-5 border-2 border-current border-t-transparent rounded-full" style="color: var(--primary);" role="status" aria-label="Loading"></div>
                                             <p class="text-xs" style="color: var(--ink-muted);">Loading schedule...</p>
                                         </div>
-                                        <div x-ref="checkin_adult_{{ $p->patient_id }}_{{ $loop->index }}"></div>
+                                        <div x-ref="checkin_adult_{{ $patientId }}"></div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="px-3 lg:px-4 py-12 text-center">
+                                    <td colspan="3" class="px-3 lg:px-4 py-12 text-center">
                                         <x-empty-state icon="fa-regular fa-calendar" title="No patients in this queue"
                                                        description="Use the search box above to find a patient and record a vaccination dose." />
                                     </td>
@@ -425,62 +358,8 @@
                 </div>
             </div>
 
-            <div x-show="activeTab === 'recent'" x-cloak class="rounded-xl border overflow-hidden" style="display: none; background: var(--bg-surface-elevated); border-color: var(--border);">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
-                        <thead style="background: var(--teal-soft);">
-                            <tr>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Date</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Patient</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Vaccine</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap hidden sm:table-cell" style="color: var(--ink-muted);">Dose</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Status</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Given by</th>
-                                <th class="px-3 lg:px-4 py-2 lg:py-3 text-right text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);"></th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[var(--border)]">
-                            @php($today = \Carbon\Carbon::today())
-                            @forelse ($recentRecords as $r)
-                                @php($nextDue = $r->next_due ? \Carbon\Carbon::parse($r->next_due) : null)
-                                <tr class="transition-colors hover:bg-black/[0.02]">
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 whitespace-nowrap" style="color: var(--ink);">{{ \Carbon\Carbon::parse($r->date_given)->format('M d, Y') }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ fullName($r->last_name, $r->first_name) }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $r->vaccine_name }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink-muted);">{{ $r->dose_number }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell">
-                                        @if (! $nextDue)
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">Up to date</span>
-                                        @elseif ($nextDue->lt($today))
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
-                                                <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Overdue
-                                            </span>
-                                        @elseif ($nextDue->isSameDay($today))
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
-                                                <i class="fa-regular fa-calendar" aria-hidden="true"></i> Due today
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: rgba(0,0,0,0.06); color: var(--ink-muted);">In progress</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ ucwords((string) $r->worker_name) ?: '-' }}</td>
-                                    <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
-                                        <a href="{{ route('immunizations.patient', (int) $r->patient_id) }}" class="text-sm font-medium hover:underline" style="color: var(--primary);">
-                                            Open
-                                        </a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="px-3 lg:px-4 py-12 text-center">
-                                        <x-empty-state icon="fa-solid fa-clock-rotate-left" title="No recent records"
-                                                       description="Immunization records will appear here once you start recording doses." />
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+            <div x-show="activeTab === 'recent'" x-cloak style="display: none;">
+                @include('immunizations.partials._recent-table', ['records' => $recentRecords])
             </div>
         </div>
     @endif

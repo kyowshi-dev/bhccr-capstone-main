@@ -8,35 +8,12 @@
     $serialDigits = (int) ($serialDigits ?? 5);
     $serialChars = array_fill(0, $serialDigits, '');
     $facilityChars = array_fill(0, $serialDigits, '');
-
-    $logoPath = public_path('img/Department_of_Health_(DOH)_PHL.svg.webp');
-    if (! file_exists($logoPath)) {
-        $logoPath = public_path('img/logo.svg');
-    }
-    $logoMime = match (pathinfo($logoPath, PATHINFO_EXTENSION)) {
-        'webp' => 'image/webp',
-        'svg' => 'image/svg+xml',
-        'png' => 'image/png',
-        default => 'image/jpeg',
-    };
-    $logoSrc = "data:{$logoMime};base64," . base64_encode((string) file_get_contents($logoPath));
 @endphp
 
 <table class="form-table" style="border-bottom:0;">
     <tr>
         <td style="width:52%; padding:3px 5px; vertical-align:middle;">
-            <div class="doh-header-brand">
-                <div class="doh-logo-wrap">
-                    <div class="logo-circle" style="border:none;">
-                        <img src="{{ $logoSrc }}" alt="DOH">
-                    </div>
-                </div>
-                <div class="doh-brand">
-                    <p class="rep">Republic of the Philippines</p>
-                    <p class="dept">Department of Health</p>
-                    <p class="dept-fil">Kagawaran ng Kalusugan</p>
-                </div>
-            </div>
+            @include('partials._doh-logo')
         </td>
         <td style="padding:0; width:48%;">
             <table class="form-table nested-table" style="border:0; width:100%; border-collapse:collapse;">

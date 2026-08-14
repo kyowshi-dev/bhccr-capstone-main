@@ -17,6 +17,9 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ route('immunizations.print-card', $patient->id) }}" target="_blank" rel="noopener" title="Print record" aria-label="Print record for {{ fullName($patient->last_name, $patient->first_name) }}" class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">
+                <i class="fa-solid fa-print" aria-hidden="true"></i>
+            </a>
             <a href="{{ route('immunizations.patient', $patient->id) }}" class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">
                 <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Full record
             </a>

@@ -29,6 +29,11 @@
                 </span>
             </p>
         </div>
+        <div class="flex flex-col gap-2 w-full sm:w-auto sm:items-end shrink-0">
+            <x-btn href="{{ route('immunizations.print-card', $patient->id) }}" target="_blank" rel="noopener" variant="outlined" icon="fa-solid fa-print" class="w-full sm:w-auto !px-3 !py-2 !text-xs">
+                Print record
+            </x-btn>
+        </div>
     </div>
 
     @if (session('success'))
@@ -64,52 +69,26 @@
         'records' => $records,
     ])
 
-    <div>
-        <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">History</h2>
-        <div class="rounded-xl border overflow-hidden" style="background: var(--bg-surface-elevated); border-color: var(--border);">
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <thead style="background: var(--teal-soft);">
-                        <tr>
-                            <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Date</th>
-                            <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Vaccine</th>
-                            <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">Dose</th>
-                            <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap hidden sm:table-cell" style="color: var(--ink-muted);">Temp (°C)</th>
-                            <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium whitespace-nowrap hidden md:table-cell" style="color: var(--ink-muted);">Given by</th>
-                            <th class="px-3 lg:px-4 py-2 lg:py-3 text-right text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[var(--border)]">
-                        @forelse ($records as $r)
-                            <tr class="transition-colors hover:bg-black/[0.02]">
-                                <td class="px-3 lg:px-4 py-2 lg:py-3 whitespace-nowrap" style="color: var(--ink);">{{ \Carbon\Carbon::parse($r->date_given)->format('M d, Y') }}</td>
-                                <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $r->vaccine_name }}</td>
-                                <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $r->dose_number }}</td>
-                                <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink);">{{ $r->temp_recorded ?? '-' }}</td>
-                                <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ $r->administered_by_name ?? '-' }}</td>
-                                <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
-                                    @if ($r->no_show)
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
-                                            <i class="fa-solid fa-user-clock" aria-hidden="true"></i> No-show
-                                        </span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-3 lg:px-4 py-6 text-center text-sm" style="color: var(--ink-muted);">No doses logged yet. Use Administer on the schedule above.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
     @include('immunizations.partials._administer-modal')
 </div>
 
 <script>
+    function confirmNoShow(form) {
+        Swal.fire({
+            title: 'Mark as no-show?',
+            html: '<p class="text-sm">This patient missed their scheduled dose. It is recorded as a missed appointment in their history.</p>',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, mark no-show',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    }
+
     function confirmClearNoShow(form) {
         Swal.fire({
             title: 'Clear no-show?',

@@ -207,6 +207,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/patients/{id}/immunizations', [ImmunizationController::class, 'forPatient'])
         ->middleware('permission:immunizations')
         ->name('immunizations.patient');
+    Route::get('/patients/{id}/immunizations/print', [ImmunizationController::class, 'printRecord'])
+        ->middleware('permission:immunizations')
+        ->name('immunizations.print-card');
+    Route::get('/patients/{id}/immunizations/print/pdf', [ImmunizationController::class, 'downloadPrintCardPdf'])
+        ->middleware('permission:immunizations')
+        ->name('immunizations.print-card.pdf');
     Route::post('/patients/{id}/immunizations/administer', [ImmunizationController::class, 'administer'])
         ->middleware('permission:immunizations')
         ->name('immunizations.administer');
