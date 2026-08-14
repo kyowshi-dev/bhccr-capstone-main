@@ -73,6 +73,27 @@ class Vitals extends Model
         return $this->belongsTo(Consultation::class);
     }
 
+    /**
+     * Return the raw stored value for a numeric column, trimmed of
+     * trailing fractional zeros, bypassing the decimal cast.
+     */
+    public function rawDisplay(string $column): ?string
+    {
+        $raw = $this->getRawOriginal($column);
+
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        $value = (string) $raw;
+
+        if (str_contains($value, '.')) {
+            $value = rtrim(rtrim($value, '0'), '.');
+        }
+
+        return $value === '' ? '0' : $value;
+    }
+
     public function summary(): Attribute
     {
         return Attribute::make(

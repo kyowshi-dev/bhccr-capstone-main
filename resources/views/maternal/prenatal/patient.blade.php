@@ -27,6 +27,7 @@
         </a>
     </div>
 
+    {{-- Current pregnancy (static summary) --}}
     @if ($active !== null)
         @php
             $latestVisit = $active->visits->sortByDesc('visit_date')->first();
@@ -112,8 +113,102 @@
         </x-card>
     @endif
 
+    {{-- Prenatal visits flowsheet --}}
+    @if ($active !== null)
+        <x-card class="overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 px-4 pt-4 sm:px-5">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h2 class="font-display font-semibold text-lg" style="color: var(--ink);">Prenatal visits</h2>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-soft); color: var(--ink-muted);">
+                        <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i> {{ $active->visits->count() }} recorded
+                    </span>
+                </div>
+                <x-btn variant="primary" icon="fa-solid fa-plus" @click="$dispatch('open-record-visit')">Record visit</x-btn>
+            </div>
+
+            @if ($active->visits->isEmpty())
+                <div class="px-4 py-6 sm:px-5">
+                    <x-empty-state icon="fa-solid fa-chart-line" title="No prenatal visits yet"
+                                   description="Record the first visit to start the fetal growth trend.">
+                        <x-btn variant="primary" icon="fa-solid fa-plus" @click="$dispatch('open-record-visit')">Record visit</x-btn>
+                    </x-empty-state>
+                </div>
+            @else
+                <div class="overflow-x-auto mt-4">
+                    <table class="w-full text-sm text-left whitespace-nowrap">
+                        <thead class="border-b" style="background: var(--teal-soft);">
+                            <tr class="text-xs uppercase tracking-wide" style="color: var(--ink-muted);">
+                                <th class="px-4 py-2.5 font-semibold text-center w-10">#</th>
+                                <th class="px-4 py-2.5 font-semibold">Date</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">AOG</th>
+                                <th class="px-4 py-2.5 font-semibold">BP (mmHg)</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">Wt (kg)</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">Temp (&deg;C)</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">FH (cm)</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">FHT (bpm)</th>
+                                <th class="px-4 py-2.5 font-semibold hidden xl:table-cell max-w-[240px]">Complaint</th>
+                                <th class="px-4 py-2.5 font-semibold">Next visit</th>
+                                <th class="px-4 py-2.5 font-semibold"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y" style="border-color: var(--border);">
+                            @foreach ($active->visits->sortBy('visit_date') as $visit)
+                                @php
+                                    $trend = $visit->flowsheet_trend;
+                                    $aogWeeks = $active->lmp !== null
+                                        ? (int) max(0, \Carbon\Carbon::parse($active->lmp)->diffInWeeks($visit->visit_date))
+                                        : null;
+                                @endphp
+                                <tr class="hover:bg-black/[0.03]">
+                                    <td class="px-4 py-2.5 text-center text-xs font-semibold" style="color: var(--ink-muted);">{{ $loop->index + 1 }}</td>
+                                    <td class="px-4 py-2.5 font-medium" style="color: var(--ink);">{{ $visit->visit_date->format('M d, Y') }}</td>
+                                    <td class="px-4 py-2.5 text-right" style="color: var(--ink-muted);">{{ $aogWeeks !== null ? $aogWeeks.' wks' : '-' }}</td>
+                                    <td class="px-4 py-2.5" style="color: var(--ink-muted);">{{ $trend['bp'] }}</td>
+                                    <td class="px-4 py-2.5 text-right" style="color: var(--ink-muted);">{{ $trend['weight_kg'] ?? '-' }}</td>
+                                    <td class="px-4 py-2.5 text-right" style="color: var(--ink-muted);">{{ $trend['temperature_c'] ?? '-' }}</td>
+                                    <td class="px-4 py-2.5 text-right" style="color: var(--ink-muted);">{{ $trend['fundic_height_cm'] ?? '-' }}</td>
+                                    <td class="px-4 py-2.5 text-right" style="color: var(--ink-muted);">{{ $visit->fetal_heart_tone_bpm ?? '-' }}</td>
+                                    <td class="px-4 py-2.5 hidden xl:table-cell max-w-[240px] truncate" style="color: var(--ink-muted);">{{ $visit->consultation?->complaint_text ?? '-' }}</td>
+                                    <td class="px-4 py-2.5">
+                                        @if ($visit->next_visit_date)
+                                            @if ($visit->next_visit_date->lt(\Carbon\Carbon::today()))
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
+                                                    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Overdue {{ $visit->next_visit_date->format('M d') }}
+                                                </span>
+                                            @elseif ($visit->next_visit_date->lte(\Carbon\Carbon::today()->addDays(7)))
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
+                                                    <i class="fa-solid fa-calendar-day" aria-hidden="true"></i> {{ $visit->next_visit_date->format('M d') }}
+                                                </span>
+                                            @else
+                                                <span style="color: var(--ink-muted);">{{ $visit->next_visit_date->format('M d, Y') }}</span>
+                                            @endif
+                                        @else
+                                            <span style="color: var(--ink-subtle);">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-2.5 text-right">
+                                        <button type="button" @click="$dispatch('open-edit-visit', {
+                                            id: {{ $visit->id }},
+                                            visit_date: '{{ $visit->visit_date?->format('Y-m-d') }}',
+                                            fundic_height_cm: {{ $trend['fundic_height_cm'] ?? 'null' }},
+                                            fetal_heart_tone_bpm: {{ $visit->fetal_heart_tone_bpm ?? 'null' }},
+                                            next_visit_date: '{{ $visit->next_visit_date?->format('Y-m-d') }}',
+                                            consultation_id: {{ $visit->consultation_id ?? 'null' }}
+                                        })"
+                                                class="text-xs font-semibold hover:underline" style="color: var(--accent-blue);">Edit</button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </x-card>
+    @endif
+
+    {{-- Static history --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        <div class="lg:col-span-1 space-y-4 lg:space-y-6">
+        <div class="lg:col-span-1">
             <x-card>
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="font-display font-semibold text-lg" style="color: var(--ink);">Obstetric history</h2>
@@ -143,103 +238,7 @@
             </x-card>
         </div>
 
-        <div class="lg:col-span-2 space-y-4 lg:space-y-6">
-            @if ($active !== null)
-                <x-card class="overflow-hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">Record prenatal visit</h2>
-                            <form method="POST" action="{{ route('maternal.prenatal.visits.store', $active->id) }}" class="space-y-3">
-                                @csrf
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label for="visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: var(--danger);">*</span></label>
-                                        <input id="visit_date" type="date" name="visit_date" value="{{ old('visit_date', now()->toDateString()) }}" max="{{ now()->toDateString() }}"
-                                               class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                                               style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);" required>
-                                        @error('visit_date') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
-                                    </div>
-                                    <div>
-                                        <label for="next_visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Next visit</label>
-                                        <input id="next_visit_date" type="date" name="next_visit_date" value="{{ old('next_visit_date') }}"
-                                               class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                                               style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                                    </div>
-                                </div>
-
-                                @include('maternal.partials.consultation-select', [
-                                    'fieldName' => 'consultation_id',
-                                    'consultations' => $consultations,
-                                    'selected' => old('consultation_id'),
-                                ])
-
-                                @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'pv_'])
-
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label for="fundic_height_cm" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Fundic height (cm)</label>
-                                        <input id="fundic_height_cm" type="number" step="0.1" min="0" max="99.9" name="fundic_height_cm" value="{{ old('fundic_height_cm') }}"
-                                               class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                                               style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                                    </div>
-                                    <div>
-                                        <label for="fetal_heart_tone_bpm" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">FHT (bpm)</label>
-                                        <input id="fetal_heart_tone_bpm" type="number" min="60" max="220" name="fetal_heart_tone_bpm" value="{{ old('fetal_heart_tone_bpm') }}"
-                                               class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                                               style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                                    </div>
-                                </div>
-                                <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md"
-                                        style="background: var(--primary);">
-                                    <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save visit
-                                </button>
-                            </form>
-                        </div>
-                        <div>
-                            <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">Visit history</h2>
-                            @if ($active->visits->isEmpty())
-                                <p class="text-sm" style="color: var(--ink-subtle);">No prenatal visits recorded yet.</p>
-                            @else
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-sm text-left">
-                                        <thead class="border-b" style="background: var(--teal-soft);">
-                                            <tr class="text-xs uppercase tracking-wide" style="color: var(--ink-muted);">
-                                                <th class="px-3 py-2 font-semibold whitespace-nowrap">Date</th>
-                                                <th class="px-3 py-2 font-semibold whitespace-nowrap">FH (cm)</th>
-                                                <th class="px-3 py-2 font-semibold whitespace-nowrap">FHT (bpm)</th>
-                                                <th class="px-3 py-2 font-semibold whitespace-nowrap">Next visit</th>
-                                                <th class="px-3 py-2 font-semibold whitespace-nowrap"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y" style="border-color: var(--border);">
-                                            @foreach ($active->visits->sortByDesc('visit_date') as $visit)
-                                                <tr class="hover:bg-black/[0.03]">
-                                                    <td class="px-3 py-2 whitespace-nowrap font-medium" style="color: var(--ink);">{{ $visit->visit_date->format('M d, Y') }}</td>
-                                                    <td class="px-3 py-2" style="color: var(--ink-muted);">{{ $visit->fundic_height_cm ?? '-' }}</td>
-                                                    <td class="px-3 py-2" style="color: var(--ink-muted);">{{ $visit->fetal_heart_tone_bpm ?? '-' }}</td>
-                                                    <td class="px-3 py-2 whitespace-nowrap" style="color: var(--ink-muted);">{{ $visit->next_visit_date?->format('M d, Y') ?? '-' }}</td>
-                                                    <td class="px-3 py-2 text-right">
-                                                        <button type="button" @click="$dispatch('open-edit-visit', {
-                                                            id: {{ $visit->id }},
-                                                            visit_date: '{{ $visit->visit_date?->format('Y-m-d') }}',
-                                                            fundic_height_cm: {{ $visit->fundic_height_cm ?? 'null' }},
-                                                            fetal_heart_tone_bpm: {{ $visit->fetal_heart_tone_bpm ?? 'null' }},
-                                                            next_visit_date: '{{ $visit->next_visit_date?->format('Y-m-d') }}',
-                                                            consultation_id: {{ $visit->consultation_id ?? 'null' }}
-                                                        })"
-                                                                class="text-xs font-semibold hover:underline" style="color: var(--accent-blue);">Edit</button>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </x-card>
-            @endif
-
+        <div class="lg:col-span-2">
             <x-card class="overflow-hidden">
                 <h2 class="font-display font-semibold text-lg px-4 pt-4" style="color: var(--ink);">Pregnancy history</h2>
                 @if ($pregnancies->isEmpty())
@@ -281,50 +280,111 @@
     </div>
 </div>
 
-<x-modal name="edit-visit-modal" title="Edit prenatal visit"
-         x-data="visitEditor()" x-on:open-edit-visit.window="open = true; setVisit($event.detail)" x-on:close.window="open = false">
-    <form method="POST" x-bind:action="`{{ url('prenatal-visits') }}/${visit.id}`" class="space-y-3">
-        @csrf
-        @method('PUT')
-        <div>
-            <label for="ev_visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: var(--danger);">*</span></label>
-            <input id="ev_visit_date" type="date" name="visit_date" max="{{ now()->toDateString() }}" x-model="visit.visit_date"
-                   class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                   style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
+@if ($active !== null)
+    <x-modal name="record-visit-modal" title="Record prenatal visit" maxWidth="max-w-3xl"
+             x-data="{ open: {{ old('intent') === 'record-visit' ? 'true' : 'false' }} }"
+             x-on:open-record-visit.window="open = true" x-on:close.window="open = false">
+        <form method="POST" action="{{ route('maternal.prenatal.visits.store', $active->id) }}" class="space-y-5">
+            @csrf
+            <input type="hidden" name="intent" value="record-visit">
+
+            <div class="space-y-4">
+                <h3 class="font-semibold pb-2 border-b border-border text-sm lg:text-base text-ink">Visit schedule</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <x-field name="visit_date" required>
+                        <x-slot:label>Visit date</x-slot:label>
+                        <x-slot:control>
+                            <input id="visit_date" type="date" name="visit_date" value="{{ old('visit_date', now()->toDateString()) }}" max="{{ now()->toDateString() }}" required
+                                   class="w-full rounded-lg border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-blue">
+                        </x-slot:control>
+                    </x-field>
+                    <x-field name="next_visit_date">
+                        <x-slot:label>Next visit</x-slot:label>
+                        <x-slot:control>
+                            <input id="next_visit_date" type="date" name="next_visit_date" value="{{ old('next_visit_date') }}"
+                                   class="w-full rounded-lg border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-blue">
+                        </x-slot:control>
+                    </x-field>
+                </div>
+            </div>
+
+            @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'pv_'])
+
+            <div class="space-y-4">
+                <h3 class="font-semibold pb-2 border-b border-border text-sm lg:text-base text-ink">Pregnancy measurements</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <x-field name="fundic_height_cm">
+                        <x-slot:label>Fundic height (cm)</x-slot:label>
+                        <x-slot:control>
+                            <input id="fundic_height_cm" type="number" step="0.1" min="0" max="99.9" name="fundic_height_cm" value="{{ old('fundic_height_cm') }}"
+                                   class="w-full rounded-lg border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-blue">
+                        </x-slot:control>
+                    </x-field>
+                    <x-field name="fetal_heart_tone_bpm">
+                        <x-slot:label>Fetal heart tone (bpm)</x-slot:label>
+                        <x-slot:control>
+                            <input id="fetal_heart_tone_bpm" type="number" min="60" max="220" name="fetal_heart_tone_bpm" value="{{ old('fetal_heart_tone_bpm') }}"
+                                   class="w-full rounded-lg border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-blue">
+                        </x-slot:control>
+                    </x-field>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="button" @click="$dispatch('close')" class="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:bg-black/[0.03]"
+                        style="border-color: var(--border); color: var(--ink-muted);">Cancel</button>
+                <x-btn type="submit" variant="primary" icon="fa-solid fa-floppy-disk">Save visit</x-btn>
+            </div>
+        </form>
+    </x-modal>
+
+    <x-modal name="edit-visit-modal" title="Edit prenatal visit"
+             x-data="{ ...visitEditor(), open: {{ old('intent') === 'edit-visit' ? 'true' : 'false' }} }"
+             x-on:open-edit-visit.window="open = true; setVisit($event.detail)" x-on:close.window="open = false">
+        <form method="POST" x-bind:action="`{{ url('prenatal-visits') }}/${visit.id}`" class="space-y-3">
+            @csrf
+            @method('PUT')
+            <input type="hidden" name="intent" value="edit-visit">
             <div>
-                <label for="ev_fundic_height_cm" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Fundic height (cm)</label>
-                <input id="ev_fundic_height_cm" type="number" step="0.1" min="0" max="99.9" name="fundic_height_cm" x-model.number="visit.fundic_height_cm"
+                <label for="ev_visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: var(--danger);">*</span></label>
+                <input id="ev_visit_date" type="date" name="visit_date" max="{{ now()->toDateString() }}" x-model="visit.visit_date"
                        class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                        style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
             </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="ev_fundic_height_cm" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Fundic height (cm)</label>
+                    <input id="ev_fundic_height_cm" type="number" step="0.1" min="0" max="99.9" name="fundic_height_cm" x-model.number="visit.fundic_height_cm"
+                           class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                           style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                </div>
+                <div>
+                    <label for="ev_fetal_heart_tone_bpm" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">FHT (bpm)</label>
+                    <input id="ev_fetal_heart_tone_bpm" type="number" min="60" max="220" name="fetal_heart_tone_bpm" x-model.number="visit.fetal_heart_tone_bpm"
+                           class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                           style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                </div>
+            </div>
             <div>
-                <label for="ev_fetal_heart_tone_bpm" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">FHT (bpm)</label>
-                <input id="ev_fetal_heart_tone_bpm" type="number" min="60" max="220" name="fetal_heart_tone_bpm" x-model.number="visit.fetal_heart_tone_bpm"
+                <label for="ev_next_visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Next visit</label>
+                <input id="ev_next_visit_date" type="date" name="next_visit_date" x-model="visit.next_visit_date"
                        class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                        style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
             </div>
-        </div>
-        <div>
-            <label for="ev_next_visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Next visit</label>
-            <input id="ev_next_visit_date" type="date" name="next_visit_date" x-model="visit.next_visit_date"
-                   class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                   style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-        </div>
-        @include('maternal.partials.consultation-select', [
-            'fieldName' => 'consultation_id',
-            'consultations' => $consultations,
-            'selected' => $visit->consultation_id ?? null,
-            'xModel' => 'visit.consultation_id',
-        ])
-        <div class="flex justify-end gap-2 pt-1">
-            <button type="button" @click="$dispatch('close')" class="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:bg-black/[0.03]"
-                    style="border-color: var(--border); color: var(--ink-muted);">Cancel</button>
-            <button type="submit" class="rounded-lg px-4 py-2 text-sm font-semibold text-white transition hover:shadow-md" style="background: var(--primary);">Save changes</button>
-        </div>
-    </form>
-</x-modal>
+            @include('maternal.partials.consultation-select', [
+                'fieldName' => 'consultation_id',
+                'consultations' => $consultations,
+                'selected' => $visit->consultation_id ?? null,
+                'xModel' => 'visit.consultation_id',
+            ])
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="button" @click="$dispatch('close')" class="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:bg-black/[0.03]"
+                        style="border-color: var(--border); color: var(--ink-muted);">Cancel</button>
+                <button type="submit" class="rounded-lg px-4 py-2 text-sm font-semibold text-white transition hover:shadow-md" style="background: var(--primary);">Save changes</button>
+            </div>
+        </form>
+    </x-modal>
+@endif
 
 <x-modal name="register-pregnancy-modal" title="Register pregnancy"
          x-on:open-register-pregnancy.window="open = true" x-on:close.window="open = false">

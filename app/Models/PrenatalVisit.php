@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -21,6 +22,8 @@ use Illuminate\Support\Carbon;
  * @property-read Pregnancy $pregnancy
  * @property-read Consultation|null $consultation
  * @property-read HealthWorker|null $recordedBy
+ * @property-read Vitals|null $triage_vitals
+ * @property-read array{bp: string, weight_kg: string|null, temperature_c: string|null, fundic_height_cm: string|null} $flowsheet_trend
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PrenatalVisit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PrenatalVisit newQuery()
@@ -74,5 +77,64 @@ class PrenatalVisit extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(HealthWorker::class, 'recorded_by');
+    }
+
+    /**
+     * Vitals captured during this visit's intake (triage phase),
+     * falling back to the latest vitals version on the consultation.
+     */
+    public function triageVitals(): Attribute
+    {
+        return Attribute::make(
+            get: function (): ?Vitals {
+                $vitals = $this->consultation?->vitals;
+
+                return $vitals?->firstWhere('phase', 'triage')
+                    ?? $vitals?->sortByDesc('created_at')->first();
+            },
+        );
+    }
+
+    /**
+     * Display-ready values for the prenatal flowsheet row, using raw
+     * stored values so precision is shown exactly as entered.
+     */
+    public function flowsheetTrend(): Attribute
+    {
+        return Attribute::make(
+            get: function (): array {
+                $vitals = $this->triage_vitals;
+
+                return [
+                    'bp' => ($vitals?->bp_systolic !== null || $vitals?->bp_diastolic !== null)
+                        ? ($vitals->bp_systolic ?? '-').'/'.($vitals->bp_diastolic ?? '-')
+                        : '-',
+                    'weight_kg' => $vitals?->rawDisplay('weight_kg'),
+                    'temperature_c' => $vitals?->rawDisplay('temperature_c'),
+                    'fundic_height_cm' => $this->rawNumber('fundic_height_cm'),
+                ];
+            },
+        );
+    }
+
+    /**
+     * Trim a raw numeric attribute for display, removing trailing
+     * fractional zeros only.
+     */
+    private function rawNumber(string $column): ?string
+    {
+        $raw = $this->getRawOriginal($column);
+
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        $value = (string) $raw;
+
+        if (str_contains($value, '.')) {
+            $value = rtrim(rtrim($value, '0'), '.');
+        }
+
+        return $value === '' ? '0' : $value;
     }
 }

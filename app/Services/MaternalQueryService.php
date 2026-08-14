@@ -80,7 +80,7 @@ class MaternalQueryService
     public function pregnanciesForPatient(Patient $patient): Collection
     {
         return $patient->pregnancies()
-            ->with('visits')
+            ->with(['visits.consultation.vitals'])
             ->orderByDesc('lmp')
             ->get();
     }
