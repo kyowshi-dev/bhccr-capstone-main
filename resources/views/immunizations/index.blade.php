@@ -13,7 +13,7 @@
     ];
 @endphp
 
-<div class="space-y-5 lg:space-y-6" x-data="immunizationIndex()">
+<div class="space-y-5 lg:space-y-6" x-data="immunizationIndex()" @checkin-close.window="closeCheckin()">
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
             <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">Immunization tracking</h1>
@@ -21,17 +21,23 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if ($mode === 'child')
-                <button type="button" @click="$dispatch('open-enroll-modal')"
-                        class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md"
-                        style="background: var(--primary);">
+                <a href="{{ route('immunizations.enroll-infant.create') }}"
+                   class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md"
+                   style="background: var(--primary);">
                     <i class="fa-solid fa-baby mr-1.5" aria-hidden="true"></i> Enroll infant
-                </button>
+                </a>
             @endif
             <a href="{{ route('patients.create') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border text-sm font-semibold transition duration-200 hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">
                 Add new patient
             </a>
         </div>
     </div>
+
+    @if (session('success'))
+        <div class="rounded-xl border px-4 py-3" style="background: var(--teal-soft); border-color: var(--primary); color: var(--primary);">
+            <i class="fa-solid fa-circle-check mr-1.5" aria-hidden="true"></i>{{ session('success') }}
+        </div>
+    @endif
 
     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div class="inline-flex self-start rounded-xl border p-1" style="border-color: var(--border); background: var(--bg-surface);" role="tablist" aria-label="Immunization mode">
@@ -78,74 +84,30 @@
     </div>
 
     @if ($mode === 'child')
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <button type="button" @click="activeQueue = 'due'" class="text-left rounded-xl border p-4 lg:p-5 transition hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
-                <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">{{ $dueDateLabel }}</p>
-                <div class="flex items-end justify-between gap-3">
-                    <p class="text-2xl font-display font-semibold leading-none" style="color: var(--accent-blue);">{{ number_format($dueTodayCount) }}</p>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
-                        <i class="fa-regular fa-calendar" aria-hidden="true"></i> children
-                    </span>
-                </div>
-            </button>
-
-            <button type="button" @click="activeQueue = 'overdue'" class="text-left rounded-xl border p-4 lg:p-5 transition hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
-                <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">Overdue / defaulters</p>
-                <div class="flex items-end justify-between gap-3">
-                    <p class="text-2xl font-display font-semibold leading-none" style="color: var(--danger);">{{ number_format($overdueCount) }}</p>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
-                        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Priority
-                    </span>
-                </div>
-            </button>
-
-            <div class="text-left rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
-                <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">Infant coverage (0–11 mo)</p>
-                <div class="flex items-end justify-between gap-3">
-                    <p class="text-2xl font-display font-semibold leading-none" style="color: var(--ink);">
-                        {{ is_null($infantCoveragePercent) ? '-' : $infantCoveragePercent.'%' }}
-                    </p>
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
-                        {{ number_format($infantTotal) }} infants
-                    </span>
-                </div>
+        <div class="rounded-xl border p-4 lg:p-5 max-w-md" style="background: var(--bg-surface); border-color: var(--border);">
+            <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">Infant coverage (0–11 mo)</p>
+            <div class="flex items-end justify-between gap-3">
+                <p class="text-2xl font-display font-semibold leading-none" style="color: var(--ink);">
+                    {{ is_null($infantCoveragePercent) ? '-' : $infantCoveragePercent.'%' }}
+                </p>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
+                    {{ number_format($infantTotal) }} infants
+                </span>
             </div>
         </div>
     @else
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <button type="button" @click="activeTab = 'due'" class="text-left rounded-xl border p-4 lg:p-5 transition hover:shadow-md" style="background: var(--bg-surface); border-color: var(--border);">
-                <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">{{ $dueDateLabel }}</p>
-                <div class="flex items-end justify-between gap-3">
-                    <p class="text-2xl font-display font-semibold leading-none" style="color: var(--accent-blue);">{{ number_format($dueTodayCount) }}</p>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
-                        <i class="fa-regular fa-calendar" aria-hidden="true"></i> adults
-                    </span>
-                </div>
-            </button>
-
-            <div class="text-left rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
-                <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">Overdue / defaulters</p>
-                <div class="flex items-end justify-between gap-3">
-                    <p class="text-2xl font-display font-semibold leading-none" style="color: var(--danger);">{{ number_format($overdueCount) }}</p>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
-                        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Priority
-                    </span>
-                </div>
-            </div>
-
-            <div class="text-left rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
-                <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">Doses given</p>
-                <div class="flex items-end justify-between gap-3">
-                    <p class="text-2xl font-display font-semibold leading-none" style="color: var(--ink);">{{ number_format($totalGiven) }}</p>
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
-                        {{ number_format($patientsWithRecords) }} patients
-                    </span>
-                </div>
+        <div class="rounded-xl border p-4 lg:p-5 max-w-md" style="background: var(--bg-surface); border-color: var(--border);">
+            <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">Doses given</p>
+            <div class="flex items-end justify-between gap-3">
+                <p class="text-2xl font-display font-semibold leading-none" style="color: var(--ink);">{{ number_format($totalGiven) }}</p>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
+                    {{ number_format($patientsWithRecords) }} patients
+                </span>
             </div>
         </div>
     @endif
 
-    <div class="rounded-xl" x-data="patientSearch($data)">
+    <div class="rounded-xl" x-data="patientSearch()">
         <div class="relative">
             <span class="absolute inset-y-0 flex items-center pointer-events-none pl-3" style="color: var(--ink-subtle);">
                 <i class="fa-solid fa-magnifying-glass text-sm" aria-hidden="true"></i>
@@ -161,13 +123,13 @@
             <ul>
                 <template x-for="patient in results" :key="patient.id">
                     <li class="border-b last:border-0 transition-colors hover:bg-black/[0.03]">
-                        <button type="button" class="block w-full text-left px-4 py-2.5" @click="parent.openPatient(patient.id, patient.text)">
+                        <a :href="'{{ route('immunizations.patient', ['id' => '__PATIENT_ID__']) }}'.replace('__PATIENT_ID__', patient.id)" class="block w-full text-left px-4 py-2.5">
                             <div class="font-medium text-sm" style="color: var(--ink);" x-text="patient.text"></div>
                             <div class="text-xs mt-0.5" style="color: var(--ink-muted);">
                                 <span x-text="patient.subtext"></span>
                                 <span class="font-semibold" style="color: var(--primary);"> - View immunization history</span>
                             </div>
-                        </button>
+                        </a>
                     </li>
                 </template>
             </ul>
@@ -231,9 +193,9 @@
                                     @endphp
                                     <tr class="transition-colors hover:bg-black/[0.02]">
                                         <td class="px-3 lg:px-4 py-3" style="color: var(--ink);">
-                                            <button type="button" class="text-left hover:underline font-medium" style="color: var(--primary);" @click="openPatient({{ $queuePatient->id }}, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)))">
+                                            <a href="{{ route('immunizations.patient', $queuePatient->id) }}" class="hover:underline font-medium" style="color: var(--primary);">
                                                 {{ fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix) }}
-                                            </button>
+                                            </a>
                                             <div class="flex items-center gap-2 mt-1.5">
                                                 @include('immunizations.partials._age-chip', ['patient' => $queuePatient])
                                                 <span class="text-xs" style="color: var(--ink-muted);">
@@ -279,16 +241,22 @@
                                                         </button>
                                                     </form>
                                                 @endif
-                                                <form method="POST" action="{{ route('immunizations.mark-done', [$queuePatient->id, $queueVaccine->id]) }}" @submit.prevent="confirmMarkDone($event.target, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)), @js($queueVaccine->vaccine_name), @js($entry['dose_number']))">
-                                                    @csrf
-                                                    <button type="submit" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);">
-                                                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Mark Done
-                                                    </button>
-                                                </form>
-                                                <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink);" @click="openPatient({{ $queuePatient->id }}, @js(fullName($queuePatient->last_name, $queuePatient->first_name, $queuePatient->middle_name, $queuePatient->suffix)))">
-                                                    <i class="fa-solid fa-syringe" aria-hidden="true"></i> Check-in / Record
+                                                <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="toggleCheckin('checkin_{{ $queueKey }}_{{ $queuePatient->id }}_{{ $loop->index }}', {{ $queuePatient->id }})">
+                                                    <i class="fa-solid fa-syringe" aria-hidden="true"></i> Record dose
                                                 </button>
                                             </div>
+                                        </td>
+                                    </tr>
+                                    <tr x-show="expandedPatientId === {{ $queuePatient->id }}"
+                                        x-cloak
+                                        class="bg-black/[0.01]"
+                                        style="display: none;">
+                                        <td colspan="5" class="p-0">
+                                            <div x-show="checkinLoading && expandedPatientId === {{ $queuePatient->id }}" class="flex items-center justify-center gap-2 px-4 py-6">
+                                                <div class="animate-spin inline-block w-5 h-5 border-2 border-current border-t-transparent rounded-full" style="color: var(--primary);" role="status" aria-label="Loading"></div>
+                                                <p class="text-xs" style="color: var(--ink-muted);">Loading schedule...</p>
+                                            </div>
+                                            <div x-ref="checkin_{{ $queueKey }}_{{ $queuePatient->id }}_{{ $loop->index }}"></div>
                                         </td>
                                     </tr>
                                 @empty
@@ -355,9 +323,9 @@
                                     </td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ ucwords((string) $r->worker_name) ?: '-' }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
-                                        <button type="button" class="text-sm font-medium hover:underline" style="color: var(--primary);" @click="openPatient({{ (int) $r->patient_id }}, @js(fullName($r->last_name, $r->first_name)))">
+                                        <a href="{{ route('immunizations.patient', (int) $r->patient_id) }}" class="text-sm font-medium hover:underline" style="color: var(--primary);">
                                             Open
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                             @empty
@@ -408,9 +376,9 @@
                                 @php($dueDate = $p->due_date ? \Carbon\Carbon::parse($p->due_date) : null)
                                 <tr class="transition-colors hover:bg-black/[0.02]">
                                     <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">
-                                        <button type="button" class="text-left hover:underline font-medium" style="color: var(--primary);" @click="openPatient({{ (int) $p->patient_id }}, @js(fullName($p->last_name, $p->first_name)))">
+                                        <a href="{{ route('immunizations.patient', (int) $p->patient_id) }}" class="hover:underline font-medium" style="color: var(--primary);">
                                             {{ fullName($p->last_name, $p->first_name) }}
-                                        </button>
+                                        </a>
                                     </td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 whitespace-nowrap" style="color: var(--ink);">
                                         {{ $dueDate?->format('M d, Y') ?? '-' }}
@@ -427,9 +395,21 @@
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 hidden sm:table-cell" style="color: var(--ink-muted);">{{ $p->dose_number }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3" style="color: var(--ink);">{{ $p->vaccine_name }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
-                                        <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="openPatient({{ (int) $p->patient_id }}, @js(fullName($p->last_name, $p->first_name)))">
-                                            <i class="fa-solid fa-syringe" aria-hidden="true"></i> Check-in / Record
+                                        <button type="button" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition hover:shadow-md" style="background: var(--primary);" @click="toggleCheckin('checkin_adult_{{ $p->patient_id }}_{{ $loop->index }}', {{ (int) $p->patient_id }})">
+                                            <i class="fa-solid fa-syringe" aria-hidden="true"></i> Record dose
                                         </button>
+                                    </td>
+                                </tr>
+                                <tr x-show="expandedPatientId === {{ (int) $p->patient_id }}"
+                                    x-cloak
+                                    class="bg-black/[0.01]"
+                                    style="display: none;">
+                                    <td colspan="5" class="p-0">
+                                        <div x-show="checkinLoading && expandedPatientId === {{ (int) $p->patient_id }}" class="flex items-center justify-center gap-2 px-4 py-6">
+                                            <div class="animate-spin inline-block w-5 h-5 border-2 border-current border-t-transparent rounded-full" style="color: var(--primary);" role="status" aria-label="Loading"></div>
+                                            <p class="text-xs" style="color: var(--ink-muted);">Loading schedule...</p>
+                                        </div>
+                                        <div x-ref="checkin_adult_{{ $p->patient_id }}_{{ $loop->index }}"></div>
                                     </td>
                                 </tr>
                             @empty
@@ -485,9 +465,9 @@
                                     </td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell" style="color: var(--ink-muted);">{{ ucwords((string) $r->worker_name) ?: '-' }}</td>
                                     <td class="px-3 lg:px-4 py-2 lg:py-3 text-right whitespace-nowrap">
-                                        <button type="button" class="text-sm font-medium hover:underline" style="color: var(--primary);" @click="openPatient({{ (int) $r->patient_id }}, @js(fullName($r->last_name, $r->first_name)))">
+                                        <a href="{{ route('immunizations.patient', (int) $r->patient_id) }}" class="text-sm font-medium hover:underline" style="color: var(--primary);">
                                             Open
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                             @empty
@@ -505,69 +485,72 @@
         </div>
     @endif
 
-    <template x-teleport="body">
-        <div x-show="patientModalOpen"
-             x-cloak
-             x-transition.opacity.duration.200ms
-             class="fixed inset-0 z-50 flex items-center justify-center p-4"
-             style="display: none;"
-             role="dialog"
-             aria-modal="true"
-             aria-labelledby="patientModalTitle"
-             @keydown.escape.window="closePatientModal()">
-            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closePatientModal()"></div>
-            <div class="relative flex flex-col w-full max-w-4xl h-[85vh] max-h-[90vh] overflow-hidden rounded-2xl border shadow-lg"
-                 style="background: var(--bg-surface-elevated); border-color: var(--border);">
-                <div class="p-4 border-b flex items-start justify-between gap-3 shrink-0" style="border-color: var(--border); background: var(--bg-surface);">
-                    <div>
-                        <p class="text-xs font-medium" style="color: var(--ink-muted);">Patient</p>
-                        <p id="patientModalTitle" class="font-display font-semibold text-lg leading-tight" style="color: var(--ink);" x-text="patientModalTitle || 'Immunizations'"></p>
-                    </div>
-                    <button type="button" class="inline-flex items-center justify-center px-3 py-2 rounded-xl text-sm font-semibold transition" style="background: rgba(0,0,0,0.06); color: var(--ink);" @click="closePatientModal()">
-                        Close
-                    </button>
-                </div>
-                <div class="flex-1 overflow-hidden relative">
-                    <div x-show="patientModalOpen" class="absolute inset-0 flex items-center justify-center" style="background: var(--bg-page); z-index: 1;">
-                        <div class="text-center">
-                            <div class="animate-spin inline-block w-8 h-8 border-2 border-current border-t-transparent rounded-full mb-2" style="color: var(--primary);" role="status" aria-label="Loading"></div>
-                            <p class="text-xs" style="color: var(--ink-muted);">Loading patient records...</p>
-                        </div>
-                    </div>
-                    <iframe :src="patientModalUrl" class="w-full h-full relative" style="background: var(--bg-page); z-index: 0;" title="Patient immunizations" @load="$el.previousElementSibling && ($el.previousElementSibling.style.display = 'none')"></iframe>
-                </div>
-            </div>
-        </div>
-    </template>
-
-    @include('immunizations.partials._enroll-infant-modal', ['zones' => $zones])
 </div>
 
 <script>
     function immunizationIndex() {
         return {
-            patientRouteTemplate: @json(route('immunizations.patient', ['id' => '__PATIENT_ID__', 'bare' => 1])),
+            checkinRouteTemplate: @json(route('immunizations.checkin', ['patient' => '__PATIENT_ID__'])),
             activeQueue: 'due',
             activeTab: 'due',
-            patientModalOpen: false,
-            patientModalUrl: '',
-            patientModalTitle: '',
-            init() {
-                this.$watch('patientModalOpen', (open) => {
-                    document.body.classList.toggle('overflow-hidden', open);
-                });
+            expandedPatientId: null,
+            expandedRef: null,
+            checkinLoading: false,
+            checkinSeq: 0,
+            checkinUrl(patientId) {
+                return this.checkinRouteTemplate.replace('__PATIENT_ID__', patientId);
             },
-            patientUrl(patientId) {
-                return this.patientRouteTemplate.replace('__PATIENT_ID__', patientId);
+            toggleCheckin(ref, patientId) {
+                if (this.expandedPatientId === patientId) {
+                    this.closeCheckin();
+                    return;
+                }
+                this.destroyCheckinTree(this.expandedRef);
+                this.expandedPatientId = patientId;
+                this.expandedRef = ref;
+                this.loadCheckin(ref, patientId);
             },
-            openPatient(patientId, title) {
-                this.patientModalUrl = this.patientUrl(patientId);
-                this.patientModalTitle = title ?? 'Immunizations';
-                this.patientModalOpen = true;
+            closeCheckin() {
+                this.checkinSeq++;
+                this.destroyCheckinTree(this.expandedRef);
+                this.expandedPatientId = null;
+                this.expandedRef = null;
+                this.checkinLoading = false;
             },
-            closePatientModal() {
-                this.patientModalOpen = false;
-                this.patientModalUrl = '';
+            destroyCheckinTree(ref) {
+                this.clearCheckinHost(ref ? this.$refs[ref] : null);
+            },
+            clearCheckinHost(container) {
+                if (!container) return;
+                while (container.firstElementChild) {
+                    if (window.Alpine) window.Alpine.destroyTree(container.firstElementChild);
+                    container.removeChild(container.firstElementChild);
+                }
+            },
+            async loadCheckin(ref, patientId) {
+                const seq = ++this.checkinSeq;
+                this.checkinLoading = true;
+                const container = this.$refs[ref];
+                this.clearCheckinHost(container);
+                try {
+                    const response = await fetch(this.checkinUrl(patientId));
+                    if (! response.ok) throw new Error(`HTTP ${response.status}`);
+                    const html = await response.text();
+                    if (this.expandedPatientId !== patientId || seq !== this.checkinSeq) return;
+                    const el = this.$refs[ref];
+                    if (el) {
+                        el.innerHTML = html;
+                        if (window.Alpine) window.Alpine.initTree(el);
+                    }
+                } catch (e) {
+                    console.error('Check-in load failed:', e);
+                    if (this.expandedPatientId === patientId && seq === this.checkinSeq) {
+                        const el = this.$refs[ref];
+                        if (el) el.innerHTML = '<div class="px-4 py-6 text-center text-sm" style="color: var(--ink-muted);">Could not load the schedule. Close and try again.</div>';
+                    }
+                } finally {
+                    if (seq === this.checkinSeq) this.checkinLoading = false;
+                }
             },
             confirmNoShow(form, patientLabel) {
                 Swal.fire({
@@ -578,21 +561,6 @@
                     confirmButtonText: 'Yes, mark no-show',
                     cancelButtonText: 'Cancel',
                     confirmButtonColor: '#dc2626',
-                    cancelButtonColor: '#6b7280',
-                    reverseButtons: true,
-                }).then((result) => {
-                    if (result.isConfirmed) form.submit();
-                });
-            },
-            confirmMarkDone(form, patientLabel, vaccineLabel, doseNumber) {
-                Swal.fire({
-                    title: 'Mark as done?',
-                    html: `<p class="text-sm">${vaccineLabel} (dose ${doseNumber}) for <strong>${patientLabel}</strong> was given - e.g. at a hospital or another facility. The date is recorded as <strong>today</strong> unless an actual date is entered on the patient page.</p>`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, mark done',
-                    cancelButtonText: 'Cancel',
-                    confirmButtonColor: 'var(--primary)',
                     cancelButtonColor: '#6b7280',
                     reverseButtons: true,
                 }).then((result) => {
@@ -614,12 +582,26 @@
                     if (result.isConfirmed) form.submit();
                 });
             },
+            confirmMarkDone(form) {
+                Swal.fire({
+                    title: 'Mark as done elsewhere?',
+                    html: '<p class="text-sm">Use this only when the dose was given at another facility. The dose is recorded with <strong>today\'s date</strong> and no temperature is required.</p>',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, mark done',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: 'var(--primary)',
+                    cancelButtonColor: '#6b7280',
+                    reverseButtons: true,
+                }).then((result) => {
+                    if (result.isConfirmed) form.submit();
+                });
+            },
         };
     }
 
-    function patientSearch(parent) {
+    function patientSearch() {
         return {
-            parent,
             query: '',
             results: [],
             loading: false,

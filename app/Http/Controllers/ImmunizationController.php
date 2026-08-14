@@ -88,10 +88,32 @@ class ImmunizationController extends Controller
 
         $patient = Patient::with(['household', 'immunizationRecords'])->findOrFail($id);
 
+        return view('immunizations.patient', $this->schedulePayload($patient));
+    }
+
+    /**
+     * Renders the inline check-in fragment used by the queue's expanded rows.
+     */
+    public function checkin(Patient $patient): View
+    {
+        $this->authorizeImmunizations();
+
+        $patient->load(['household', 'immunizationRecords']);
+
+        return view('immunizations.partials._checkin', $this->schedulePayload($patient));
+    }
+
+    /**
+     * Shared schedule data for the patient page and the check-in fragment.
+     *
+     * @return array<string, mixed>
+     */
+    private function schedulePayload(Patient $patient): array
+    {
         $isChild = $patient->age < 18;
         $allowedCategories = $isChild ? ['Child', 'Both'] : ['Adult', 'Both'];
 
-        $records = ImmunizationQueryService::recordsForPatient($id);
+        $records = ImmunizationQueryService::recordsForPatient($patient->id);
         $vaccines = ImmunizationQueryService::vaccinesFor($allowedCategories);
         $healthWorkers = ImmunizationQueryService::healthWorkers();
 
@@ -119,7 +141,7 @@ class ImmunizationController extends Controller
             fn (Vaccine $v) => [$v->id => $this->service->unresolvedMissed($patient, $v)]
         );
 
-        return view('immunizations.patient', [
+        return [
             'patient' => $patient,
             'records' => $records,
             'vaccines' => $vaccines,
@@ -131,7 +153,16 @@ class ImmunizationController extends Controller
             'schedulesByVaccine' => $schedulesByVaccine,
             'noShowEvents' => $noShowEvents,
             'isImmunizationEnrolled' => $patient->is_immunization_enrolled,
-        ]);
+        ];
+    }
+
+    public function createInfant(): View
+    {
+        $this->authorizeImmunizations();
+
+        $zones = Zone::orderBy('zone_number')->get();
+
+        return view('immunizations.enroll-infant', ['zones' => $zones]);
     }
 
     public function administer(AdministerVaccineRequest $request, $id): RedirectResponse
@@ -153,7 +184,10 @@ class ImmunizationController extends Controller
                 'administered_by' => $this->currentWorkerId(),
             ]);
         } catch (ValidationException $e) {
-            return back()->withErrors($e->errors())->withInput();
+            return redirect()
+                ->route('immunizations.patient', $patient->id)
+                ->withErrors($e->errors())
+                ->withInput();
         }
 
         $next = '';
@@ -163,9 +197,7 @@ class ImmunizationController extends Controller
             $next = ' Next dose due '.$nextDue->format('M j, Y').'.';
         }
 
-        return redirect()
-            ->route('immunizations.patient', $patient->id)
-            ->with('success', $vaccine->vaccine_name.' recorded (dose '.$record->dose_number.').'.$next);
+        return back()->with('success', $vaccine->vaccine_name.' recorded (dose '.$record->dose_number.').'.$next);
     }
 
     /**

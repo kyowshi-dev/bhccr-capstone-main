@@ -47,7 +47,7 @@
                         </button>
                     </div>
 
-                    <div class="p-6 space-y-4">
+                    <div class="p-5 space-y-4">
                         <div x-show="outOfWindow" class="rounded-xl border px-4 py-3 text-sm" style="background: var(--accent-soft); border-color: var(--amber); color: var(--amber);">
                             <i class="fa-solid fa-clock mr-1.5" aria-hidden="true"></i>
                             This vaccine is outside its recommended age window. An override reason is required.
@@ -55,7 +55,7 @@
 
                         <div>
                             <label for="administer_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
-                                Date given <span class="font-normal" style="color: var(--ink-subtle);">(optional - today if blank)</span>
+                                Date given
                             </label>
                             <input id="administer_date" name="date_given" type="date" max="{{ now()->toDateString() }}"
                                    value="{{ old('date_given', now()->toDateString()) }}"

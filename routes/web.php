@@ -198,6 +198,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/immunizations', [ImmunizationController::class, 'index'])
         ->middleware('permission:immunizations')
         ->name('immunizations.index');
+    Route::get('/immunizations/checkin/{patient}', [ImmunizationController::class, 'checkin'])
+        ->middleware('permission:immunizations')
+        ->name('immunizations.checkin');
+    Route::get('/immunizations/enroll-infant', [ImmunizationController::class, 'createInfant'])
+        ->middleware('permission:immunizations')
+        ->name('immunizations.enroll-infant.create');
     Route::get('/patients/{id}/immunizations', [ImmunizationController::class, 'forPatient'])
         ->middleware('permission:immunizations')
         ->name('immunizations.patient');

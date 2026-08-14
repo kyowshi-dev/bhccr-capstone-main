@@ -5,9 +5,6 @@
 @section('content')
 @php
     $isBare = request()->query('bare');
-    $recordsByVaccine = $records->groupBy('vaccine_id');
-    $alertOverdue = collect($schedule)->filter(fn ($i) => ($statuses[$i->vaccine->id] ?? null) === 'overdue' || ($statuses[$i->vaccine->id] ?? null) === 'out_of_window')->count();
-    $alertNoShow = collect($schedule)->filter(fn ($i) => ($statuses[$i->vaccine->id] ?? null) === 'no_show')->count();
     $purok = $patient->household?->zone?->zone_number ?? 'No purok';
     [$y, $m, $d] = $patient->ageDetail !== null ? array_pad($patient->ageDetail, 3, 0) : [null, null, null];
     $ageText = $y !== null ? "{$y}y {$m}m {$d}d" : '-';
@@ -57,119 +54,15 @@
         </div>
     @endif
 
-    @if ($alertOverdue > 0 || $alertNoShow > 0)
-        <div class="rounded-xl border px-4 py-3 text-sm" style="background: var(--danger-soft); border-color: var(--danger); color: var(--danger);">
-            <i class="fa-solid fa-circle-exclamation mr-1.5" aria-hidden="true"></i>
-            @if ($alertOverdue > 0){{ $alertOverdue }} vaccine{{ $alertOverdue === 1 ? '' : 's' }} overdue.@endif
-            @if ($alertNoShow > 0)@if ($alertOverdue > 0) @endif{{ $alertNoShow }} marked no-show - follow up.@endif
-        </div>
-    @endif
-
-    <div>
-        <h2 class="font-display font-semibold text-lg mb-1" style="color: var(--ink);">Immunization schedule</h2>
-        <p class="text-sm mb-3" style="color: var(--ink-muted);">Dose numbers advance automatically from prior records.</p>
-        <div class="rounded-xl border overflow-hidden" style="background: var(--bg-surface-elevated); border-color: var(--border);">
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <thead style="background: var(--teal-soft);">
-                        <tr>
-                            <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium" style="color: var(--ink-muted);">Vaccine</th>
-                            <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium hidden md:table-cell" style="color: var(--ink-muted);">Schedule</th>
-                            <th class="px-3 lg:px-4 py-2 lg:py-3 text-left text-xs font-medium" style="color: var(--ink-muted);">Status</th>
-                            <th class="px-3 lg:px-4 py-2 lg:py-3 text-right text-xs font-medium" style="color: var(--ink-muted);">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[var(--border)]">
-                        @forelse ($schedule as $item)
-                            @php
-                                $vaccineId = $item->vaccine->id;
-                                $status = $statuses[$vaccineId] ?? 'waiting';
-                                $elig = $eligibility[$vaccineId] ?? ['state' => 'waiting', 'earliest_date' => null, 'requires_override' => false];
-                                $givenCount = $recordsByVaccine->get($vaccineId, collect())->count();
-                                $nextDose = $givenCount + 1;
-                                $nextSchedule = $schedulesByVaccine[$vaccineId] ?? collect();
-                                $nextScheduleRow = $nextSchedule->where('dose_number', $nextDose)->first();
-                                $requiresTemp = (bool) ($nextScheduleRow->requires_temp ?? false);
-                                $noShowEvent = $noShowEvents[$vaccineId] ?? null;
-                                $earliestDate = $elig['earliest_date'] ?? null;
-                            @endphp
-                            <tr class="transition-colors hover:bg-black/[0.02]">
-                                <td class="px-3 lg:px-4 py-3" style="color: var(--ink);">
-                                    <div class="font-medium">{{ $item->vaccine->vaccine_name }}</div>
-                                    @if ($item->vaccine->vaccine_code)
-                                        <div class="text-xs mt-0.5" style="color: var(--ink-muted);">{{ $item->vaccine->vaccine_code }}</div>
-                                    @endif
-                                </td>
-                                <td class="px-3 lg:px-4 py-3 hidden md:table-cell text-xs" style="color: var(--ink-muted);">
-                                    {{ $item->vaccine->description ?? 'Per DOH schedule' }}
-                                </td>
-                                <td class="px-3 lg:px-4 py-3">
-                                    @if ($status === 'completed')
-                                        <span class="inline-flex items-center gap-1.5 text-xs font-medium" style="color: var(--ink-muted);">
-                                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Complete
-                                        </span>
-                                    @elseif ($status === 'no_show')
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
-                                            <i class="fa-solid fa-user-clock" aria-hidden="true"></i> No-show
-                                        </span>
-                                    @elseif ($status === 'out_of_window')
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--amber-soft); color: var(--amber);">
-                                            <i class="fa-solid fa-clock" aria-hidden="true"></i> Out of window
-                                        </span>
-                                    @elseif ($status === 'overdue')
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--danger-soft); color: var(--danger);">
-                                            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Overdue
-                                        </span>
-                                    @else
-                                        <span class="text-xs font-medium" style="color: var(--ink-subtle);">Waiting</span>
-                                    @endif
-                                </td>
-                                <td class="px-3 lg:px-4 py-3 text-right whitespace-nowrap">
-                                    @if ($status === 'completed')
-                                        <span class="text-xs font-medium" style="color: var(--ink-muted);">Series complete</span>
-                                    @elseif ($elig['state'] === 'too_early')
-                                        <span class="text-xs font-medium" style="color: var(--ink-muted);">
-                                            Earliest {{ \Carbon\Carbon::parse($earliestDate)->format('M d, Y') }}
-                                        </span>
-                                    @else
-                                        <div class="inline-flex items-center gap-1.5">
-                                            @if ($status === 'no_show' && $noShowEvent)
-                                                <form method="POST" action="{{ route('immunizations.no-show') }}" @submit.prevent="confirmClearNoShow($event.target)">
-                                                    @csrf
-                                                    <input type="hidden" name="no_show" value="0">
-                                                    <input type="hidden" name="patient_id" value="{{ $patient->id }}">
-                                                    <input type="hidden" name="vaccine_id" value="{{ $vaccineId }}">
-                                                    <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">
-                                                        Clear no-show
-                                                    </button>
-                                                </form>
-                                            @endif
-<button type="button"
-                                            @click="$dispatch('open-administer', {
-                                                vaccineId: {{ $vaccineId }},
-                                                vaccineName: @js($item->vaccine->vaccine_name),
-                                                doseNumber: {{ $nextDose }},
-                                                requiresTemp: {{ $requiresTemp ? 'true' : 'false' }},
-                                                outOfWindow: {{ ($elig['state'] ?? '') === 'out_of_window' ? 'true' : 'false' }}
-                                            })"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition hover:shadow-md"
-                                            style="background: var(--primary);">
-                                        <i class="fa-solid fa-syringe" aria-hidden="true"></i> Administer
-                                    </button>
-                                        </div>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="px-4 py-8 text-center text-sm" style="color: var(--ink-muted);">No vaccines in schedule for this age group.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    @include('immunizations.partials._schedule-table', [
+        'patient' => $patient,
+        'schedule' => $schedule,
+        'statuses' => $statuses,
+        'eligibility' => $eligibility,
+        'schedulesByVaccine' => $schedulesByVaccine,
+        'noShowEvents' => $noShowEvents,
+        'records' => $records,
+    ])
 
     <div>
         <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">History</h2>
@@ -224,6 +117,22 @@
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Yes, clear',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: 'var(--primary)',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    }
+
+    function confirmMarkDone(form) {
+        Swal.fire({
+            title: 'Mark as done elsewhere?',
+            html: '<p class="text-sm">Use this only when the dose was given at another facility. The dose is recorded with <strong>today\'s date</strong> and no temperature is required.</p>',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, mark done',
             cancelButtonText: 'Cancel',
             confirmButtonColor: 'var(--primary)',
             cancelButtonColor: '#6b7280',

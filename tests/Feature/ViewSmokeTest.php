@@ -83,5 +83,7 @@ class ViewSmokeTest extends TestCase
         $this->get(route('roles.index'))->assertOk();
         $this->get(route('zones.create'))->assertOk();
         $this->get("/patients/{$patientId}/immunizations")->assertOk();
+        $this->get(route('immunizations.checkin', $patientId))->assertOk();
+        $this->get(route('immunizations.enroll-infant.create'))->assertOk();
     }
 }

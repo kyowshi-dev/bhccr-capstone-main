@@ -95,7 +95,7 @@ class ImmunizationAdministerTest extends TestCase
         $this->post(route('immunizations.administer', $infant->id), [
             'vaccine_id' => $this->vaccine('PENTA')->id,
             'temp_recorded' => '36.5',
-        ])->assertSessionHasErrors('date_given');
+        ])->assertRedirect(route('immunizations.patient', $infant->id))->assertSessionHasErrors('date_given');
     }
 
     public function test_administer_allows_overdue_dose(): void
@@ -103,10 +103,11 @@ class ImmunizationAdministerTest extends TestCase
         $this->actingAs($this->authorizedUser());
         $infant = $this->makeInfant(now()->subDays(100));
 
-        $this->post(route('immunizations.administer', $infant->id), [
-            'vaccine_id' => $this->vaccine('PENTA')->id,
-            'temp_recorded' => '36.5',
-        ])->assertRedirect(route('immunizations.patient', $infant->id))->assertSessionHasNoErrors();
+        $this->from(route('immunizations.patient', $infant->id))
+            ->post(route('immunizations.administer', $infant->id), [
+                'vaccine_id' => $this->vaccine('PENTA')->id,
+                'temp_recorded' => '36.5',
+            ])->assertRedirect(route('immunizations.patient', $infant->id))->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('immunization_records', [
             'patient_id' => $infant->id,
@@ -132,11 +133,12 @@ class ImmunizationAdministerTest extends TestCase
         $this->actingAs($this->authorizedUser());
         $infant = $this->makeInfant(now()->subDays(300));
 
-        $this->post(route('immunizations.administer', $infant->id), [
-            'vaccine_id' => $this->vaccine('ROTA')->id,
-            'temp_recorded' => '36.5',
-            'override_reason' => 'Catch-up per physician advice',
-        ])->assertRedirect(route('immunizations.patient', $infant->id))->assertSessionHasNoErrors();
+        $this->from(route('immunizations.patient', $infant->id))
+            ->post(route('immunizations.administer', $infant->id), [
+                'vaccine_id' => $this->vaccine('ROTA')->id,
+                'temp_recorded' => '36.5',
+                'override_reason' => 'Catch-up per physician advice',
+            ])->assertRedirect(route('immunizations.patient', $infant->id))->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('immunization_records', [
             'patient_id' => $infant->id,
