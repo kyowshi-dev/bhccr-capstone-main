@@ -137,7 +137,3 @@ See the [open issues](https://github.com/kyowshi-dev/bhccr-capstone-main/issues)
 ## License
 
 Distributed under the MIT license. This is a **capstone project and is not affiliated with, or endorsed by, the Philippine DOH (Department of Health).**
-
----
-
-<p align="center"><i>Built with 💚 for the health workers of Brgy. Sta. Ana</i></p>
