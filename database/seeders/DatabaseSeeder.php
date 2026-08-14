@@ -96,6 +96,9 @@ class DatabaseSeeder extends Seeder
         // 9. PATIENTS + households
         $this->call(PatientSeeder::class);
 
+        // 9a. INFANTS with existing immunization records
+        $this->call(InfantImmunizationSeeder::class);
+
         // 10. CONSULTATIONS + outward referrals
         $this->call(ConsultationSeeder::class);
 

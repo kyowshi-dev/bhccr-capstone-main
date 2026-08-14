@@ -287,21 +287,11 @@ class ChildImmunizationServiceTest extends TestCase
         $this->service->administer($patient, $this->vaccine('HEPA_B_GT24'), ['temp_recorded' => '36.5']);
     }
 
-    public function test_group_guard_blocks_catchup_after_birth_dose(): void
-    {
-        $patient = $this->makePatient(now()->subDays(60));
-
-        $this->service->administer($patient, $this->vaccine('HEPA_B_24H'), ['temp_recorded' => '36.5']);
-
-        $this->expectException(ValidationException::class);
-        $this->service->administer($patient, $this->vaccine('HEPA_B_CATCHUP'), ['temp_recorded' => '36.5']);
-    }
-
-    public function test_group_guard_allows_catchup_without_birth_dose(): void
+    public function test_group_guard_allows_late_dose_without_birth_dose(): void
     {
         $patient = $this->makePatient(now()->subDays(90));
 
-        $record = $this->service->administer($patient, $this->vaccine('HEPA_B_CATCHUP'), ['temp_recorded' => '36.5']);
+        $record = $this->service->administer($patient, $this->vaccine('HEPA_B_GT24'), ['temp_recorded' => '36.5']);
 
         $this->assertSame(1, $record->dose_number);
     }
@@ -313,14 +303,13 @@ class ChildImmunizationServiceTest extends TestCase
         $this->service->administer($patient, $this->vaccine('HEPA_B_24H'), ['temp_recorded' => '36.5']);
 
         $this->assertSame('completed', $this->service->statusFor($patient, $this->vaccine('HEPA_B_GT24')));
-        $this->assertSame('completed', $this->service->statusFor($patient, $this->vaccine('HEPA_B_CATCHUP')));
     }
 
     public function test_giving_birth_dose_clears_hep_b_variants_from_overdue_queue(): void
     {
         $patient = $this->makePatient(now()->subDays(100));
 
-        $hepCodes = ['HEPA_B_24H', 'HEPA_B_GT24', 'HEPA_B_CATCHUP'];
+        $hepCodes = ['HEPA_B_24H', 'HEPA_B_GT24'];
 
         $overdueBefore = $this->service->queue('overdue')
             ->filter(fn (array $entry) => in_array($entry['vaccine']->vaccine_code, $hepCodes, true));
@@ -340,7 +329,6 @@ class ChildImmunizationServiceTest extends TestCase
         $this->service->administer($patient, $this->vaccine('HEPA_B_GT24'), ['temp_recorded' => '36.5']);
 
         $this->assertSame('completed', $this->service->statusFor($patient, $this->vaccine('HEPA_B_24H')));
-        $this->assertSame('completed', $this->service->statusFor($patient, $this->vaccine('HEPA_B_CATCHUP')));
     }
 
     public function test_mark_no_show_appends_missed_event_and_clear_resolves_it(): void
