@@ -55,6 +55,7 @@ class MaternalProfile extends Model
         'Calendar/Rhythm',
         'Pills',
         'Injectable',
+        'DMPA',
         'IUD',
         'Implant',
         'Condom',
