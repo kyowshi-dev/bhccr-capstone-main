@@ -3,6 +3,7 @@
 use App\Http\Middleware\DisableBackCache;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\TrackPageVisit;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -25,6 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Apply DisableBackCache to all authenticated routes
         // This prevents back-button bypass after logout (OWASP A01)
         $middleware->appendToGroup('web', DisableBackCache::class);
+
+        // Record successful page loads in the session trail for breadcrumbs
+        $middleware->appendToGroup('web', TrackPageVisit::class);
 
         // Trust forwarding headers from tunnel proxies (ngrok, Cloudflare Tunnel)
         // so generated URLs use https:// when the app is reached through them

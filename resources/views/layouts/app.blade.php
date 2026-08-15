@@ -72,17 +72,17 @@
                     <p class="mt-3 pt-3 border-t border-white/10 px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/50">Community</p>
 
                     @if ($can('patients'))
-                        <x-layouts.nav-link url="{{ route('patients.index') }}" label="Residents (Patients)" icon="fa-solid fa-user-injured"
+                        <x-layouts.nav-link url="{{ route('patients.index') }}" label="Patients" icon="fa-solid fa-user-injured"
                                             :active="request()->routeIs('patients*')" />
                     @endif
 
                     @if ($can('household'))
-                        <x-layouts.nav-link url="{{ route('households.index') }}" label="Household & Census" icon="fa-solid fa-house-chimney"
+                        <x-layouts.nav-link url="{{ route('households.index') }}" label="Households" icon="fa-solid fa-house-chimney"
                                             :active="request()->routeIs('households*')" />
                     @endif
 
                     @if ($can('zones'))
-                        <x-layouts.nav-link url="{{ route('zones.index') }}" label="Purok / Zone Coverage" icon="fa-solid fa-map-location-dot"
+                        <x-layouts.nav-link url="{{ route('zones.index') }}" label="Zones" icon="fa-solid fa-map-location-dot"
                                             :active="request()->routeIs('zones*')" />
                     @endif
                 @endif
@@ -91,7 +91,7 @@
                     <p class="mt-3 pt-3 border-t border-white/10 px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/50">Health Care Services</p>
 
                     @if ($can('consultations'))
-                        <x-layouts.nav-link url="{{ route('consultations.index') }}" label="Consultations & Check-ups" icon="fa-solid fa-stethoscope"
+                        <x-layouts.nav-link url="{{ route('consultations.index') }}" label="Consultations" icon="fa-solid fa-stethoscope"
                                             :active="request()->routeIs('consultations*')" />
                     @endif
 
@@ -101,7 +101,7 @@
                     @endif
 
                     @if ($can('maternal'))
-                        <x-layouts.nav-link url="{{ route('maternal.prenatal.index') }}" label="Maternal Care & Family Planning" icon="fa-solid fa-person-pregnant"
+                        <x-layouts.nav-link url="{{ route('maternal.prenatal.index') }}" label="Maternal Care" icon="fa-solid fa-person-pregnant"
                                             :active="request()->routeIs('maternal*')" />
                     @endif
 
@@ -115,12 +115,12 @@
                     <p class="mt-3 pt-3 border-t border-white/10 px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/50">Reports & Inventory</p>
 
                     @if ($can('medicines'))
-                        <x-layouts.nav-link url="{{ route('medicines.index') }}" label="Medicine Directory" icon="fa-solid fa-pills"
+                        <x-layouts.nav-link url="{{ route('medicines.index') }}" label="Medicines" icon="fa-solid fa-pills"
                                             :active="request()->routeIs('medicines*')" />
                     @endif
 
                     @if ($can('reports'))
-                        <x-layouts.nav-link url="{{ route('reports.index') }}" label="RHU & LGU Reports" icon="fa-solid fa-file-lines"
+                        <x-layouts.nav-link url="{{ route('reports.index') }}" label="Reports" icon="fa-solid fa-file-lines"
                                             :active="request()->routeIs('reports*')" />
                     @endif
                 @endif
@@ -130,13 +130,13 @@
                 </p>
 
                 @if ($can('users'))
-                    <x-layouts.nav-link url="{{ route('users.index') }}" label="Users & Role Permissions" icon="fa-solid fa-user-gear"
+                    <x-layouts.nav-link url="{{ route('users.index') }}" label="User Management" icon="fa-solid fa-user-gear"
                                         :active="request()->routeIs('users*')" />
-                    <x-layouts.nav-link url="{{ route('roles.index') }}" label="Role Manager" icon="fa-solid fa-user-shield"
+                    <x-layouts.nav-link url="{{ route('roles.index') }}" label="Roles" icon="fa-solid fa-user-shield"
                                         :active="request()->routeIs('roles*')" />
                 @endif
 
-                <x-layouts.nav-link url="{{ route('settings.index') }}" label="System Settings & Backups" icon="fa-solid fa-gear"
+                <x-layouts.nav-link url="{{ route('settings.index') }}" label="Settings" icon="fa-solid fa-gear"
                                     :active="request()->routeIs('settings*')" />
             </nav>
         </aside>
@@ -304,7 +304,7 @@
                         $breadcrumbs = \App\Helpers\BreadcrumbHelper::getBreadcrumbs();
                     @endphp
                     @if (count($breadcrumbs) > 1)
-                        <nav class="flex items-center gap-2 mb-3 py-1 animate-in opacity-0 delay-1 lg:px-2" aria-label="Breadcrumb">
+                        <nav class="flex items-center gap-2 mb-3 py-1 animate-in opacity-0 delay-1 lg:px-2" aria-label="Breadcrumb trail">
                             @foreach ($breadcrumbs as $index => $crumb)
                                 @if ($index > 0)
                                     <svg class="w-4 h-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
