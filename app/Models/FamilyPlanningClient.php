@@ -63,6 +63,7 @@ class FamilyPlanningClient extends Model
     public const METHODS = [
         'Pills',
         'Injectable',
+        'DMPA',
         'Implant',
         'IUD',
         'Condom',

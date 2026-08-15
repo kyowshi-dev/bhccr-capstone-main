@@ -19,7 +19,7 @@ class UpdateFamilyPlanningClientRequest extends FormRequest
     {
         return [
             'type_of_client' => ['required', 'in:new_acceptor,continuing_user,drop_out,others'],
-            'method' => ['required', 'string', 'in:Pills,Injectable,Implant,IUD,Condom,BTL,Calendar/Rhythm,LAM,Others'],
+            'method' => ['required', 'string', 'in:Pills,Injectable,DMPA,Implant,IUD,Condom,BTL,Calendar/Rhythm,LAM,Others'],
             'drop_out_reason' => ['nullable', 'required_if:type_of_client,drop_out', 'string', 'max:500'],
             'schedule_next_visit' => ['nullable', 'date'],
             'is_active' => ['nullable', 'boolean'],

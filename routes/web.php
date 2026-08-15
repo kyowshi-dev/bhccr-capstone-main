@@ -306,36 +306,27 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/morbidity/download', [ReportController::class, 'downloadMorbidityPdf'])
         ->middleware('permission:reports')
         ->name('reports.morbidity.download');
-    Route::get('/reports/maternal-care', [ReportController::class, 'maternalCare'])
+    Route::get('/reports/mch-epi-fp', [ReportController::class, 'mchEpiFp'])
         ->middleware('permission:reports')
-        ->name('reports.maternal-care');
-    Route::get('/reports/maternal-care/download', [ReportController::class, 'downloadMaternalCarePdf'])
+        ->name('reports.mch-epi-fp');
+    Route::get('/reports/mch-epi-fp/download', [ReportController::class, 'downloadMchEpiFpPdf'])
         ->middleware('permission:reports')
-        ->name('reports.maternal-care.download');
-    Route::get('/reports/immunization', [ReportController::class, 'immunization'])
-        ->middleware('permission:reports')
-        ->name('reports.immunization');
-    Route::get('/reports/immunization/download', [ReportController::class, 'downloadImmunizationPdf'])
-        ->middleware('permission:reports')
-        ->name('reports.immunization.download');
-    Route::get('/reports/family-planning', [ReportController::class, 'familyPlanning'])
-        ->middleware('permission:reports')
-        ->name('reports.family-planning');
-    Route::get('/reports/family-planning/download', [ReportController::class, 'downloadFamilyPlanningPdf'])
-        ->middleware('permission:reports')
-        ->name('reports.family-planning.download');
-    Route::get('/reports/ncd', [ReportController::class, 'ncd'])
-        ->middleware('permission:reports')
-        ->name('reports.ncd');
-    Route::get('/reports/ncd/download', [ReportController::class, 'downloadNcdPdf'])
-        ->middleware('permission:reports')
-        ->name('reports.ncd.download');
-    Route::get('/reports/referrals', [ReportController::class, 'referrals'])
-        ->middleware('permission:reports')
-        ->name('reports.referrals');
-    Route::get('/reports/referrals/download', [ReportController::class, 'downloadReferralsPdf'])
-        ->middleware('permission:reports')
-        ->name('reports.referrals.download');
+        ->name('reports.mch-epi-fp.download');
+
+    // Legacy redirects: standalone maternal / immunization / family planning
+    // reports were merged into reports.mch-epi-fp.
+    Route::get('/reports/maternal-care', [ReportController::class, 'redirectLegacyMchEpiFp'])
+        ->middleware('permission:reports');
+    Route::get('/reports/maternal-care/download', [ReportController::class, 'redirectLegacyMchEpiFpDownload'])
+        ->middleware('permission:reports');
+    Route::get('/reports/immunization', [ReportController::class, 'redirectLegacyMchEpiFp'])
+        ->middleware('permission:reports');
+    Route::get('/reports/immunization/download', [ReportController::class, 'redirectLegacyMchEpiFpDownload'])
+        ->middleware('permission:reports');
+    Route::get('/reports/family-planning', [ReportController::class, 'redirectLegacyMchEpiFp'])
+        ->middleware('permission:reports');
+    Route::get('/reports/family-planning/download', [ReportController::class, 'redirectLegacyMchEpiFpDownload'])
+        ->middleware('permission:reports');
 
     // 8. USER MANAGEMENT
     Route::get('/users', [UserManagementController::class, 'index'])

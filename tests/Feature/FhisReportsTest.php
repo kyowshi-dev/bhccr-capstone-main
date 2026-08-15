@@ -4,14 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\FamilyPlanningClient;
 use App\Models\Household;
-use App\Models\OutwardReferral;
 use App\Models\Patient;
 use App\Models\User;
-use App\Services\FamilyPlanningReportService;
-use App\Services\ImmunizationReportService;
-use App\Services\MaternalCareReportService;
-use App\Services\NcdReportService;
-use App\Services\ReferralReportService;
+use App\Services\MchEpiFpReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Concerns\AssignsRolesAndPermissions;
@@ -45,22 +40,22 @@ class FhisReportsTest extends TestCase
         return $this->createUserWithPermissions(['reports']);
     }
 
-    private function healthWorkerFor(User $user): int
+    private function healthWorkerFor(User $user, string $lastName = 'Worker'): int
     {
         return DB::table('health_workers')->insertGetId([
             'user_id' => $user->id,
             'first_name' => 'Test',
-            'last_name' => 'Worker',
+            'last_name' => $lastName,
             'role' => 'Midwife',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
     }
 
-    private function patient(string $lastName = 'Reyes'): Patient
+    private function patient(string $lastName = 'Reyes', int $zoneId = 1): Patient
     {
         return Patient::create([
-            'household_id' => Household::create(['zone_id' => 1, 'family_name_head' => $lastName])->id,
+            'household_id' => Household::create(['zone_id' => $zoneId, 'family_name_head' => $lastName])->id,
             'first_name' => 'Liza',
             'last_name' => $lastName,
             'sex' => 'Female',
@@ -73,13 +68,40 @@ class FhisReportsTest extends TestCase
         ]);
     }
 
-    private function consultation(int $patientId, int $workerId): int
+    private function filters(?string $from = null, ?string $to = null): array
     {
-        return DB::table('consultations')->insertGetId([
-            'patient_id' => $patientId,
-            'worker_id' => $workerId,
-            'status' => 'completed',
-            'mode_of_transaction' => 'Walk-in',
+        return [
+            'from' => $from ?? now()->startOfMonth()->toDateString(),
+            'to' => $to ?? now()->endOfMonth()->toDateString(),
+        ];
+    }
+
+    private function pregnancy(Patient $patient, int $workerId, string $createdAt = 'now'): int
+    {
+        $timestamp = $createdAt === 'now' ? now() : $createdAt;
+
+        return DB::table('pregnancies')->insertGetId([
+            'patient_id' => $patient->id,
+            'status' => 'active',
+            'gravidity' => 1,
+            'parity' => 0,
+            'lmp' => now()->subMonths(4)->toDateString(),
+            'syphilis_result' => 'negative',
+            'iron_taken' => 1,
+            'tt_date' => now()->toDateString(),
+            'recorded_by' => $workerId,
+            'created_at' => $timestamp,
+            'updated_at' => $timestamp,
+        ]);
+    }
+
+    private function vaccineId(string $code = 'BCG_TEST'): int
+    {
+        return DB::table('vaccines_lookup')->insertGetId([
+            'vaccine_code' => $code,
+            'vaccine_name' => 'BCG Test',
+            'category' => 'Child',
+            'sort_order' => 99,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -92,28 +114,77 @@ class FhisReportsTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_maternal_care_report_renders_indicators(): void
+    public function test_mch_epi_fp_report_renders_register_with_patient_worker_and_date(): void
     {
         $user = $this->authorizedUser();
         $workerId = $this->healthWorkerFor($user);
         $patient = $this->patient();
 
-        $pregnancyId = DB::table('pregnancies')->insertGetId([
-            'patient_id' => $patient->id,
-            'status' => 'active',
-            'gravidity' => 1,
-            'parity' => 0,
-            'lmp' => now()->subMonths(4)->toDateString(),
-            'syphilis_result' => 'negative',
-            'iron_taken' => 1,
-            'tt_date' => now()->toDateString(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $pregnancyId = $this->pregnancy($patient, $workerId);
 
         DB::table('prenatal_visits')->insert([
             'pregnancy_id' => $pregnancyId,
             'visit_date' => now()->toDateString(),
+            'recorded_by' => $workerId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('immunization_records')->insert([
+            'patient_id' => $patient->id,
+            'vaccine_id' => $this->vaccineId(),
+            'dose_number' => 1,
+            'date_given' => now()->toDateString(),
+            'administered_by' => $workerId,
+            'no_show' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $client = FamilyPlanningClient::create([
+            'patient_id' => $patient->id,
+            'type_of_client' => FamilyPlanningClient::TYPE_NEW_ACCEPTOR,
+            'method' => 'Injectable',
+            'is_active' => true,
+            'recorded_by' => $workerId,
+        ]);
+
+        DB::table('family_planning_visits')->insert([
+            'client_id' => $client->id,
+            'visit_date' => now()->toDateString(),
+            'method' => 'Injectable',
+            'recorded_by' => $workerId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('reports.mch-epi-fp', $this->filters()))
+            ->assertOk()
+            ->assertSee('Maternal, EPI & Family Planning Report')
+            ->assertSee(now()->startOfMonth()->format('m/d/Y').' - '.now()->endOfMonth()->format('m/d/Y'))
+            ->assertSee(now()->format('m/d/Y'))
+            ->assertSee('Reyes')
+            ->assertSee('Test Worker')
+            ->assertSee('Prenatal registration')
+            ->assertSee('Prenatal visit')
+            ->assertSee('BCG Test 1')
+            ->assertSee('New Acceptor - Injectable')
+            ->assertSee('Visit - Injectable');
+    }
+
+    public function test_mch_epi_fp_report_summaries_count_all_programs(): void
+    {
+        $user = $this->authorizedUser();
+        $workerId = $this->healthWorkerFor($user);
+        $patient = $this->patient();
+
+        $pregnancyId = $this->pregnancy($patient, $workerId);
+
+        DB::table('prenatal_visits')->insert([
+            'pregnancy_id' => $pregnancyId,
+            'visit_date' => now()->toDateString(),
+            'recorded_by' => $workerId,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -129,215 +200,188 @@ class FhisReportsTest extends TestCase
             'delivery_time' => '09:30:00',
             'breastfeeding_date' => now()->toDateString(),
             'breastfeeding_time' => '10:00:00',
-            'child_last_name' => 'Reyes',
-            'child_first_name' => 'Baby',
-            'child_sex' => 'M',
             'postpartum_24h_date' => now()->toDateString(),
-            'postpartum_7d_date' => now()->toDateString(),
-            'postpartum_14d_date' => now()->toDateString(),
-            'postpartum_28d_date' => now()->toDateString(),
+            'recorded_by' => $workerId,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $this->actingAs($user)
-            ->get(route('reports.maternal-care', ['month' => now()->month, 'year' => now()->year]))
-            ->assertOk()
-            ->assertSee('New prenatal clients')
-            ->assertSee('Maternal Care Report');
+        DB::table('immunization_records')->insert([
+            'patient_id' => $patient->id,
+            'vaccine_id' => $this->vaccineId(),
+            'dose_number' => 1,
+            'date_given' => now()->toDateString(),
+            'administered_by' => $workerId,
+            'no_show' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        FamilyPlanningClient::create([
+            'patient_id' => $patient->id,
+            'type_of_client' => FamilyPlanningClient::TYPE_OTHERS,
+            'method' => 'Pills',
+            'is_active' => true,
+            'recorded_by' => $workerId,
+        ]);
+
+        $report = MchEpiFpReportService::query($this->filters(), $user);
+
+        $this->assertSame(1, $report['summaries']['maternal']['newPrenatalClients']);
+        $this->assertSame(1, $report['summaries']['maternal']['prenatalVisits']);
+        $this->assertSame(1, $report['summaries']['maternal']['totalDeliveries']);
+        $this->assertSame(1, $report['summaries']['maternal']['postpartum24h']);
+        $this->assertSame(1, $report['summaries']['epi']['totalDoses']);
+        $this->assertSame(1, $report['summaries']['epi']['childDoses']);
+        $this->assertSame(0, $report['summaries']['epi']['adultDoses']);
+        $this->assertSame(1, $report['summaries']['fp']['totalOthers']);
+        $this->assertSame(0, $report['summaries']['fp']['totalNew']);
     }
 
-    public function test_maternal_care_report_counts_prenatal_and_delivery_indicators(): void
+    public function test_mch_epi_fp_report_respects_date_range(): void
     {
         $user = $this->authorizedUser();
+        $workerId = $this->healthWorkerFor($user);
         $patient = $this->patient();
 
-        $pregnancyId = DB::table('pregnancies')->insertGetId([
-            'patient_id' => $patient->id,
-            'status' => 'active',
-            'gravidity' => 1,
-            'parity' => 0,
-            'lmp' => now()->subMonths(4)->toDateString(),
-            'syphilis_result' => 'negative',
-            'iron_taken' => 1,
-            'tt_date' => now()->toDateString(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $pregnancyId = $this->pregnancy($patient, $workerId, now()->subMonth());
 
         DB::table('prenatal_visits')->insert([
             'pregnancy_id' => $pregnancyId,
-            'visit_date' => now()->toDateString(),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'visit_date' => now()->subMonth()->toDateString(),
+            'recorded_by' => $workerId,
+            'created_at' => now()->subMonth(),
+            'updated_at' => now()->subMonth(),
         ]);
 
-        $report = MaternalCareReportService::query(now()->month, now()->year, null, $user);
+        $currentMonth = MchEpiFpReportService::query($this->filters(), $user);
+        $this->assertSame(0, $currentMonth['totalRows']);
 
-        $this->assertSame(1, $report['newPrenatalClients']);
-        $this->assertSame(1, $report['prenatalVisits']);
-        $this->assertSame(1, $report['ttDoses']);
-        $this->assertSame(1, $report['ironSupplemented']);
+        $wideRange = MchEpiFpReportService::query($this->filters(now()->subMonths(2)->startOfMonth()->toDateString()), $user);
+        $this->assertSame(2, $wideRange['totalRows']);
+        $this->assertSame(1, $wideRange['summaries']['maternal']['prenatalVisits']);
     }
 
-    public function test_immunization_report_tallies_doses_by_vaccine(): void
-    {
-        $user = $this->authorizedUser();
-        $patient = $this->patient();
-
-        $vaccineId = DB::table('vaccines_lookup')->insertGetId([
-            'vaccine_code' => 'BCG_TEST',
-            'vaccine_name' => 'BCG Test',
-            'category' => 'Child',
-            'sort_order' => 99,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('immunization_records')->insert([
-            'patient_id' => $patient->id,
-            'vaccine_id' => $vaccineId,
-            'dose_number' => 1,
-            'date_given' => now()->toDateString(),
-            'no_show' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $report = ImmunizationReportService::query(now()->month, now()->year, null, $user);
-
-        $this->assertSame(1, $report['totalDoses']);
-        $this->assertSame(1, $report['childDoses']);
-        $this->assertSame(0, $report['adultDoses']);
-        $this->assertSame(1, $report['doses']->first()->doses);
-    }
-
-    public function test_family_planning_report_counts_acceptors_per_method(): void
-    {
-        $user = $this->authorizedUser();
-        $patient = $this->patient();
-
-        $client = FamilyPlanningClient::create([
-            'patient_id' => $patient->id,
-            'type_of_client' => FamilyPlanningClient::TYPE_NEW_ACCEPTOR,
-            'method' => 'Injectable',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('family_planning_visits')->insert([
-            'client_id' => $client->id,
-            'visit_date' => now()->toDateString(),
-            'method' => 'Injectable',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $report = FamilyPlanningReportService::query(now()->month, now()->year, null, $user);
-
-        $this->assertSame(1, $report['totalNew']);
-        $this->assertSame(1, $report['totalVisits']);
-
-        $row = $report['rows']->firstWhere('method', 'Injectable');
-        $this->assertSame(1, $row->new_acceptors);
-        $this->assertSame(1, $row->visits);
-    }
-
-    public function test_ncd_report_counts_hypertension_patients_from_diagnoses(): void
+    public function test_mch_epi_fp_program_filter_limits_register_and_summaries(): void
     {
         $user = $this->authorizedUser();
         $workerId = $this->healthWorkerFor($user);
         $patient = $this->patient();
 
-        $diagnosisId = DB::table('diagnosis_lookup')->insertGetId([
-            'diagnosis_code' => 'I10',
-            'diagnosis_name' => 'Essential hypertension',
-        ]);
-
-        $consultationId = $this->consultation($patient->id, $workerId);
-
-        DB::table('diagnosis_records')->insert([
-            'consultation_id' => $consultationId,
-            'diagnosis_id' => $diagnosisId,
-            'diagnosed_by' => $workerId,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $report = NcdReportService::query(now()->month, now()->year, null, $user);
-
-        $this->assertSame(1, $report['totalPatients']);
-        $this->assertSame(1, $report['totalConsultations']);
-        $this->assertSame(1, $report['rows']->firstWhere('key', 'Hypertension')->patients_seen);
-        $this->assertSame(1, $report['rows']->firstWhere('key', 'Hypertension')->registry_patients);
-    }
-
-    public function test_referral_report_counts_outward_and_incoming(): void
-    {
-        $user = $this->authorizedUser();
-        $workerId = $this->healthWorkerFor($user);
-
-        $outwardPatient = $this->patient('Dela Cruz');
-        $outwardConsultationId = $this->consultation($outwardPatient->id, $workerId);
-
-        DB::table('outward_referrals')->insert([
-            'consultation_id' => $outwardConsultationId,
-            'destination_facility' => 'NMMC',
-            'pertinent_history' => 'Chest pain',
-            'actions_taken' => 'Referred',
-            'specific_details' => 'Cardiology workup',
-            'status' => OutwardReferral::STATUS_COMPLETED,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $incomingPatient = $this->patient('Santos');
-        DB::table('consultations')->insert([
-            'patient_id' => $incomingPatient->id,
-            'worker_id' => $workerId,
-            'status' => 'completed',
-            'mode_of_transaction' => 'Walk-in',
-            'referred_from' => 'RHU Tagoloan',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $report = ReferralReportService::query(now()->month, now()->year, null, $user);
-
-        $this->assertSame(1, $report['totalOutward']);
-        $this->assertSame(1, $report['outwardByDestination']->first()->total);
-        $this->assertSame(1, $report['outwardByStatus']->first()->total);
-        $this->assertSame(1, $report['totalInward']);
-        $this->assertSame('RHU Tagoloan', $report['inwardBySource']->first()->source);
-    }
-
-    public function test_zone_scoped_user_only_sees_assigned_zone_data(): void
-    {
-        $user = $this->authorizedUser();
-        $patient = $this->patient('Zone1');
-
-        $vaccineId = DB::table('vaccines_lookup')->insertGetId([
-            'vaccine_code' => 'BCG_TEST2',
-            'vaccine_name' => 'BCG Test 2',
-            'category' => 'Child',
-            'sort_order' => 99,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $this->pregnancy($patient, $workerId);
 
         DB::table('immunization_records')->insert([
             'patient_id' => $patient->id,
-            'vaccine_id' => $vaccineId,
+            'vaccine_id' => $this->vaccineId(),
             'dose_number' => 1,
             'date_given' => now()->toDateString(),
+            'administered_by' => $workerId,
             'no_show' => false,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $report = ImmunizationReportService::query(now()->month, now()->year, null, $user);
+        $epiOnly = MchEpiFpReportService::query($this->filters() + ['program' => 'epi'], $user);
 
-        $this->assertSame(1, $report['totalDoses']);
+        $this->assertSame(1, $epiOnly['totalRows']);
+        $this->assertSame('EPI Immunization', $epiOnly['rows']->first()->program_label);
+        $this->assertNull($epiOnly['summaries']['maternal']);
+        $this->assertNull($epiOnly['summaries']['fp']);
+        $this->assertNotNull($epiOnly['summaries']['epi']);
+        $this->assertSame(1, $epiOnly['programCounts']['epi']);
+        $this->assertSame(0, $epiOnly['programCounts']['maternal']);
+        $this->assertSame(0, $epiOnly['programCounts']['fp']);
+    }
+
+    public function test_mch_epi_fp_report_zone_scoping_hides_other_zones(): void
+    {
+        $user = $this->createUserWithPermissions(['reports', 'household']);
+        $workerId = $this->healthWorkerFor($user);
+
+        DB::table('zones')->insertOrIgnore([
+            'id' => 2,
+            'zone_number' => 'Zone 2',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('zones')->where('id', 1)->update(['assigned_worker_id' => $workerId]);
+
+        $ownPatient = $this->patient('OwnZone', 1);
+        $otherPatient = $this->patient('OtherZone', 2);
+        $vaccineId = $this->vaccineId('BCG_SCOPED');
+
+        DB::table('immunization_records')->insert([
+            'patient_id' => $otherPatient->id,
+            'vaccine_id' => $vaccineId,
+            'dose_number' => 1,
+            'date_given' => now()->toDateString(),
+            'administered_by' => $workerId,
+            'no_show' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('immunization_records')->insert([
+            'patient_id' => $ownPatient->id,
+            'vaccine_id' => $vaccineId,
+            'dose_number' => 1,
+            'date_given' => now()->toDateString(),
+            'administered_by' => $workerId,
+            'no_show' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $report = MchEpiFpReportService::query($this->filters(), $user);
+
+        $this->assertSame(1, $report['totalRows']);
+        $this->assertSame(1, $report['summaries']['epi']['totalDoses']);
+        $this->assertStringContainsString('OwnZone', $report['rows']->first()->patient_name);
+    }
+
+    public function test_mch_epi_fp_search_filters_register_by_patient_name(): void
+    {
+        $user = $this->authorizedUser();
+        $workerId = $this->healthWorkerFor($user);
+        $delosSantos = $this->patient('Delos Santos');
+        $reyes = $this->patient('Reyes');
+
+        $this->pregnancy($delosSantos, $workerId);
+        $this->pregnancy($reyes, $workerId);
+
+        $search = MchEpiFpReportService::query($this->filters() + ['search' => 'rey'], $user);
+
+        $this->assertSame(1, $search['totalRows']);
+        $this->assertStringContainsString('Reyes', $search['rows']->first()->patient_name);
+
+        $noMatch = MchEpiFpReportService::query($this->filters() + ['search' => 'zzz'], $user);
+
+        $this->assertSame(0, $noMatch['totalRows']);
+    }
+
+    public function test_legacy_report_routes_redirect_to_merged_report(): void
+    {
+        $user = $this->authorizedUser();
+
+        $this->actingAs($user)
+            ->get('/reports/maternal-care?month='.now()->month.'&year='.now()->year)
+            ->assertRedirect(route('reports.mch-epi-fp', $this->filters()));
+
+        $this->actingAs($user)
+            ->get('/reports/immunization')
+            ->assertRedirect(route('reports.mch-epi-fp'));
+
+        $this->actingAs($user)
+            ->get('/reports/family-planning/download')
+            ->assertRedirect(route('reports.mch-epi-fp.download'));
+
+        $this->actingAs($user)
+            ->get('/reports/ncd')
+            ->assertNotFound();
+
+        $this->actingAs($user)
+            ->get('/reports/referrals')
+            ->assertNotFound();
     }
 }

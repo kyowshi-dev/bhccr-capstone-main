@@ -25,52 +25,15 @@ class PdfService
     }
 
     /**
-     * Generate PDF for the FHSIS Maternal Care Report.
+     * Generate PDF for the merged Maternal / EPI / Family Planning report.
      *
      * @param  array<string, mixed>  $report
      */
-    public function generateMaternalCareReport(array $report, string $zoneLabel): \Barryvdh\DomPDF\PDF
+    public function generateMchEpiFpReport(array $report, string $zoneLabel, string $programLabel): \Barryvdh\DomPDF\PDF
     {
-        return Pdf::loadView('pdfs.maternal_care_report', $report + ['zoneLabel' => $zoneLabel]);
-    }
-
-    /**
-     * Generate PDF for the FHSIS EPI Immunization Report.
-     *
-     * @param  array<string, mixed>  $report
-     */
-    public function generateImmunizationReport(array $report, string $zoneLabel): \Barryvdh\DomPDF\PDF
-    {
-        return Pdf::loadView('pdfs.immunization_report', $report + ['zoneLabel' => $zoneLabel]);
-    }
-
-    /**
-     * Generate PDF for the FHSIS Family Planning Report.
-     *
-     * @param  array<string, mixed>  $report
-     */
-    public function generateFamilyPlanningReport(array $report, string $zoneLabel): \Barryvdh\DomPDF\PDF
-    {
-        return Pdf::loadView('pdfs.family_planning_report', $report + ['zoneLabel' => $zoneLabel]);
-    }
-
-    /**
-     * Generate PDF for the FHSIS Adult Care / NCD Report.
-     *
-     * @param  array<string, mixed>  $report
-     */
-    public function generateNcdReport(array $report, string $zoneLabel): \Barryvdh\DomPDF\PDF
-    {
-        return Pdf::loadView('pdfs.ncd_report', $report + ['zoneLabel' => $zoneLabel]);
-    }
-
-    /**
-     * Generate PDF for the FHSIS Referral Report.
-     *
-     * @param  array<string, mixed>  $report
-     */
-    public function generateReferralReport(array $report, string $zoneLabel): \Barryvdh\DomPDF\PDF
-    {
-        return Pdf::loadView('pdfs.referral_report', $report + ['zoneLabel' => $zoneLabel]);
+        return Pdf::loadView('pdfs.mch_epi_fp_report', $report + [
+            'zoneLabel' => $zoneLabel,
+            'programLabel' => $programLabel,
+        ]);
     }
 }
