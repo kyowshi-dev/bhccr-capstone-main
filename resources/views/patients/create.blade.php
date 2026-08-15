@@ -15,7 +15,7 @@
         </div>
     @endif
 
-    <form action="{{ route('patients.store') }}" method="POST" class="mt-0 bg-surface rounded-xl lg:rounded-lg shadow-sm border-border space-y-3 lg:space-y-4" x-data="{ isPhilhealthMember: '{{ old('is_philhealth_member', 'n') }}' }">
+    <form action="{{ route('patients.store') }}" method="POST" class="mt-0 bg-surface rounded-xl lg:rounded-lg shadow-sm border-border space-y-3 lg:space-y-4" x-data='patientEnroll()'>
         @csrf
 
         <div class="pb-3 lg:pb-4 border-b border-border">
@@ -40,8 +40,56 @@
                 <div>
                     <label class="block text-xs uppercase tracking-wide font-semibold text-ink-muted mb-1">Last Name <span class="text-danger">*</span></label>
                     <input type="text" name="last_name" value="{{ old('last_name') }}"
+                           x-model="surname"
+                           @input.debounce.300ms="searchSurnameMatches()"
+                           autocomplete="off"
                            class="w-full px-3 lg:px-4 py-2 rounded-xl border @error('last_name') border-danger bg-danger-soft @else border-border @enderror focus:ring-accent-blue focus:border-accent-blue text-sm">
                     @error('last_name') <p class="text-danger text-xs mt-1">{{ $message }}</p> @enderror
+
+                    <div x-show="!creating && surname.trim().length >= 2" x-cloak class="mt-2 space-y-2">
+                        <div x-show="surnameSelected" class="rounded-xl border px-4 py-3 flex items-center justify-between gap-3" style="border-color: var(--primary); background: var(--teal-soft);">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <i class="fa-solid fa-house-chimney text-sm" style="color: var(--primary);" aria-hidden="true"></i>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium truncate" style="color: var(--ink);" x-text="surnameSelected?.text"></p>
+                                    <p class="text-xs" style="color: var(--ink-muted);" x-text="surnameSelected?.subtext"></p>
+                                </div>
+                            </div>
+                            <button type="button" @click="detachSurname()" class="shrink-0 text-xs font-semibold hover:underline" style="color: var(--primary);">Remove</button>
+                        </div>
+
+                        <template x-if="!surnameSelected">
+                            <div>
+                                <p class="text-xs font-medium mb-2" style="color: var(--ink-muted);" x-text="surnameSearching ? `Searching households for “${surname.trim()}”…` : 'Matching households by family name'"></p>
+
+                                <div class="space-y-2">
+                                    <template x-for="household in surnameMatches" :key="household.id">
+                                        <div class="flex items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-colors hover:bg-black/[0.03]" style="border-color: var(--border); background: var(--bg-surface);">
+                                            <div class="flex items-center gap-2.5 min-w-0">
+                                                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style="background: var(--teal-soft); color: var(--primary);">
+                                                    <i class="fa-solid fa-house-chimney text-xs" aria-hidden="true"></i>
+                                                </span>
+                                                <div class="min-w-0">
+                                                    <p class="text-sm font-medium truncate" style="color: var(--ink);" x-text="household.text"></p>
+                                                    <p class="text-xs" style="color: var(--ink-muted);" x-text="household.subtext"></p>
+                                                </div>
+                                            </div>
+                                            <button type="button"
+                                                    @click="attachSurname(household)"
+                                                    class="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+                                                    style="background: var(--primary);">
+                                                <i class="fa-solid fa-plus" aria-hidden="true"></i> Attach
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <p x-show="!surnameSearching && surnameMatches.length === 0" class="rounded-xl border border-dashed px-4 py-3 text-xs" style="border-color: var(--border); color: var(--ink-muted);">
+                                        No matching household. Search manually below or create a new household.
+                                    </p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
                 </div>
             </div>
 
@@ -240,7 +288,7 @@
                 Household Information
             </h3>
 
-            <div x-data="{ creating: {{ old('create_new_household') ? 'true' : 'false' }} }" class="space-y-4">
+            <div class="space-y-4">
                 <input type="hidden" name="create_new_household" :value="creating ? 1 : 0">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -258,7 +306,7 @@
                     </button>
 
                     <button type="button"
-                            @click="creating = true"
+                            @click="enableCreating()"
                             :class="creating ? 'border-primary bg-surface shadow-sm' : 'border-border bg-teal-soft text-ink-muted'"
                             class="rounded-2xl border p-4 text-left transition-all duration-200 hover:border-primary">
                         <div class="flex items-center justify-between gap-3">
@@ -273,13 +321,7 @@
 
                 <div class="grid grid-cols-1 gap-4">
                     <div x-show="!creating" x-cloak class="bg-teal-soft border border-border rounded-2xl p-4">
-                        <div x-data='householdAutocomplete({
-                                initialId: @json($selectedHouseholdId ? (int) $selectedHouseholdId : null),
-                                initialText: @json($selectedHousehold?->family_name_head ?? ""),
-                                transientId: @json($transientHouseholdId ?? null),
-                                transientLabel: @json($transientHouseholdLabel ?? "Transient/Unmapped")
-                            })'
-                             x-init="init()" class="space-y-4">
+                        <div class="space-y-4">
                             <div>
                                 <label class="block text-xs lg:text-sm font-medium text-ink mb-1">
                                     Select Household <span class="text-danger">*</span>
@@ -318,9 +360,9 @@
                                        class="w-full px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl border @error('household_id') border-danger bg-danger-soft @else border-border @enderror focus:ring-accent-blue focus:border-accent-blue text-sm"
                                        autocomplete="off">
 
-                                <div x-show="dropdownOpen && !isTransient && results.length > 0" class="absolute z-20 w-full bg-surface mt-1 border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                <div x-show="dropdownOpen && !isTransient && autocompleteResults.length > 0" class="absolute z-20 w-full bg-surface mt-1 border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
                                     <ul>
-                                        <template x-for="item in results" :key="item.id">
+                                        <template x-for="item in autocompleteResults" :key="item.id">
                                             <li class="px-3 lg:px-4 py-2 lg:py-2.5 hover:bg-black/5 cursor-pointer border-b last:border-0 text-xs lg:text-sm"
                                                 @click.prevent="select(item)">
                                                 <div class="font-medium text-ink" x-text="item.text"></div>
@@ -331,7 +373,7 @@
                                 </div>
                             </div>
 
-                            <div class="text-xs text-ink-muted" x-show="!isTransient && query.length > 0 && results.length === 0" x-cloak>
+                            <div class="text-xs text-ink-muted" x-show="!isTransient && query.length > 0 && autocompleteResults.length === 0 && !autocompleteLoading" x-cloak>
                                 No household found.
                             </div>
 
@@ -372,7 +414,7 @@
                                 </label>
                                 <input type="text"
                                        name="new_household_family_name_head"
-                                       value="{{ old('new_household_family_name_head') }}"
+                                       x-model="newFamilyHead"
                                        class="w-full px-3 lg:px-4 py-2 rounded-xl border @error('new_household_family_name_head') border-danger bg-danger-soft @else border-border @enderror focus:ring-accent-blue focus:border-accent-blue text-sm"
                                        placeholder="Head Surname">
                                 @error('new_household_family_name_head')
@@ -412,18 +454,25 @@
     </form>
 
     <script>
-        function householdAutocomplete({ initialId, initialText, transientId, transientLabel }) {
+        function patientEnroll() {
             return {
-                query: initialText || '',
-                householdId: initialId || null,
-                transientHouseholdId: transientId ?? null,
-                transientHouseholdLabel: transientLabel || 'Transient/Unmapped',
-                isTransient: transientId !== null && initialId !== null && String(initialId) === String(transientId),
+                isPhilhealthMember: @js(old('is_philhealth_member', 'n')),
+                creating: @js((bool) old('create_new_household')),
+                surname: @js(old('last_name', '')),
+                surnameMatches: [],
+                surnameSearching: false,
+                surnameSelected: null,
+                query: @js($selectedHousehold?->family_name_head ?? ''),
+                householdId: @js($selectedHouseholdId ? (int) $selectedHouseholdId : null),
+                transientHouseholdId: @js($transientHouseholdId ?? null),
+                transientHouseholdLabel: @js($transientHouseholdLabel ?? 'Transient/Unmapped'),
+                isTransient: @js($selectedHouseholdId !== null && $transientHouseholdId !== null && (string) $selectedHouseholdId === (string) $transientHouseholdId),
                 previousHouseholdId: null,
                 previousQuery: null,
                 dropdownOpen: false,
-                results: [],
-                loading: false,
+                autocompleteResults: [],
+                autocompleteLoading: false,
+                newFamilyHead: @js(old('new_household_family_name_head', '')),
 
                 init() {
                     // If the old household is the transient household, lock it in.
@@ -433,37 +482,81 @@
                     }
                 },
 
+                async searchSurnameMatches() {
+                    if (this.surname.trim().length < 2) {
+                        this.surnameMatches = [];
+                        return;
+                    }
+                    if (this.creating && ! this.newFamilyHead.trim()) {
+                        this.newFamilyHead = this.surname.trim();
+                    }
+                    this.surnameSearching = true;
+                    try {
+                        const url = @json(route('search.households'))
+                            + '?query=' + encodeURIComponent(this.surname.trim());
+                        const response = await fetch(url);
+                        const data = await response.json();
+                        this.surnameMatches = Array.isArray(data) ? data : [];
+                    } catch (e) {
+                        console.error('Household match failed:', e);
+                        this.surnameMatches = [];
+                    }
+                    this.surnameSearching = false;
+                },
+
+                attachSurname(household) {
+                    this.surnameSelected = household;
+                    this.householdId = household.id;
+                    this.query = household.text;
+                    this.creating = false;
+                    this.surnameMatches = [];
+                },
+
+                detachSurname() {
+                    this.surnameSelected = null;
+                    this.householdId = null;
+                    this.query = '';
+                },
+
                 async search() {
                     if (this.isTransient) return;
                     const q = (this.query || '').trim();
                     if (q.length < 2) {
-                        this.results = [];
+                        this.autocompleteResults = [];
                         this.dropdownOpen = false;
                         return;
                     }
 
-                    this.loading = true;
+                    this.autocompleteLoading = true;
                     try {
                         const response = await fetch(`{{ route('search.households') }}?query=${encodeURIComponent(q)}`);
-                        this.results = await response.json();
-                        this.dropdownOpen = this.results.length > 0;
+                        this.autocompleteResults = await response.json();
+                        this.dropdownOpen = this.autocompleteResults.length > 0;
                     } catch (e) {
                         console.error('Household search failed:', e);
-                        this.results = [];
+                        this.autocompleteResults = [];
                     } finally {
-                        this.loading = false;
+                        this.autocompleteLoading = false;
                     }
                 },
 
                 select(item) {
                     this.householdId = item.id;
                     this.query = item.text;
-                    this.results = [];
+                    this.autocompleteResults = [];
                     this.dropdownOpen = false;
+                    this.surnameSelected = null;
+                },
+
+                enableCreating() {
+                    this.creating = true;
+                    if (! this.newFamilyHead.trim() && this.surname.trim().length >= 2) {
+                        this.newFamilyHead = this.surname.trim();
+                    }
                 },
 
                 onTransientToggle() {
-                    this.results = [];
+                    this.autocompleteResults = [];
                     this.dropdownOpen = false;
 
                     if (this.isTransient) {
