@@ -55,16 +55,24 @@
                 <div id="diagnosesList" class="space-y-3">
                     @if ($diagnoses->count() > 0)
                         @foreach ($diagnoses as $diagnosis)
+                            @php
+                                $diagName = $diagnosis->diagnosis_name ?? $diagnosis->custom_diagnosis_name ?? 'Unknown';
+                            @endphp
                             <div class="p-3 rounded-lg border flex items-start justify-between group" style="background: var(--border); border-color: var(--border);">
                                 <div class="flex-1">
-                                    <p class="text-sm font-medium" style="color: var(--ink);">{{ $diagnosis->diagnosis_name }}</p>
+                                    <p class="text-sm font-medium" style="color: var(--ink);">{{ $diagName }}</p>
                                     @if ($diagnosis->remarks)
                                         <p class="text-xs mt-1" style="color: var(--ink-muted);">{{ $diagnosis->remarks }}</p>
                                     @endif
                                 </div>
-                                <button type="button" class="ml-3 p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--danger)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="deleteDiagnosis({{ $diagnosis->id }})">
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--accent-blue)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="editDiagnosis({{ $diagnosis->id }}, {{ Js::from($diagName) }}, {{ Js::from($diagnosis->remarks) }})">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </button>
+                                <button type="button" class="p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--danger)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="deleteDiagnosis({{ $diagnosis->id }})">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
+                            </div>
                             </div>
                         @endforeach
                     @else
@@ -83,10 +91,13 @@
                 <div id="prescriptionsList" class="space-y-3">
                     @if ($prescriptions->count() > 0)
                         @foreach ($prescriptions as $prescription)
+                            @php
+                                $medName = $prescription->medicine_name ?? $prescription->custom_medicine_name ?? 'Unknown';
+                            @endphp
                             <div class="p-3 rounded-lg border group" style="background: var(--border); border-color: var(--border);">
                                 <div class="flex items-start justify-between">
                                     <div class="flex-1">
-                                        <p class="text-sm font-medium" style="color: var(--ink);">{{ $prescription->medicine_name }}</p>
+                                        <p class="text-sm font-medium" style="color: var(--ink);">{{ $medName }}</p>
                                         <div class="grid grid-cols-2 gap-2 mt-2 text-xs" style="color: var(--ink-muted);">
                                             @if ($prescription->dosage)
                                                 <p><span class="font-medium">Dosage:</span> {{ $prescription->dosage }}</p>
@@ -102,9 +113,14 @@
                                             @endif
                                         </div>
                                     </div>
-                                    <button type="button" class="ml-3 p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--danger)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="deletePrescription({{ $prescription->id }})">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                    </button>
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--accent-blue)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="editPrescription({{ $prescription->id }}, {{ Js::from($medName) }}, {{ Js::from($prescription->dosage) }}, {{ Js::from($prescription->frequency) }}, {{ Js::from($prescription->duration) }}, {{ Js::from($prescription->quantity) }})">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </button>
+                                <button type="button" class="p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--danger)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="deletePrescription({{ $prescription->id }})">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
                                 </div>
                             </div>
                         @endforeach
@@ -154,11 +170,12 @@
     </div>
 </form>
 
+@push('page-modals')
 <!-- Diagnosis Modal -->
-<div id="diagnosisModal" x-show="$store.modals.diagnosis" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+<div id="diagnosisModal" x-show="$store.modals.diagnosis" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-[70] flex items-center justify-center p-4" style="display: none;">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeDiagnosisModal()"></div>
     <div id="diagnosisPanel" x-show="$store.modals.diagnosis" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="bg-surface rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
-        <h3 class="font-semibold text-lg">Add Diagnosis</h3>
+        <h3 id="diagnosisModalTitle" class="font-semibold text-lg">Add Diagnosis</h3>
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Diagnosis Name</label>
@@ -171,16 +188,16 @@
         </div>
         <div class="flex gap-2 justify-end">
             <button type="button" class="px-4 py-2 rounded-lg text-sm font-medium transition" style="background: var(--border); color: var(--ink);" onclick="closeDiagnosisModal()">Cancel</button>
-            <button type="button" class="px-4 py-2 rounded-lg text-white text-sm font-medium transition" style="background: var(--primary);" onclick="addDiagnosis()">Add</button>
+            <button type="button" id="diagnosisSubmitBtn" class="px-4 py-2 rounded-lg text-white text-sm font-medium transition" style="background: var(--primary);" onclick="addDiagnosis()">Add</button>
         </div>
     </div>
 </div>
 
 <!-- Prescription Modal -->
-<div id="prescriptionModal" x-show="$store.modals.prescription" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+<div id="prescriptionModal" x-show="$store.modals.prescription" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-[70] flex items-center justify-center p-4" style="display: none;">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closePrescriptionModal()"></div>
     <div id="prescriptionPanel" x-show="$store.modals.prescription" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="bg-surface rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
-        <h3 class="font-semibold text-lg">Add Prescription</h3>
+        <h3 id="prescriptionModalTitle" class="font-semibold text-lg">Add Prescription</h3>
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Medicine Name</label>
@@ -209,139 +226,159 @@
         </div>
         <div class="flex gap-2 justify-end">
             <button type="button" class="px-4 py-2 rounded-lg text-sm font-medium transition" style="background: var(--border); color: var(--ink);" onclick="closePrescriptionModal()">Cancel</button>
-            <button type="button" class="px-4 py-2 rounded-lg text-white text-sm font-medium transition" style="background: var(--primary);" onclick="addPrescription()">Add</button>
+            <button type="button" id="prescriptionSubmitBtn" class="px-4 py-2 rounded-lg text-white text-sm font-medium transition" style="background: var(--primary);" onclick="addPrescription()">Add</button>
         </div>
     </div>
 </div>
+@endpush
 
 <script>
-// Modal functions
+const CONSULTATION_ID = {{ $consultation->id }};
+const CSRF_TOKEN = document.querySelector('input[name="_token"]').value;
+let editMode = { diagnosis: false, prescription: false };
+let editId = { diagnosis: null, prescription: null };
+
 function openDiagnosisModal() {
-    document.getElementById('diagnosisModal').classList.remove('hidden');
+    editMode.diagnosis = false;
+    editId.diagnosis = null;
+    document.getElementById('diagnosisModalTitle').textContent = 'Add Diagnosis';
+    document.getElementById('diagnosisSubmitBtn').textContent = 'Add';
+    Alpine.store('modals').diagnosis = true;
     document.getElementById('diagnosisName').focus();
 }
 
 function closeDiagnosisModal() {
-    document.getElementById('diagnosisModal').classList.add('hidden');
+    Alpine.store('modals').diagnosis = false;
     document.getElementById('diagnosisName').value = '';
     document.getElementById('diagnosisRemarks').value = '';
+    editMode.diagnosis = false;
+    editId.diagnosis = null;
 }
 
 function openPrescriptionModal() {
-    document.getElementById('prescriptionModal').classList.remove('hidden');
+    editMode.prescription = false;
+    editId.prescription = null;
+    document.getElementById('prescriptionModalTitle').textContent = 'Add Prescription';
+    document.getElementById('prescriptionSubmitBtn').textContent = 'Add';
+    Alpine.store('modals').prescription = true;
     document.getElementById('medicineName').focus();
 }
 
 function closePrescriptionModal() {
-    document.getElementById('prescriptionModal').classList.add('hidden');
+    Alpine.store('modals').prescription = false;
     document.getElementById('medicineName').value = '';
     document.getElementById('dosage').value = '';
     document.getElementById('frequency').value = '';
     document.getElementById('duration').value = '';
     document.getElementById('quantity').value = '';
+    editMode.prescription = false;
+    editId.prescription = null;
 }
 
-// Add diagnosis (via AJAX to backend)
 function addDiagnosis() {
     const name = document.getElementById('diagnosisName').value.trim();
     const remarks = document.getElementById('diagnosisRemarks').value.trim();
-    
+
     if (!name) {
         Swal.fire({title: 'Missing diagnosis', text: 'Please enter a diagnosis name.', icon: 'warning', confirmButtonColor: 'var(--primary)'});
         return;
     }
-    
-    // For now, we add to the client-side list and it will be handled on form submission
-    // In a real implementation, you'd POST to an endpoint that adds to the DB
-    const diagnosisList = document.getElementById('diagnosesList');
-    const diagnosisHtml = `
-        <div class="p-3 rounded-lg border flex items-start justify-between group" style="background: var(--border); border-color: var(--border);">
-            <div class="flex-1">
-                <p class="text-sm font-medium" style="color: var(--ink);">${name}</p>
-                ${remarks ? `<p class="text-xs mt-1" style="color: var(--ink-muted);">${remarks}</p>` : ''}
-                <input type="hidden" class="diagnosis-name" value="${name}">
-                <input type="hidden" class="diagnosis-remarks" value="${remarks}">
-            </div>
-            <button type="button" class="ml-3 p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--danger)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="this.closest('[style*=background]').remove(); checkIfEmpty('diagnosesList')">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            </button>
-        </div>
-    `;
-    
-    if (diagnosisList.innerHTML.includes('No diagnoses recorded')) {
-        diagnosisList.innerHTML = diagnosisHtml;
-    } else {
-        diagnosisList.insertAdjacentHTML('beforeend', diagnosisHtml);
-    }
-    
-    closeDiagnosisModal();
+
+    const payload = { diagnosis_name: name, remarks };
+    const url = editMode.diagnosis && editId.diagnosis
+        ? `/consultations/${CONSULTATION_ID}/diagnoses/${editId.diagnosis}`
+        : `/consultations/${CONSULTATION_ID}/edit-diagnosis`;
+    const method = editMode.diagnosis ? 'PUT' : 'POST';
+
+    safeFetch(url, {
+        method,
+        headers: {
+            'X-CSRF-TOKEN': CSRF_TOKEN,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        if (!response.ok) return response.json().then(err => { throw err; });
+        return response.json();
+    })
+    .then(() => {
+        closeDiagnosisModal();
+        location.reload();
+    })
+    .catch(err => {
+        if (err.message === 'Session expired') return;
+        const msg = err.message || (err.errors ? Object.values(err.errors).flat().join(', ') : 'Failed to save diagnosis.');
+        Swal.fire({title: 'Error', text: msg, icon: 'error', confirmButtonColor: 'var(--primary)'});
+    });
 }
 
-// Add prescription (via AJAX to backend)
+function editDiagnosis(id, name, remarks) {
+    editMode.diagnosis = true;
+    editId.diagnosis = id;
+    document.getElementById('diagnosisModalTitle').textContent = 'Edit Diagnosis';
+    document.getElementById('diagnosisSubmitBtn').textContent = 'Update';
+    document.getElementById('diagnosisName').value = name || '';
+    document.getElementById('diagnosisRemarks').value = remarks || '';
+    Alpine.store('modals').diagnosis = true;
+}
+
 function addPrescription() {
     const medicineName = document.getElementById('medicineName').value.trim();
     const dosage = document.getElementById('dosage').value.trim();
     const frequency = document.getElementById('frequency').value.trim();
     const duration = document.getElementById('duration').value.trim();
     const quantity = document.getElementById('quantity').value.trim();
-    
+
     if (!medicineName) {
         Swal.fire({title: 'Missing medicine', text: 'Please enter a medicine name.', icon: 'warning', confirmButtonColor: 'var(--primary)'});
         return;
     }
-    
-    // For now, we add to the client-side list
-    const prescriptionList = document.getElementById('prescriptionsList');
-    let details = '';
-    if (dosage) details += `<p><span class="font-medium">Dosage:</span> ${dosage}</p>`;
-    if (frequency) details += `<p><span class="font-medium">Frequency:</span> ${frequency}</p>`;
-    if (duration) details += `<p><span class="font-medium">Duration:</span> ${duration}</p>`;
-    if (quantity) details += `<p><span class="font-medium">Quantity:</span> ${quantity}</p>`;
-    
-    const prescriptionHtml = `
-        <div class="p-3 rounded-lg border group" style="background: var(--border); border-color: var(--border);">
-            <div class="flex items-start justify-between">
-                <div class="flex-1">
-                    <p class="text-sm font-medium" style="color: var(--ink);">${medicineName}</p>
-                    <div class="grid grid-cols-2 gap-2 mt-2 text-xs" style="color: var(--ink-muted);">
-                        ${details}
-                    </div>
-                    <input type="hidden" class="medicine-name" value="${medicineName}">
-                    <input type="hidden" class="dosage" value="${dosage}">
-                    <input type="hidden" class="frequency" value="${frequency}">
-                    <input type="hidden" class="duration" value="${duration}">
-                    <input type="hidden" class="quantity" value="${quantity}">
-                </div>
-                <button type="button" class="ml-3 p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--danger)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="this.closest('[style*=background]').remove(); checkIfEmpty('prescriptionsList')">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
-            </div>
-        </div>
-    `;
-    
-    if (prescriptionList.innerHTML.includes('No prescriptions recorded')) {
-        prescriptionList.innerHTML = prescriptionHtml;
-    } else {
-        prescriptionList.insertAdjacentHTML('beforeend', prescriptionHtml);
-    }
-    
-    closePrescriptionModal();
+
+    const payload = { medicine_name: medicineName, dosage, frequency, duration, quantity: quantity ? parseInt(quantity) : null };
+    const url = editMode.prescription && editId.prescription
+        ? `/consultations/${CONSULTATION_ID}/prescriptions/${editId.prescription}`
+        : `/consultations/${CONSULTATION_ID}/edit-prescription`;
+    const method = editMode.prescription ? 'PUT' : 'POST';
+
+    safeFetch(url, {
+        method,
+        headers: {
+            'X-CSRF-TOKEN': CSRF_TOKEN,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        if (!response.ok) return response.json().then(err => { throw err; });
+        return response.json();
+    })
+    .then(() => {
+        closePrescriptionModal();
+        location.reload();
+    })
+    .catch(err => {
+        if (err.message === 'Session expired') return;
+        const msg = err.message || (err.errors ? Object.values(err.errors).flat().join(', ') : 'Failed to save prescription.');
+        Swal.fire({title: 'Error', text: msg, icon: 'error', confirmButtonColor: 'var(--primary)'});
+    });
 }
 
-function checkIfEmpty(listId) {
-    const list = document.getElementById(listId);
-    const itemCount = list.querySelectorAll('[style*="rgba(0,0,0,0.02)"]').length;
-    
-    if (itemCount === 0) {
-        let emptyMsg = 'No diagnoses recorded. Click "Add Diagnosis" to get started.';
-        if (listId === 'prescriptionsList') {
-            emptyMsg = 'No prescriptions recorded. Click "Add Prescription" to get started.';
-        }
-        list.innerHTML = `<p class="text-sm italic py-4" style="color: var(--ink-muted);">${emptyMsg}</p>`;
-    }
+function editPrescription(id, medicineName, dosage, frequency, duration, quantity) {
+    editMode.prescription = true;
+    editId.prescription = id;
+    document.getElementById('prescriptionModalTitle').textContent = 'Edit Prescription';
+    document.getElementById('prescriptionSubmitBtn').textContent = 'Update';
+    document.getElementById('medicineName').value = medicineName || '';
+    document.getElementById('dosage').value = dosage || '';
+    document.getElementById('frequency').value = frequency || '';
+    document.getElementById('duration').value = duration || '';
+    document.getElementById('quantity').value = quantity || '';
+    Alpine.store('modals').prescription = true;
 }
 
-// Delete diagnosis
 function deleteDiagnosis(id) {
     Swal.fire({
         title: 'Delete diagnosis?',
@@ -354,10 +391,10 @@ function deleteDiagnosis(id) {
         cancelButtonText: 'Cancel',
     }).then((result) => {
         if (!result.isConfirmed) return;
-        fetch(`{{ route('consultations.diagnosis.delete', ['consultation' => $consultation->id, 'diagnosisId' => '__DID__']) }}`.replace('__DID__', id), {
+        safeFetch(`/consultations/${CONSULTATION_ID}/diagnoses/${id}`, {
             method: 'DELETE',
             headers: {
-                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'X-CSRF-TOKEN': CSRF_TOKEN,
                 'Accept': 'application/json'
             }
         })
@@ -372,7 +409,6 @@ function deleteDiagnosis(id) {
     });
 }
 
-// Delete prescription
 function deletePrescription(id) {
     Swal.fire({
         title: 'Delete prescription?',
@@ -385,10 +421,10 @@ function deletePrescription(id) {
         cancelButtonText: 'Cancel',
     }).then((result) => {
         if (!result.isConfirmed) return;
-        fetch(`{{ route('consultations.prescription.delete', ['consultation' => $consultation->id, 'prescriptionId' => '__PID__']) }}`.replace('__PID__', id), {
+        safeFetch(`/consultations/${CONSULTATION_ID}/prescriptions/${id}`, {
             method: 'DELETE',
             headers: {
-                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'X-CSRF-TOKEN': CSRF_TOKEN,
                 'Accept': 'application/json'
             }
         })
@@ -403,7 +439,6 @@ function deletePrescription(id) {
     });
 }
 
-// Close modals on background click
 document.getElementById('diagnosisModal')?.addEventListener('click', function(e) {
     if (e.target === this) closeDiagnosisModal();
 });

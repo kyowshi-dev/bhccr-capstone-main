@@ -220,6 +220,7 @@ final class ConsultationQueryService
             ->select(
                 'diagnosis_records.id',
                 'diagnosis_lookup.diagnosis_name as diagnosis_name',
+                'diagnosis_records.custom_diagnosis_name',
                 'diagnosis_records.remarks'
             )
             ->get();
@@ -232,6 +233,7 @@ final class ConsultationQueryService
             ->select(
                 'prescriptions.id',
                 'medicines_lookup.name as medicine_name',
+                'prescriptions.custom_medicine_name',
                 'prescriptions.dosage',
                 'prescriptions.frequency',
                 'prescriptions.duration',

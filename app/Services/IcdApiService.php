@@ -45,7 +45,10 @@ class IcdApiService
         }
 
         try {
-            $resp = Http::withToken($token)->get($url, $requestData);
+            $resp = Http::withHeaders([
+                'API-Version' => config('bhcis.icd_api.api_version', 'v2'),
+                'Accept-Language' => config('bhcis.icd_api.language', 'en'),
+            ])->withToken($token)->get($url, $requestData);
 
             if (! $resp->successful()) {
                 Log::warning('ICD API search request failed', [
