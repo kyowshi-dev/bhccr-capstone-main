@@ -38,4 +38,8 @@ Laravel 12 app: **BHCIS System Sta. Ana** — Barangay Health Center Information
 - `docs/database_and_routes.md` — DB schema + routes inventory
 - `docs/security/` — security audit and hardening notes; `docs/CLAUDE.md`, `docs/REFACTOR_*` for related guidance
 
+## Tooling
+
+- `cloudflared` (Cloudflare Tunnel) is installed at `~/.local/bin/cloudflared` and on PATH. If missing/corrupt, reinstall: `curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o ~/.local/bin/cloudflared && chmod +x ~/.local/bin/cloudflared`. Verify with `cloudflared --version` (downloads smaller than ~40MB are truncated - re-download).
+
 Tests use in-memory sqlite (`phpunit.xml`). Don't create docs files unless asked.
