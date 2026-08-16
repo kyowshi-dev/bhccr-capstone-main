@@ -5,6 +5,133 @@ document.querySelectorAll(".nav-link, .nav-submenu").forEach(function (link) {
     if (path === current) link.classList.add("router-link-active");
 });
 
+/**
+ * Global fetch wrapper with graceful error handling for 419, 403, 404, 500.
+ *
+ * Usage:
+ *   safeFetch(url, options)
+ *     .then(function (res) { return res.json(); })
+ *     .then(function (data) { ... });
+ *
+ * On 419 (session expired): shows SweetAlert and redirects to login.
+ * On 403 (forbidden): shows SweetAlert, returns a rejected promise.
+ * On 404 (not found): shows SweetAlert, returns a rejected promise.
+ * On 500 (server error): shows SweetAlert with reload option.
+ * On network error: shows SweetAlert, returns a rejected promise.
+ *
+ * The returned promise resolves with the raw Response for ok statuses,
+ * so callers can still call .json() / .text() etc.
+ */
+function safeFetch(url, options) {
+    options = options || {};
+    options.credentials = options.credentials || "same-origin";
+    options.headers = options.headers || {};
+
+    return fetch(url, options)
+        .then(function (response) {
+            if (response.ok) return response;
+
+            var status = response.status;
+
+            if (status === 419) {
+                _safeFetchHandleSessionExpired();
+                return Promise.reject(new Error("Session expired"));
+            }
+
+            if (status === 403) {
+                _safeFetchShowError(
+                    "Access Denied",
+                    "You do not have permission to perform this action.",
+                );
+                return Promise.reject(new Error("Forbidden"));
+            }
+
+            if (status === 404) {
+                _safeFetchShowError(
+                    "Not Found",
+                    "The requested resource was not found.",
+                );
+                return Promise.reject(new Error("Not found"));
+            }
+
+            if (status >= 500) {
+                _safeFetchShowServerError(status);
+                return Promise.reject(new Error("Server error " + status));
+            }
+
+            return response;
+        })
+        .catch(function (error) {
+            if (error.message === "Failed to fetch" || error instanceof TypeError) {
+                _safeFetchShowError(
+                    "Connection Error",
+                    "Unable to reach the server. Check your internet connection and try again.",
+                );
+            }
+            return Promise.reject(error);
+        });
+}
+
+function _safeFetchHandleSessionExpired() {
+    if (typeof Swal === "undefined") {
+        window.location.href =
+            (window.BHCIS && window.BHCIS.routes && window.BHCIS.routes.login) ||
+            "/login";
+        return;
+    }
+
+    Swal.fire({
+        title: "Session Expired",
+        text: "Your session has expired. Please log in again.",
+        icon: "warning",
+        confirmButtonText: "Go to Login",
+        confirmButtonColor: "var(--primary)",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+    }).then(function () {
+        window.location.href =
+            (window.BHCIS && window.BHCIS.routes && window.BHCIS.routes.login) ||
+            "/login";
+    });
+}
+
+function _safeFetchShowError(title, text) {
+    if (typeof Swal === "undefined") {
+        alert(title + ": " + text);
+        return;
+    }
+
+    Swal.fire({
+        title: title,
+        text: text,
+        icon: "error",
+        confirmButtonText: "OK",
+        confirmButtonColor: "var(--primary)",
+    });
+}
+
+function _safeFetchShowServerError(status) {
+    if (typeof Swal === "undefined") {
+        alert("A server error occurred (" + status + "). Please try again.");
+        return;
+    }
+
+    Swal.fire({
+        title: "Server Error",
+        text: "Something went wrong on our end. Please try again or reload the page.",
+        icon: "error",
+        showCancelButton: true,
+        confirmButtonText: "Reload Page",
+        cancelButtonText: "Dismiss",
+        confirmButtonColor: "var(--primary)",
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            window.location.reload();
+        }
+    });
+}
+
+
 var modalStoreKeys = {
     consultationCreateModal: "consultation",
     printReferralConfirmModal: "printReferral",
@@ -85,13 +212,12 @@ function openConsultationCreateModal(patientId) {
         return;
     }
 
-    fetch(
+    safeFetch(
         window.BHCIS.routes.consultationsCreate.replace(
             "__PID__",
             encodeURIComponent(patientId),
         ),
         {
-            credentials: "same-origin",
             headers: {
                 "X-Requested-With": "XMLHttpRequest",
                 Accept: "text/html",
@@ -99,11 +225,6 @@ function openConsultationCreateModal(patientId) {
         },
     )
         .then(function (response) {
-            if (!response.ok) {
-                throw new Error(
-                    "Failed to load consultation form: " + response.status,
-                );
-            }
             return response.text();
         })
         .then(function (html) {
@@ -112,6 +233,9 @@ function openConsultationCreateModal(patientId) {
             resetConsultationCreateModalView();
         })
         .catch(function (error) {
+            if (error.message === "Session expired" || error.message === "Forbidden" || error.message === "Not found" || error.message.indexOf("Server error") === 0) {
+                return;
+            }
             console.error("Consultation modal load failed:", error);
             content.innerHTML =
                 '<div class="p-6 text-center text-sm" style="color: #b91c1c;">Unable to load the consultation form. Please try again.</div>';
@@ -136,8 +260,8 @@ function closeConsultationCreateModal() {
 
 var outwardReferralWizardState = {
     currentStep: 1,
-    totalSteps: 3,
-    stepNames: ["Referral Details", "Preview", "Confirmation"],
+    totalSteps: 2,
+    stepNames: ["Referral Details", "Review & Confirm"],
 };
 
 function outwardReferralPreviewFieldMap() {
@@ -385,13 +509,7 @@ function copyOutwardReferralDataToMainForm() {
         });
 }
 
-function populateOutwardReferralConfirmationStep() {
-    document
-        .querySelectorAll("#outwardReferralWizardStep2 [data-preview-source]")
-        .forEach(function (previewEl) {
-            syncOutwardReferralStep1FromPreview(previewEl);
-        });
-
+function populateOutwardReferralReviewStep() {
     var patientNameEl = document.getElementById("outward_confirm_patient_name");
     var patientMetaEl = document.getElementById("outward_confirm_patient_meta");
     var contextEl = document.getElementById("consultationReferralContext");
@@ -407,12 +525,9 @@ function populateOutwardReferralConfirmationStep() {
         }
 
         var contextUrl = contextEl.dataset.referralContextUrl;
-        if (contextUrl && window.fetch) {
-            fetch(contextUrl, { headers: { Accept: "application/json" } })
+        if (contextUrl) {
+            safeFetch(contextUrl, { headers: { Accept: "application/json" } })
                 .then(function (response) {
-                    if (!response.ok) {
-                        throw new Error("Referral context request failed.");
-                    }
                     return response.json();
                 })
                 .then(function (data) {
@@ -447,67 +562,6 @@ function populateOutwardReferralConfirmationStep() {
         if (patientMetaEl && meta) {
             patientMetaEl.textContent = meta.textContent.trim() || "-";
         }
-    }
-
-    var referredTo = document.getElementById("outward_referred_to");
-    var confirmReferredTo = document.getElementById(
-        "outward_confirm_referred_to",
-    );
-    if (confirmReferredTo) {
-        confirmReferredTo.textContent = referredTo?.value.trim() || "-";
-    }
-
-    var reasonsList = document.getElementById("outward_confirm_reasons");
-    if (reasonsList) {
-        reasonsList.innerHTML = "";
-        document
-            .querySelectorAll(
-                '#outwardReferralWizardStep1 input[name="referral_reasons[]"]:checked',
-            )
-            .forEach(function (checkbox) {
-                var label =
-                    checkbox
-                        .closest("label")
-                        ?.querySelector("span")
-                        ?.textContent?.trim() || checkbox.value;
-                var item = document.createElement("li");
-                item.textContent = label;
-                reasonsList.appendChild(item);
-            });
-        if (!reasonsList.children.length) {
-            var emptyItem = document.createElement("li");
-            emptyItem.textContent = "No reasons selected";
-            emptyItem.style.color = "var(--ink-subtle)";
-            reasonsList.appendChild(emptyItem);
-        }
-    }
-
-    var reasonDetails = document.getElementById(
-        "outward_referral_reason_details",
-    );
-    var confirmReasonDetails = document.getElementById(
-        "outward_confirm_reason_details",
-    );
-    if (confirmReasonDetails) {
-        confirmReasonDetails.textContent =
-            reasonDetails?.value.trim() || "No additional details provided.";
-    }
-
-    var history = document.getElementById("outward_pertinent_history");
-    var confirmHistory = document.getElementById(
-        "outward_confirm_pertinent_history",
-    );
-    if (confirmHistory) {
-        confirmHistory.textContent = history?.value.trim() || "-";
-    }
-
-    var actions = document.getElementById("outward_actions_taken");
-    var confirmActions = document.getElementById(
-        "outward_confirm_actions_taken",
-    );
-    if (confirmActions) {
-        confirmActions.textContent =
-            actions?.value.trim() || "No actions recorded.";
     }
 
     var confirmVitals = document.getElementById("outward_confirm_vitals");
@@ -652,8 +706,6 @@ function outwardReferralWizardUpdateUi() {
         if (state.currentStep >= state.totalSteps) {
             nextBtn.textContent = "Confirm & save referral";
             nextBtn.setAttribute("aria-label", "Confirm and save referral");
-        } else if (state.currentStep === 2) {
-            nextBtn.textContent = "Continue to confirmation";
         } else {
             nextBtn.textContent = "Next";
         }
@@ -676,7 +728,7 @@ function outwardReferralWizardGoNext() {
             .forEach(function (previewEl) {
                 syncOutwardReferralStep1FromPreview(previewEl);
             });
-        populateOutwardReferralConfirmationStep();
+        populateOutwardReferralReviewStep();
     }
 
     if (
@@ -708,10 +760,7 @@ function outwardReferralWizardGoNext() {
 
     if (outwardReferralWizardState.currentStep === 2) {
         syncOutwardReferralPreviewFromStep1();
-    }
-
-    if (outwardReferralWizardState.currentStep === 3) {
-        populateOutwardReferralConfirmationStep();
+        populateOutwardReferralReviewStep();
     }
 }
 
@@ -1105,20 +1154,24 @@ if (window.BHCIS.canPollLiveRequests) {
                 return Promise.resolve();
             }
 
-            return fetch(window.BHCIS.routes.liveRequests, {
-                credentials: "same-origin",
+            return safeFetch(window.BHCIS.routes.liveRequests, {
                 headers: {
                     "X-Requested-With": "XMLHttpRequest",
                     Accept: "application/json",
                 },
             })
                 .then(function (response) {
-                    if (!response.ok) {
-                        throw new Error("Live request fetch failed");
+                    if (response.status === 401 || response.status === 403) {
+                        pollingEnabled = false;
+                        return null;
                     }
                     return response.json();
                 })
                 .then(function (data) {
+                    if (data === null) {
+                        return;
+                    }
+
                     if (data.hasRequest && data.request) {
                         showConsultationToast(data.request);
                     }
