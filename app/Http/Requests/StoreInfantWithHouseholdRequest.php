@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Patient;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -40,8 +41,10 @@ class StoreInfantWithHouseholdRequest extends FormRequest
             'suffix' => ['nullable', 'string', 'max:50'],
             'sex' => ['required', 'in:Male,Female'],
             'date_of_birth' => ['required', 'date', 'before:today'],
-            'birth_weight' => ['nullable', 'numeric', 'between:0.1,10'],
-            'mother_name' => ['nullable', 'string', 'max:255'],
+            'birth_weight' => ['required', 'numeric', 'between:0.1,10'],
+            'mother_id' => ['nullable', 'integer', 'exists:patients,id'],
+            'mother_name' => ['required', 'string', 'max:255'],
+            'father_name' => ['nullable', 'string', 'max:255'],
             'guardian_name' => ['nullable', 'string', 'max:255'],
         ];
     }
@@ -69,6 +72,16 @@ class StoreInfantWithHouseholdRequest extends FormRequest
         $validator->after(function ($validator) {
             if (! $this->boolean('create_household') && ! $this->filled('household_id')) {
                 $validator->errors()->add('household_id', 'Select an existing household or create a new one.');
+            }
+
+            if ($this->filled('mother_id')) {
+                $mother = Patient::find($this->input('mother_id'));
+
+                if ($mother === null) {
+                    $validator->errors()->add('mother_id', 'The selected mother does not exist.');
+                } elseif ($mother->sex !== 'Female') {
+                    $validator->errors()->add('mother_id', 'The linked mother must be a female patient.');
+                }
             }
         });
     }

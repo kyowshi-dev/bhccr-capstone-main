@@ -37,6 +37,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property string $mother_name
  * @property string|null $guardian_name
+ * @property string|null $father_name
+ * @property int|null $mother_id
  * @property string $spouse_name
  * @property string $family_relationship
  * @property string $residential_address
@@ -60,6 +62,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, ImmunizationStatusEvent> $immunizationStatusEvents
  * @property-read int|null $immunization_status_events_count
  * @property-read MaternalProfile|null $maternalProfile
+ * @property-read Patient|null $mother
  * @property-read mixed $patient_code
  * @property-read Collection<int, PostnatalRecord> $postnatalRecords
  * @property-read int|null $postnatal_records_count
@@ -91,6 +94,8 @@ use Illuminate\Support\Carbon;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Patient whereMembershipCategory($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Patient whereMiddleName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Patient whereMotherName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Patient whereMotherId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Patient whereFatherName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Patient wherePhilhealthNo($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Patient whereResidentialAddress($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Patient whereSex($value)
@@ -119,6 +124,9 @@ class Patient extends Model
         'educational_attainment',
         'employment_status',
         'mother_name',
+        'guardian_name',
+        'father_name',
+        'mother_id',
         'spouse_name',
         'family_relationship',
         'residential_address',
@@ -157,6 +165,11 @@ class Patient extends Model
     public function household(): BelongsTo
     {
         return $this->belongsTo(Household::class);
+    }
+
+    public function mother(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'mother_id');
     }
 
     public function consultations(): HasMany
