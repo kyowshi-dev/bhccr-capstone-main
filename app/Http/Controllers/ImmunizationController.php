@@ -16,12 +16,8 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use Spatie\LaravelPdf\Enums\Format;
-use Spatie\LaravelPdf\Facades\Pdf;
-use Spatie\LaravelPdf\PdfBuilder;
 
 class ImmunizationController extends Controller
 {
@@ -37,13 +33,20 @@ class ImmunizationController extends Controller
 
         $mode = $this->resolveMode($request);
         $zoneId = $request->filled('zone_id') ? (int) $request->input('zone_id') : null;
-        $date = $request->filled('date') ? $request->input('date') : Carbon::today()->toDateString();
+
+        [$from, $to, $month, $dateFrom, $dateTo, $monthOptions] = $this->resolveDateWindow($request);
 
         $categories = $mode === 'child' ? ['Child', 'Both'] : ['Adult', 'Both'];
 
         $queues = [];
         foreach (['due', 'overdue', 'no_show'] as $key) {
-            $queues[$key] = $this->service->queue($key, $zoneId, $key === 'due' ? $date : null, $categories);
+            $queues[$key] = $this->service->queue(
+                $key,
+                $zoneId,
+                $key === 'due' ? $from : ($key === 'overdue' ? $from : null),
+                $key === 'due' ? $to : null,
+                $categories
+            );
         }
 
         $dueTodayCount = $queues['due']->map(fn (array $entry) => $entry['patient']->id)->unique()->count();
@@ -64,7 +67,7 @@ class ImmunizationController extends Controller
         $recentRecords = $this->service->withNextDue(ImmunizationQueryService::recentRecords());
 
         $infantStats = ImmunizationQueryService::infantStats($zoneId);
-        ['totalGiven' => $totalGiven, 'patientsWithRecords' => $patientsWithRecords] = ImmunizationQueryService::overallStats();
+        $adultStats = ImmunizationQueryService::adultStats($zoneId);
 
         $zones = Zone::orderBy('zone_number')->get();
 
@@ -72,7 +75,12 @@ class ImmunizationController extends Controller
             'mode' => $mode,
             'zones' => $zones,
             'zoneId' => $zoneId,
-            'date' => $date,
+            'month' => $month,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+            'monthOptions' => $monthOptions,
+            'dueWindowStart' => $from,
+            'dueWindowEnd' => $to,
             'queues' => $queues,
             'recentRecords' => $recentRecords,
             'dueTodayPatients' => $dueTodayPatients,
@@ -81,9 +89,62 @@ class ImmunizationController extends Controller
             'noShowCount' => $noShowCount,
             'infantCoveragePercent' => $infantStats['infantCoveragePercent'],
             'infantTotal' => $infantStats['infantTotal'],
-            'totalGiven' => $totalGiven,
-            'patientsWithRecords' => $patientsWithRecords,
+            'adultEnrolled' => $adultStats['adultEnrolled'],
+            'adultDosesByVaccine' => $adultStats['dosesByVaccine'],
         ]);
+    }
+
+    /**
+     * Resolve the due-date window from the month filter or the optional
+     * date range. Defaults to the current month when nothing is selected.
+     *
+     * @return array{0: Carbon, 1: Carbon, 2: string, 3: ?string, 4: ?string, 5: array<string, string>}
+     */
+    private function resolveDateWindow(Request $request): array
+    {
+        $today = Carbon::today();
+        $monthOptions = [];
+        for ($i = -11; $i <= 12; $i++) {
+            $cursor = $today->copy()->addMonthsNoOverflow($i)->startOfMonth();
+            $monthOptions[$cursor->format('Y-m')] = $cursor->format('F Y');
+        }
+
+        $currentMonth = $today->format('Y-m');
+        $month = $request->filled('month')
+            ? $request->input('month')
+            : $currentMonth;
+
+        if (! is_string($month) || ! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
+            $month = $currentMonth;
+        }
+
+        $dateFrom = $request->filled('date_from') ? $request->input('date_from') : null;
+        $dateTo = $request->filled('date_to') ? $request->input('date_to') : null;
+
+        $from = null;
+        $to = null;
+        try {
+            $from = $dateFrom !== null ? Carbon::parse($dateFrom)->startOfDay() : null;
+            $to = $dateTo !== null ? Carbon::parse($dateTo)->endOfDay() : null;
+        } catch (\Exception) {
+            $from = null;
+            $to = null;
+        }
+
+        if ($from === null && $to === null) {
+            $from = Carbon::createFromFormat('Y-m-d', $month.'-01')->startOfDay();
+            $to = $from->copy()->endOfMonth();
+        } elseif ($from === null) {
+            $from = $to->copy()->startOfDay();
+        } elseif ($to === null) {
+            $to = $from->copy()->endOfDay();
+        }
+
+        if ($to->lt($from)) {
+            [$from, $to] = [$to->copy()->startOfDay(), $from->copy()->endOfDay()];
+        }
+
+        return [$from, $to, $month, $dateFrom, $dateTo, $monthOptions];
     }
 
     public function forPatient($id): View
@@ -105,23 +166,6 @@ class ImmunizationController extends Controller
         $patient = Patient::with(['household.zone'])->findOrFail($id);
 
         return view('immunizations.print-card', $this->printPayload($patient));
-    }
-
-    /**
-     * PDF download of the child immunization record card.
-     */
-    public function downloadPrintCardPdf($id): PdfBuilder
-    {
-        $this->authorizeImmunizations();
-
-        $patient = Patient::with(['household.zone'])->findOrFail($id);
-
-        $filename = 'Child-Immunization-Record-'.Str::slug($patient->first_name.' '.$patient->last_name).'.pdf';
-
-        return Pdf::view('immunizations.print-card-pdf', $this->printPayload($patient))
-            ->format(Format::A4)
-            ->margins(10, 10, 10, 10)
-            ->inline($filename);
     }
 
     /**
@@ -232,6 +276,8 @@ class ImmunizationController extends Controller
             $record = $this->service->administer($patient, $vaccine, [
                 'date_given' => $request->input('date_given'),
                 'temp_recorded' => $request->input('temp_recorded'),
+                'child_weight_kg' => $request->input('child_weight_kg'),
+                'child_height_cm' => $request->input('child_height_cm'),
                 'notes' => $request->input('notes'),
                 'override_reason' => $request->input('override_reason'),
                 'administered_by' => $this->currentWorkerId(),
@@ -368,6 +414,39 @@ class ImmunizationController extends Controller
                 'zone_id' => $household->zone_id,
                 'zone' => ['zone_number' => $household->zone->zone_number],
                 'patients_count' => $household->patients_count,
+            ])->values()
+        );
+    }
+
+    public function motherMatch(Request $request): JsonResponse
+    {
+        $this->authorizeImmunizations();
+
+        $validated = $request->validate([
+            'query' => ['required', 'string', 'max:255'],
+        ]);
+
+        $adultCutoff = Carbon::today()->subYears(18)->toDateString();
+
+        $results = Patient::query()
+            ->with('household.zone')
+            ->where('sex', 'Female')
+            ->whereDate('date_of_birth', '<=', $adultCutoff)
+            ->where(function ($query) use ($validated) {
+                $needle = addcslashes($validated['query'], '%_');
+                $query->where('last_name', 'like', "%{$needle}%")
+                    ->orWhere('first_name', 'like', "%{$needle}%");
+            })
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->limit(10)
+            ->get();
+
+        return response()->json(
+            $results->map(fn (Patient $mother) => [
+                'id' => $mother->id,
+                'text' => fullName($mother->last_name, $mother->first_name, $mother->middle_name, $mother->suffix),
+                'subtext' => $mother->patient_code.' | '.$mother->age.' y/o'.' | Purok '.$mother->household->zone->zone_number,
             ])->values()
         );
     }
