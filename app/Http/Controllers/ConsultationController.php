@@ -8,7 +8,10 @@ use App\Http\Requests\AddPrescriptionRequest;
 use App\Http\Requests\FinalizeConsultationRequest;
 use App\Http\Requests\ReferralRequest;
 use App\Http\Requests\StoreConsultationRequest;
+use App\Http\Requests\UpdateConsultationComplaintRequest;
 use App\Http\Requests\UpdateConsultationRequest;
+use App\Http\Requests\UpdateDiagnosisRequest;
+use App\Http\Requests\UpdatePrescriptionRequest;
 use App\Http\Requests\VitalsRequest;
 use App\Models\Consultation;
 use App\Models\HealthWorker;
@@ -23,10 +26,8 @@ use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
-use Spatie\LaravelPdf\Enums\Format;
-use Spatie\LaravelPdf\Facades\Pdf;
-use Spatie\LaravelPdf\PdfBuilder;
 
 class ConsultationController extends Controller
 {
@@ -163,19 +164,6 @@ class ConsultationController extends Controller
         $this->guardHandoutAccess($consultation);
 
         return view('consultations.handout', ConsultationHandoutService::data($consultation));
-    }
-
-    public function downloadHandoutPdf(Consultation $consultation): PdfBuilder
-    {
-        $this->guardHandoutAccess($consultation);
-
-        $data = ConsultationHandoutService::data($consultation);
-        $filename = 'iClinicSys-Handout-C'.str_pad((string) $data['consultation']->id, 4, '0', STR_PAD_LEFT).'.pdf';
-
-        return Pdf::view('consultations.handout-pdf', $data)
-            ->format(Format::A4)
-            ->margins(6, 6, 6, 6)
-            ->inline($filename);
     }
 
     public function retakeVitals(VitalsRequest $request, Consultation $consultation): RedirectResponse
@@ -346,6 +334,22 @@ class ConsultationController extends Controller
         return redirect()->route('consultations.show', $consultation->id)->with('success', 'Consultation updated successfully.');
     }
 
+    public function updateComplaint(UpdateConsultationComplaintRequest $request, Consultation $consultation): RedirectResponse
+    {
+        $this->authorizePermission('consultations');
+
+        if (in_array($consultation->status, ConsultationStatus::terminalValues(), true)) {
+            return redirect()->back()->withErrors([
+                'complaint' => 'Chief complaint can only be edited while the consultation is under review.',
+            ]);
+        }
+
+        ConsultationService::updateComplaint($consultation, $request->validated('complaint_text'));
+
+        return redirect()->route('consultations.show', $consultation->id)
+            ->with('success', 'Chief complaint updated successfully.');
+    }
+
     public function deleteDiagnosis(Request $request, Consultation $consultation, int $diagnosisId): JsonResponse|RedirectResponse
     {
         $this->authorizePermission('consultations');
@@ -380,6 +384,95 @@ class ConsultationController extends Controller
         }
 
         return redirect()->route('consultations.edit', $consultation->id)->with('success', 'Prescription deleted successfully.');
+    }
+
+    public function updateDiagnosis(UpdateDiagnosisRequest $request, Consultation $consultation, int $diagnosisId): JsonResponse
+    {
+        $this->authorizePermission('consultations');
+
+        $record = DB::table('diagnosis_records')
+            ->where('consultation_id', $consultation->id)
+            ->where('id', $diagnosisId)
+            ->first();
+
+        if (! $record) {
+            return response()->json(['message' => 'Diagnosis not found'], 404);
+        }
+
+        DB::table('diagnosis_records')
+            ->where('id', $diagnosisId)
+            ->update([
+                'custom_diagnosis_name' => $request->input('diagnosis_name'),
+                'remarks' => $request->input('remarks'),
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'Diagnosis updated successfully.']);
+    }
+
+    public function updatePrescription(UpdatePrescriptionRequest $request, Consultation $consultation, int $prescriptionId): JsonResponse
+    {
+        $this->authorizePermission('consultations');
+
+        $record = DB::table('prescriptions')
+            ->where('consultation_id', $consultation->id)
+            ->where('id', $prescriptionId)
+            ->first();
+
+        if (! $record) {
+            return response()->json(['message' => 'Prescription not found'], 404);
+        }
+
+        DB::table('prescriptions')
+            ->where('id', $prescriptionId)
+            ->update([
+                'custom_medicine_name' => $request->input('medicine_name'),
+                'dosage' => $request->input('dosage'),
+                'frequency' => $request->input('frequency'),
+                'duration' => $request->input('duration'),
+                'quantity' => $request->input('quantity'),
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'Prescription updated successfully.']);
+    }
+
+    public function addDiagnosisFromEdit(UpdateDiagnosisRequest $request, Consultation $consultation): JsonResponse
+    {
+        $this->authorizePermission('consultations');
+
+        $worker = $this->currentWorker();
+
+        DB::table('diagnosis_records')->insert([
+            'consultation_id' => $consultation->id,
+            'diagnosis_id' => null,
+            'custom_diagnosis_name' => $request->input('diagnosis_name'),
+            'remarks' => $request->input('remarks'),
+            'diagnosed_by' => $worker->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Diagnosis added successfully.']);
+    }
+
+    public function addPrescriptionFromEdit(UpdatePrescriptionRequest $request, Consultation $consultation): JsonResponse
+    {
+        $this->authorizePermission('consultations');
+
+        DB::table('prescriptions')->insert([
+            'consultation_id' => $consultation->id,
+            'medicine_id' => null,
+            'custom_medicine_name' => $request->input('medicine_name'),
+            'dosage' => $request->input('dosage'),
+            'frequency' => $request->input('frequency'),
+            'duration' => $request->input('duration'),
+            'quantity' => $request->input('quantity'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Prescription added successfully.']);
     }
 
     private function currentWorker(): HealthWorker
