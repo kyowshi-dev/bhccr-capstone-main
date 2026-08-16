@@ -27,14 +27,14 @@
         <div class="rounded-xl border p-5 lg:p-6" style="background: var(--bg-surface); border-color: var(--border);">
             <h2 class="font-display font-semibold text-lg mb-4" style="color: var(--ink);">Export Database</h2>
             <p class="text-sm mb-4" style="color: var(--ink-muted);">Current database: <strong style="color: var(--ink);">{{ $databaseName }}</strong> ({{ $driver }}). Download a full copy now and store it in a safe place for disaster recovery.</p>
-            <form action="{{ route('settings.backups.export') }}" method="POST" class="inline-flex flex-col items-start gap-3">
+            <form action="{{ route('settings.backups.export') }}" method="POST" class="inline-flex flex-col items-start gap-3" data-disable-on-submit>
                 @csrf
                 <div class="w-full">
                     <label for="current_password_export" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Confirm your password</label>
                     <input type="password" id="current_password_export" name="current_password" autocomplete="current-password" required class="w-full rounded-lg border py-2 px-3 text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">
                     @error('current_password')<p class="mt-1 text-xs" style="color: var(--danger);">{{ $message }}</p>@enderror
                 </div>
-                <button type="submit" class="px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md" style="background: var(--accent);">
+                <button type="submit" class="submit-btn px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed" style="background: var(--accent);">
                     Download database export
                 </button>
             </form>
@@ -43,8 +43,8 @@
         <div class="rounded-xl border p-5 lg:p-6" style="background: var(--bg-surface); border-color: var(--border);">
             <h2 class="font-display font-semibold text-lg mb-4" style="color: var(--ink);">Import Database</h2>
             <p class="text-sm mb-4" style="color: var(--ink-muted);">Upload a database backup file to restore the system. <strong class="text-danger">Warning:</strong> This will replace all current data.</p>
-            
-            <form action="{{ route('settings.backups.import') }}" method="POST" enctype="multipart/form-data">
+
+            <form action="{{ route('settings.backups.import') }}" method="POST" enctype="multipart/form-data" data-disable-on-submit>
                 @csrf
                 <div class="space-y-4">
                     <div>
@@ -58,7 +58,7 @@
                         <input type="password" id="current_password_import" name="current_password" autocomplete="current-password" required class="w-full rounded-lg border py-2 px-3 text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--primary);">
                         @error('current_password')<p class="mt-1 text-xs" style="color: var(--danger);">{{ $message }}</p>@enderror
                     </div>
-                    
+
                     <div class="bg-amber-soft border border-amber/30 rounded-lg p-3">
                         <div class="flex">
                             <div class="flex-shrink-0">
@@ -74,8 +74,8 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <button type="submit" class="px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md" style="background: var(--danger);" onclick="event.preventDefault(); Swal.fire({title: 'Import database backup?', text: 'This will replace all current data. A backup of the current database will be saved automatically.', icon: 'warning', showCancelButton: true, confirmButtonColor: 'var(--danger)', cancelButtonColor: '#6b7280', confirmButtonText: 'Import', cancelButtonText: 'Cancel'}).then(result => { if (result.isConfirmed) this.closest('form').submit(); });">
+
+                    <button type="submit" class="submit-btn px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed" style="background: var(--danger);" onclick="event.preventDefault(); Swal.fire({title: 'Import database backup?', text: 'This will replace all current data. A backup of the current database will be saved automatically.', icon: 'warning', showCancelButton: true, confirmButtonColor: 'var(--danger)', cancelButtonColor: '#6b7280', confirmButtonText: 'Import', cancelButtonText: 'Cancel'}).then(result => { if (result.isConfirmed) { const btn = this; btn.disabled = true; btn.closest('form').submit(); } });">
                         Import Database Backup
                     </button>
                 </div>
@@ -84,3 +84,19 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.querySelectorAll('[data-disable-on-submit]').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            const btn = form.querySelector('.submit-btn');
+            if (btn && !btn.disabled) {
+                btn.disabled = true;
+                if (btn.dataset.loadingText) {
+                    btn.textContent = btn.dataset.loadingText;
+                }
+            }
+        });
+    });
+</script>
+@endpush

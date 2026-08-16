@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use PDO;
 use Symfony\Component\Process\Process;
 
 final class BackupService
@@ -33,6 +35,10 @@ final class BackupService
                 return ['error' => 'Database file not found.'];
             }
 
+            if (! is_readable($path)) {
+                return ['error' => 'Database file is not readable. Check file permissions.'];
+            }
+
             return [
                 'download' => [
                     'path' => $path,
@@ -45,11 +51,25 @@ final class BackupService
         if (in_array($driver, ['mysql', 'mariadb'], true)) {
             $conn = config('database.connections.'.$driver);
             $process = new Process(self::mysqldumpCommand($conn), null, self::credentialsEnv($conn));
-            $process->setTimeout(300); // 5 minutes timeout
+            $process->setTimeout(600); // 10 minutes timeout for large databases
             $process->run();
 
             if (! $process->isSuccessful()) {
-                return ['error' => 'Backup failed: '.$process->getErrorOutput().'. Ensure mysqldump is installed and database credentials are correct.'];
+                $stderr = trim($process->getErrorOutput());
+                Log::error('mysqldump failed: '.$stderr);
+
+                $userMessage = 'Backup failed. ';
+                if (str_contains($stderr, 'Access denied')) {
+                    $userMessage .= 'Database credentials are incorrect. Check the DB_USERNAME and DB_PASSWORD in .env.';
+                } elseif (str_contains($stderr, 'Command not found') || str_contains($stderr, 'No such file')) {
+                    $userMessage .= 'mysqldump is not installed or not on the system PATH.';
+                } elseif (str_contains($stderr, 'Cannot connect')) {
+                    $userMessage .= 'Cannot connect to the database server. Check DB_HOST and DB_PORT in .env.';
+                } else {
+                    $userMessage .= 'Ensure mysqldump is installed and database credentials are correct.';
+                }
+
+                return ['error' => $userMessage];
             }
 
             $sqlContent = $process->getOutput();
@@ -82,6 +102,22 @@ final class BackupService
             $dbPath = config('database.connections.sqlite.database');
             $dbDir = dirname($dbPath);
 
+            // Verify the uploaded file is a valid SQLite database
+            $magicBytes = file_get_contents($file->getRealPath(), false, null, 0, 16);
+            if ($magicBytes !== "SQLite format 3\000" && $magicBytes !== "SQLite format 3\001") {
+                // Allow .sql files too — they might be SQL dumps rather than raw SQLite files
+                $ext = strtolower($file->getClientOriginalExtension());
+                if ($ext === 'sql') {
+                    return ['error' => 'SQLite database does not support importing .sql files. Use a .sqlite or .db backup file, or switch to MySQL.'];
+                }
+
+                return ['error' => 'The uploaded file does not appear to be a valid SQLite database.'];
+            }
+
+            if (! is_writable($dbDir)) {
+                return ['error' => 'Database directory is not writable. Check file permissions on '.htmlspecialchars($dbDir).'.'];
+            }
+
             // Create backup of current database
             if (file_exists($dbPath)) {
                 $backupPath = $dbPath.'.backup.'.now()->format('Y-m-d-His');
@@ -94,8 +130,19 @@ final class BackupService
             try {
                 $file->move($dbDir, basename($dbPath));
 
+                // Verify the new database file exists and is readable
+                if (! is_file($dbPath)) {
+                    return ['error' => 'Database file was not created at the expected location. The import may have partially completed.'];
+                }
+
+                if (! is_readable($dbPath)) {
+                    return ['error' => 'Database file was created but is not readable. Check file permissions.'];
+                }
+
                 return ['success' => true];
             } catch (\Exception $e) {
+                Log::error('SQLite import failed: '.$e->getMessage());
+
                 return ['error' => 'Failed to import database: '.$e->getMessage()];
             }
         }
@@ -109,33 +156,77 @@ final class BackupService
                 return ['error' => 'The uploaded file is empty or invalid.'];
             }
 
+            // Validate that the file looks like a SQL dump
+            if (! str_contains($sqlContent, 'CREATE') && ! str_contains($sqlContent, 'INSERT') && ! str_contains($sqlContent, '-- MySQL')) {
+                return ['error' => 'The uploaded file does not appear to be a valid SQL dump.'];
+            }
+
             // Create backup of current database first
             $env = self::credentialsEnv($conn);
             $backupFilename = 'bhcis-backup-pre-import-'.now()->format('Y-m-d-His').'.sql';
             $backupProcess = new Process(self::mysqldumpCommand($conn), null, $env);
-            $backupProcess->setTimeout(120);
+            $backupProcess->setTimeout(300);
             $backupProcess->run();
 
+            $backupCreated = false;
             if ($backupProcess->isSuccessful()) {
                 Storage::put($backupFilename, $backupProcess->getOutput());
+                $backupCreated = true;
+            } else {
+                Log::warning('Pre-import backup failed, proceeding with import anyway: '.$backupProcess->getErrorOutput());
             }
 
-            // Now import the new database
-            $importCommand = [
-                'mysql',
-                '-h', $conn['host'],
-                '-P', (string) $conn['port'],
-                '-u', $conn['username'],
-                $conn['database'],
-            ];
-
+            // Import the new database
+            $importCommand = self::mysqlImportCommand($conn);
             $importProcess = new Process($importCommand, null, $env);
             $importProcess->setInput($sqlContent);
-            $importProcess->setTimeout(300); // 5 minutes timeout for import
+            $importProcess->setTimeout(600); // 10 minutes timeout for large databases
             $importProcess->run();
 
             if (! $importProcess->isSuccessful()) {
-                return ['error' => 'Import failed. A backup was created before import. Error: '.$importProcess->getErrorOutput()];
+                $stderr = trim($importProcess->getErrorOutput());
+                Log::error('MySQL import failed: '.$stderr);
+
+                $recoveryNote = $backupCreated
+                    ? ' A backup of the previous database was saved as '.$backupFilename.' in storage.'
+                    : ' No pre-import backup could be created.';
+
+                $userMessage = 'Import failed.'.$recoveryNote;
+                if (str_contains($stderr, 'Access denied')) {
+                    $userMessage .= ' Database credentials are incorrect.';
+                } elseif (str_contains($stderr, 'Command not found') || str_contains($stderr, 'No such file')) {
+                    $userMessage .= ' The mysql client is not installed or not on the system PATH.';
+                } elseif (str_contains($stderr, 'ERROR')) {
+                    // Extract the first MySQL error line
+                    $errorLines = array_filter(explode("\n", $stderr), static fn ($line) => str_starts_with($line, 'ERROR'));
+                    if (! empty($errorLines)) {
+                        $userMessage .= ' '.reset($errorLines);
+                    }
+                }
+
+                return ['error' => $userMessage];
+            }
+
+            // Verify the import by attempting to connect and query the database
+            try {
+                $dsn = sprintf(
+                    '%s:host=%s;port=%s;dbname=%s',
+                    $driver === 'mariadb' ? 'mysql' : $driver,
+                    $conn['host'],
+                    $conn['port'],
+                    $conn['database']
+                );
+                $pdo = new PDO($dsn, $conn['username'], $conn['password'] ?: null, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                ]);
+                $pdo->query('SELECT 1');
+            } catch (\PDOException $e) {
+                Log::error('Post-import verification failed: '.$e->getMessage());
+                $recoveryNote = $backupCreated
+                    ? ' A backup of the previous database was saved as '.$backupFilename.'.'
+                    : ' No pre-import backup was available.';
+
+                return ['error' => 'Import completed but database verification failed.'.$recoveryNote.' You may need to restore from backup manually.'];
             }
 
             return ['success' => true];
@@ -146,7 +237,7 @@ final class BackupService
 
     private static function mysqldumpCommand(array $conn): array
     {
-        return [
+        $cmd = [
             'mysqldump',
             '-h', $conn['host'],
             '-P', (string) $conn['port'],
@@ -154,8 +245,39 @@ final class BackupService
             '--single-transaction',
             '--quick',
             '--skip-lock-tables',
-            $conn['database'],
+            '--skip-column-statistics',
+            '--no-defaults',
         ];
+
+        // Explicitly pass empty password flag to prevent interactive prompt
+        if (empty($conn['password'])) {
+            $cmd[] = '--password=';
+        }
+
+        $cmd[] = $conn['database'];
+
+        return $cmd;
+    }
+
+    private static function mysqlImportCommand(array $conn): array
+    {
+        $cmd = [
+            'mysql',
+            '-h', $conn['host'],
+            '-P', (string) $conn['port'],
+            '-u', $conn['username'],
+            '--batch',       // Non-interactive, tab-separated output
+            '--no-defaults', // Don't read my.cnf files that may have conflicting settings
+        ];
+
+        // Explicitly pass empty password flag to prevent interactive prompt
+        if (empty($conn['password'])) {
+            $cmd[] = '--password=';
+        }
+
+        $cmd[] = $conn['database'];
+
+        return $cmd;
     }
 
     private static function credentialsEnv(array $conn): array
