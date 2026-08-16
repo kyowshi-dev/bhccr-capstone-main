@@ -6,7 +6,7 @@
 @php
     $enrollHasErrors = $errors->hasAny([
         'first_name', 'middle_name', 'last_name', 'sex',
-        'date_of_birth', 'birth_weight', 'mother_name',
+        'date_of_birth', 'birth_weight', 'mother_name', 'mother_id', 'father_name',
         'household_id', 'create_household', 'zone_id', 'family_name_head', 'contact_number', 'duplicate',
     ]);
     $duplicateMsg = $enrollHasErrors ? $errors->first('duplicate') : null;
@@ -100,8 +100,10 @@
                     </div>
 
                     <div>
-                        <label for="enroll_birth_weight" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Birth weight (kg)</label>
-                        <input id="enroll_birth_weight" name="birth_weight" type="number" step="0.01" min="0.1" max="10"
+                        <label for="enroll_birth_weight" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
+                            Birth weight (kg) <span style="color: var(--danger);">*</span>
+                        </label>
+                        <input id="enroll_birth_weight" name="birth_weight" type="number" step="0.01" min="0.1" max="10" required
                                value="{{ old('birth_weight') }}" placeholder="e.g. 3.20"
                                class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
                                style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
@@ -110,13 +112,73 @@
                         @enderror
                     </div>
 
+                    <div class="sm:col-span-2">
+                        <label for="enroll_mother" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
+                            Mother's full name <span style="color: var(--danger);">*</span>
+                        </label>
+                        <input id="enroll_mother" name="mother_name" type="text" required minlength="2" maxlength="255"
+                               value="{{ old('mother_name') }}"
+                               x-model="motherQuery"
+                               @input.debounce.300ms="searchMothers()"
+                               autocomplete="off"
+                               placeholder="Search existing patient or type the full name"
+                               class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+                               style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                        <input type="hidden" name="mother_id" :value="motherSelected ? motherSelected.id : ''">
+
+                        <div x-show="motherSelected" x-cloak class="mt-2 mb-2 rounded-xl border px-4 py-3 flex items-center justify-between gap-3" style="border-color: var(--primary); background: var(--teal-soft);">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <i class="fa-solid fa-user text-sm" style="color: var(--primary);" aria-hidden="true"></i>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium truncate" style="color: var(--ink);" x-text="motherSelected?.text"></p>
+                                    <p class="text-xs" style="color: var(--ink-muted);" x-text="motherSelected?.subtext"></p>
+                                </div>
+                            </div>
+                            <button type="button" @click="unlinkMother()" class="shrink-0 text-xs font-semibold hover:underline" style="color: var(--primary);">Remove</button>
+                        </div>
+
+                        <div x-show="!motherSelected && motherQuery.trim().length >= 2" class="mt-2 space-y-2">
+                            <p class="text-xs font-medium" style="color: var(--ink-muted);" x-show="searchingMothers">
+                                <i class="fa-solid fa-spinner fa-spin mr-1" aria-hidden="true"></i>Searching patients…
+                            </p>
+
+                            <template x-for="mother in motherMatches" :key="mother.id">
+                                <button type="button" @click="linkMother(mother)"
+                                        class="w-full flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors hover:bg-black/[0.03]"
+                                        style="border-color: var(--border); background: var(--bg-surface);">
+                                    <span class="flex items-center gap-2.5 min-w-0">
+                                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style="background: var(--teal-soft); color: var(--primary);">
+                                            <i class="fa-solid fa-user text-xs" aria-hidden="true"></i>
+                                        </span>
+                                        <span class="min-w-0">
+                                            <span class="block text-sm font-medium truncate" style="color: var(--ink);" x-text="mother.text"></span>
+                                            <span class="block text-xs" style="color: var(--ink-muted);" x-text="mother.subtext"></span>
+                                        </span>
+                                    </span>
+                                    <span class="shrink-0 text-xs font-semibold" style="color: var(--primary);">Link</span>
+                                </button>
+                            </template>
+
+                            <p x-show="!searchingMothers && motherMatches.length === 0" class="rounded-xl border border-dashed px-4 py-3 text-xs" style="border-color: var(--border); color: var(--ink-muted);">
+                                No matching patient. The typed name will be saved as the mother's name.
+                            </p>
+                        </div>
+
+                        @error('mother_name')
+                            <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
+                        @enderror
+                        @error('mother_id')
+                            <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <div>
-                        <label for="enroll_mother" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Mother's full name</label>
-                        <input id="enroll_mother" name="mother_name" type="text" maxlength="255" value="{{ old('mother_name') }}"
+                        <label for="enroll_father" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Father's full name</label>
+                        <input id="enroll_father" name="father_name" type="text" maxlength="255" value="{{ old('father_name') }}"
                                autocomplete="off"
                                class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
                                style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                        @error('mother_name')
+                        @error('father_name')
                             <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
                         @enderror
                     </div>
@@ -255,6 +317,10 @@
             searching: false,
             selected: null,
             createHousehold: @js((bool) old('create_household')),
+            motherQuery: @js(old('mother_name', '')),
+            motherMatches: [],
+            searchingMothers: false,
+            motherSelected: null,
             init() {
                 if (this.createHousehold && ! this.familyHead) {
                     this.familyHead = this.surname;
@@ -266,11 +332,10 @@
                 try {
                     const url = @json(route('immunizations.household-match'))
                         + '?surname=' + encodeURIComponent(this.surname.trim());
-                    const response = await fetch(url);
-                    const data = await response.json();
+                    const response = await safeFetch(url);
+                    const data = response.ok ? await response.json() : [];
                     this.matches = Array.isArray(data) ? data : [];
                 } catch (e) {
-                    console.error('Household match failed:', e);
                     this.matches = [];
                 }
                 this.searching = false;
@@ -284,6 +349,33 @@
                 if (this.createHousehold && ! this.familyHead) {
                     this.familyHead = this.surname;
                 }
+            },
+            async searchMothers() {
+                if (this.motherSelected && this.motherQuery.trim() !== this.motherSelected.text) {
+                    this.unlinkMother();
+                }
+
+                if (this.motherQuery.trim().length < 2) { this.motherMatches = []; return; }
+                this.searchingMothers = true;
+                try {
+                    const url = @json(route('immunizations.mother-match'))
+                        + '?query=' + encodeURIComponent(this.motherQuery.trim());
+                    const response = await safeFetch(url);
+                    const data = response.ok ? await response.json() : [];
+                    this.motherMatches = Array.isArray(data) ? data : [];
+                } catch (e) {
+                    this.motherMatches = [];
+                }
+                this.searchingMothers = false;
+            },
+            linkMother(mother) {
+                this.motherSelected = mother;
+                this.motherQuery = mother.text;
+                this.motherMatches = [];
+            },
+            unlinkMother() {
+                this.motherSelected = null;
+                this.motherMatches = [];
             },
         };
     }

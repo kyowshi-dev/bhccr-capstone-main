@@ -4,8 +4,11 @@
 
 @section('content')
 @php
-    $targetDate = \Carbon\Carbon::parse($date);
-    $dueDateLabel = $targetDate->isToday() ? 'Due next 7 days' : 'Due from '.$targetDate->format('M d');
+    $hasDateRange = filled($dateFrom) || filled($dateTo);
+    $isCurrentMonth = $month === \Carbon\Carbon::today()->format('Y-m');
+    $dueDateLabel = $hasDateRange
+        ? 'Due from '.$dueWindowStart->format('M j').' to '.$dueWindowEnd->format('M j')
+        : ($isCurrentMonth ? 'Due this month' : 'Due in '.$dueWindowStart->format('F Y'));
     $statusBadges = [
         'due' => ['bg' => 'var(--accent-blue-soft)', 'fg' => 'var(--accent-blue)'],
         'overdue' => ['bg' => 'var(--danger-soft)', 'fg' => 'var(--danger)'],
@@ -66,16 +69,31 @@
                     @endforeach
                 </select>
             </div>
-            @if ($mode === 'child')
-                <div>
-                    <label for="filter_date" class="sr-only">Filter by due date</label>
-                    <input id="filter_date" type="date" name="date" value="{{ $date }}" max="{{ \Carbon\Carbon::today()->addYear()->toDateString() }}"
-                           @change="$el.form.submit()"
-                           class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                           style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                </div>
-            @endif
-            @if ($zoneId !== null || ($mode === 'child' && $date !== \Carbon\Carbon::today()->toDateString()))
+            <div>
+                <label for="filter_month" class="sr-only">Filter by month</label>
+                <select id="filter_month" name="month" @change="$el.form.date_from.value = ''; $el.form.date_to.value = ''; $el.form.submit()"
+                        class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                        style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                    @foreach ($monthOptions as $monthValue => $monthLabel)
+                        <option value="{{ $monthValue }}" @selected($month === $monthValue)>{{ $monthLabel }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <label for="filter_date_from" class="sr-only">Filter from date</label>
+                <input id="filter_date_from" type="date" name="date_from" value="{{ $dateFrom ?? '' }}"
+                       class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                       style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                <span class="text-xs" style="color: var(--ink-muted);">to</span>
+                <label for="filter_date_to" class="sr-only">Filter to date</label>
+                <input id="filter_date_to" type="date" name="date_to" value="{{ $dateTo ?? '' }}"
+                       class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                       style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                <button type="submit" class="rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-black/[0.03]" style="border-color: var(--border); color: var(--ink-muted);">
+                    Apply range
+                </button>
+            </div>
+            @if ($zoneId !== null || $month !== \Carbon\Carbon::today()->format('Y-m') || $hasDateRange)
                 <a href="{{ route('immunizations.index', ['mode' => $mode]) }}" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition hover:bg-black/[0.03]" style="color: var(--ink-muted);">
                     <i class="fa-solid fa-xmark" aria-hidden="true"></i> Clear
                 </a>
@@ -96,13 +114,26 @@
             </div>
         </div>
     @else
-        <div class="rounded-xl border p-4 lg:p-5 max-w-md" style="background: var(--bg-surface); border-color: var(--border);">
-            <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">Doses given</p>
-            <div class="flex items-end justify-between gap-3">
-                <p class="text-2xl font-display font-semibold leading-none" style="color: var(--ink);">{{ number_format($totalGiven) }}</p>
-                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
-                    {{ number_format($patientsWithRecords) }} patients
-                </span>
+        <div class="grid gap-3 sm:grid-cols-2 max-w-2xl">
+            <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
+                <p class="text-xs font-medium mb-0.5" style="color: var(--ink-muted);">Adults enrolled</p>
+                <div class="flex items-end justify-between gap-3">
+                    <p class="text-2xl font-display font-semibold leading-none" style="color: var(--ink);">{{ number_format($adultEnrolled) }}</p>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
+                        <i class="fa-solid fa-user mr-1" aria-hidden="true"></i>18+ enrolled
+                    </span>
+                </div>
+            </div>
+            <div class="rounded-xl border p-4 lg:p-5" style="background: var(--bg-surface); border-color: var(--border);">
+                <p class="text-xs font-medium mb-2" style="color: var(--ink-muted);">Doses given by vaccine</p>
+                @forelse ($adultDosesByVaccine as $adultDose)
+                    <div class="flex items-center justify-between gap-3 py-1 border-b last:border-0" style="border-color: var(--border);">
+                        <span class="text-sm" style="color: var(--ink);">{{ $adultDose->vaccine_name }}</span>
+                        <span class="text-sm font-semibold" style="color: var(--primary);">{{ number_format($adultDose->doses_count) }}</span>
+                    </div>
+                @empty
+                    <p class="text-xs" style="color: var(--ink-muted);">No adult doses recorded yet.</p>
+                @endforelse
             </div>
         </div>
     @endif
@@ -205,7 +236,7 @@
                                                 @foreach ($entries as $entry)
                                                     @php($queueVaccine = $entry['vaccine'])
                                                     <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap" style="background: {{ $badge['bg'] }}; color: {{ $badge['fg'] }};">
-                                                        {{ $queueVaccine->vaccine_name }} · Dose {{ $entry['dose_number'] }}
+                                                        {{ $queueVaccine->vaccine_name }} {{ $entry['dose_number'] }}
                                                         @if ($entry['due_date'] !== null)
                                                             · {{ $entry['due_date']->format('M j') }}
                                                         @endif
@@ -252,7 +283,7 @@
                                                     'no_show' => 'fa-solid fa-user-clock',
                                                 }"
                                                 :title="match ($queueKey) {
-                                                    'due' => 'No patients '.($targetDate->isToday() ? 'due in the next 7 days' : 'due on or after '.$date),
+                                                    'due' => 'No patients '.($isCurrentMonth && ! $hasDateRange ? 'due this month' : ($hasDateRange ? 'due in the selected range' : 'due in '.$dueWindowStart->format('F Y'))),
                                                     'overdue' => 'No overdue patients',
                                                     'no_show' => 'No no-show cases',
                                                 }"
@@ -279,7 +310,7 @@
                 </div>
                 <div class="inline-flex rounded-xl border p-1" style="border-color: var(--border); background: var(--bg-surface);" role="tablist" aria-label="Queue view">
                     <button type="button" @click="activeTab = 'due'" role="tab" :aria-selected="activeTab === 'due' ? 'true' : 'false'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition" :style="activeTab === 'due' ? 'background: var(--teal-soft); color: var(--primary);' : 'color: var(--ink-muted);'">
-                        Due next{{ ! $targetDate->isToday() ? ' ('. $targetDate->format('M d') .')' : '' }}
+                        {{ $dueDateLabel }}
                     </button>
                     <button type="button" @click="activeTab = 'recent'" role="tab" :aria-selected="activeTab === 'recent' ? 'true' : 'false'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition" :style="activeTab === 'recent' ? 'background: var(--teal-soft); color: var(--primary);' : 'color: var(--ink-muted);'">
                         Recent
@@ -319,7 +350,7 @@
                                             @foreach ($entries as $entry)
                                                 @php($dueVaccine = $entry['vaccine'])
                                                 <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
-                                                    {{ $dueVaccine->vaccine_name }} · Dose {{ $entry['dose_number'] }}
+                                                    {{ $dueVaccine->vaccine_name }} {{ $entry['dose_number'] }}
                                                     @if ($entry['due_date'] !== null)
                                                         · {{ $entry['due_date']->format('M j') }}
                                                     @endif
@@ -412,7 +443,8 @@
                 const container = this.$refs[ref];
                 this.clearCheckinHost(container);
                 try {
-                    const response = await fetch(this.checkinUrl(patientId));
+                    const response = await safeFetch(this.checkinUrl(patientId));
+                    const data = response.ok ? await response.json() : {};
                     if (! response.ok) throw new Error(`HTTP ${response.status}`);
                     const html = await response.text();
                     if (this.expandedPatientId !== patientId || seq !== this.checkinSeq) return;
@@ -488,7 +520,8 @@
                 if (this.query.length < 2) { this.results = []; return; }
                 this.loading = true;
                 try {
-                    const response = await fetch(`{{ route('search.patients') }}?query=${this.query}`);
+                    const response = await safeFetch(`{{ route('search.patients') }}?query=${this.query}`);
+                    this.results = response.ok ? await response.json() : [];
                     const data = await response.json();
                     this.results = data.map(item => ({
                         ...item,

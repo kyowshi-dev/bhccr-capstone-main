@@ -104,21 +104,6 @@ class ImmunizationPrintTest extends TestCase
         $this->get(route('immunizations.print-card', $infant->id))->assertForbidden();
     }
 
-    public function test_print_card_pdf_guest_is_redirected_to_login(): void
-    {
-        $infant = $this->infant();
-
-        $this->get(route('immunizations.print-card.pdf', $infant->id))->assertRedirect(route('login'));
-    }
-
-    public function test_print_card_pdf_requires_permission(): void
-    {
-        $this->actingAs($this->createUserWithPermissions([]));
-        $infant = $this->infant();
-
-        $this->get(route('immunizations.print-card.pdf', $infant->id))->assertForbidden();
-    }
-
     public function test_print_card_renders_child_information(): void
     {
         $this->actingAs($this->userWithPermission());
@@ -170,7 +155,7 @@ class ImmunizationPrintTest extends TestCase
             ->assertSee('3 (1½ buwan, 2½ buwan, 3½ buwan)', false)
             ->assertSee('BCG', false)
             ->assertSee('PENTA', false)
-            ->assertSee('D1:', false)
+            ->assertSee('BCG 1:', false)
             ->assertSee('Well tolerated', false);
     }
 

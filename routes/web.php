@@ -143,6 +143,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/consultations/{consultation}', [ConsultationController::class, 'update'])
         ->middleware('permission:consultations')
         ->name('consultations.update');
+    Route::put('/consultations/{consultation}/complaint', [ConsultationController::class, 'updateComplaint'])
+        ->middleware('permission:consultations')
+        ->name('consultations.complaint.update');
 
     // Doctor's Workspace (View specific consultation)
     Route::get('/consultations/{consultation}', [ConsultationController::class, 'show'])
@@ -172,9 +175,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/consultations/{consultation}/handout', [ConsultationController::class, 'printHandout'])
         ->middleware('permission:print_handouts')
         ->name('consultations.handout');
-    Route::get('/consultations/{consultation}/handout/pdf', [ConsultationController::class, 'downloadHandoutPdf'])
-        ->middleware('permission:print_handouts')
-        ->name('consultations.handout.pdf');
     Route::post('/consultations/{consultation}/vitals/retake', [ConsultationController::class, 'retakeVitals'])
         ->middleware('permission:consultations')
         ->name('consultations.vitals.retake');
@@ -193,6 +193,18 @@ Route::middleware('auth')->group(function () {
     Route::delete('/consultations/{consultation}/prescriptions/{prescriptionId}', [ConsultationController::class, 'deletePrescription'])
         ->middleware('permission:consultations')
         ->name('consultations.prescription.delete');
+    Route::put('/consultations/{consultation}/diagnoses/{diagnosisId}', [ConsultationController::class, 'updateDiagnosis'])
+        ->middleware('permission:consultations')
+        ->name('consultations.diagnosis.update');
+    Route::put('/consultations/{consultation}/prescriptions/{prescriptionId}', [ConsultationController::class, 'updatePrescription'])
+        ->middleware('permission:consultations')
+        ->name('consultations.prescription.update');
+    Route::post('/consultations/{consultation}/edit-diagnosis', [ConsultationController::class, 'addDiagnosisFromEdit'])
+        ->middleware('permission:consultations')
+        ->name('consultations.edit-diagnosis');
+    Route::post('/consultations/{consultation}/edit-prescription', [ConsultationController::class, 'addPrescriptionFromEdit'])
+        ->middleware('permission:consultations')
+        ->name('consultations.edit-prescription');
 
     // 5. IMMUNIZATION
     Route::get('/immunizations', [ImmunizationController::class, 'index'])
@@ -210,9 +222,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/patients/{id}/immunizations/print', [ImmunizationController::class, 'printRecord'])
         ->middleware('permission:immunizations')
         ->name('immunizations.print-card');
-    Route::get('/patients/{id}/immunizations/print/pdf', [ImmunizationController::class, 'downloadPrintCardPdf'])
-        ->middleware('permission:immunizations')
-        ->name('immunizations.print-card.pdf');
     Route::post('/patients/{id}/immunizations/administer', [ImmunizationController::class, 'administer'])
         ->middleware('permission:immunizations')
         ->name('immunizations.administer');
@@ -231,6 +240,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/immunizations/household-match', [ImmunizationController::class, 'householdMatch'])
         ->middleware('permission:immunizations', 'throttle:60,1')
         ->name('immunizations.household-match');
+    Route::get('/immunizations/mother-match', [ImmunizationController::class, 'motherMatch'])
+        ->middleware('permission:immunizations', 'throttle:60,1')
+        ->name('immunizations.mother-match');
 
     // 5a. MATERNAL CARE (Family Planning / Prenatal / Postnatal)
     Route::get('/maternal/family-planning', [FamilyPlanningController::class, 'index'])
@@ -425,10 +437,10 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:users')
         ->name('settings.backups');
     Route::post('/settings/backups/export', [SettingsController::class, 'exportBackup'])
-        ->middleware('permission:users', 'throttle:1,60')  // max 1 export per hour
+        ->middleware('permission:users', 'throttle:3,60')  // max 3 exports per hour (allows retry on transient failure)
         ->name('settings.backups.export');
     Route::post('/settings/backups/import', [SettingsController::class, 'importBackup'])
-        ->middleware('permission:users', 'throttle:1,60')  // max 1 import per hour
+        ->middleware('permission:users', 'throttle:3,60')  // max 3 imports per hour (allows retry on transient failure)
         ->name('settings.backups.import');
 
     // 13. PROFILE MANAGEMENT

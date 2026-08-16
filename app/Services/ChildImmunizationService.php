@@ -237,7 +237,6 @@ class ChildImmunizationService
 
         $this->assertDoseNotTooEarly($patient, $vaccine, $nextIndex, $dateGiven);
         $this->assertOutOfWindowOverride($patient, $vaccine, $data);
-        $this->assertTemperatureValid($schedule, $data);
         $this->assertNoGroupConflict($patient, $vaccine);
 
         $patient->immunizationRecords()
@@ -252,6 +251,8 @@ class ChildImmunizationService
             'dose_number' => $doseNumber,
             'date_given' => $dateGiven,
             'temp_recorded' => $data['temp_recorded'] ?? null,
+            'child_weight_kg' => $data['child_weight_kg'] ?? null,
+            'child_height_cm' => $data['child_height_cm'] ?? null,
             'administered_by' => $data['administered_by'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);
@@ -373,6 +374,9 @@ class ChildImmunizationService
 
         $relationship = $data['sex'] === 'Female' ? 'Daughter' : 'Son';
 
+        $motherId = $data['mother_id'] ?? null;
+        $mother = $motherId !== null ? Patient::find($motherId) : null;
+
         return Patient::create([
             'household_id' => $householdId,
             'first_name' => $data['first_name'],
@@ -383,7 +387,11 @@ class ChildImmunizationService
             'date_of_birth' => $data['date_of_birth'],
             'birth_weight' => $data['birth_weight'] ?? null,
             'guardian_name' => $data['guardian_name'] ?? null,
-            'mother_name' => $data['mother_name'] ?? $data['guardian_name'] ?? '',
+            'mother_id' => $mother?->id,
+            'mother_name' => $mother !== null
+                ? trim(implode(' ', array_filter([$mother->first_name, $mother->middle_name, $mother->last_name])))
+                : ($data['mother_name'] ?? ''),
+            'father_name' => $data['father_name'] ?? null,
             'spouse_name' => '',
             'family_relationship' => $relationship,
             'residential_address' => $this->zoneAddress($householdId),
@@ -410,14 +418,15 @@ class ChildImmunizationService
      * workflow simplicity). The clinical distinction is preserved at
      * administration time via the override-reason gate.
      *
-     * The "due" queue uses a rolling window (DUE_WINDOW_DAYS from the target
-     * date) so children who became eligible between session days are not
-     * missed; everything earlier than the target is "overdue".
+     * The "due" queue uses the supplied date window (defaults to today
+     * plus DUE_WINDOW_DAYS when omitted) so patients who became eligible
+     * between session days are not missed; everything earlier than the
+     * window start is "overdue".
      *
      * @param  list<string>  $categories
      * @return \Illuminate\Support\Collection<int, array{patient: Patient, vaccine: Vaccine, status: string, dose_number: int, due_date: Carbon}>
      */
-    public function queue(string $mode, ?int $zoneId = null, ?string $date = null, array $categories = ['Child', 'Both']): \Illuminate\Support\Collection
+    public function queue(string $mode, ?int $zoneId = null, ?Carbon $from = null, ?Carbon $to = null, array $categories = ['Child', 'Both']): \Illuminate\Support\Collection
     {
         $query = Patient::query()->whereHas('household')->where('is_immunization_enrolled', true);
 
@@ -429,7 +438,8 @@ class ChildImmunizationService
 
         $vaccines = Vaccine::whereIn('category', $categories)->with('schedules')->get();
 
-        $target = $date !== null ? Carbon::parse($date) : Carbon::today();
+        $from = $from?->copy()->startOfDay() ?? Carbon::today();
+        $to = $to?->copy()->endOfDay() ?? $from->copy()->addDays(self::DUE_WINDOW_DAYS);
 
         $childFocused = in_array('Child', $categories, true);
 
@@ -456,7 +466,7 @@ class ChildImmunizationService
                         continue;
                     }
 
-                    if ($earliest->lt($target) || $earliest->gt($target->copy()->addDays(self::DUE_WINDOW_DAYS))) {
+                    if ($earliest->lt($from) || $earliest->gt($to)) {
                         continue;
                     }
 
@@ -475,7 +485,7 @@ class ChildImmunizationService
                     ? in_array($status, [self::STATUS_OVERDUE, self::STATUS_OUT_OF_WINDOW], true)
                     : $status === $mode;
 
-                if (! $matchesMode || ($mode === self::STATUS_OVERDUE && ! $earliest->lt($target))) {
+                if (! $matchesMode || ($mode === self::STATUS_OVERDUE && ! $earliest->lt($from))) {
                     continue;
                 }
 
@@ -485,7 +495,7 @@ class ChildImmunizationService
                         ->where('no_show', false)
                         ->count();
 
-                    if ($dosesGiven === 0 && $earliest->lt($target->copy()->subDays(self::OVERDUE_LOOKBACK_DAYS))) {
+                    if ($dosesGiven === 0 && $earliest->lt($from->copy()->subDays(self::OVERDUE_LOOKBACK_DAYS))) {
                         continue;
                     }
                 }
@@ -600,31 +610,6 @@ class ChildImmunizationService
         if ($this->isOutOfWindow($patient, $vaccine) && blank($data['override_reason'] ?? null)) {
             throw ValidationException::withMessages([
                 'override_reason' => 'This vaccine is out of its age window; an override reason is required.',
-            ]);
-        }
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    private function assertTemperatureValid(VaccineSchedule $schedule, array $data): void
-    {
-        if (! $schedule->requires_temp) {
-            return;
-        }
-
-        $temp = $data['temp_recorded'] ?? null;
-        $administeredElsewhere = (bool) ($data['administered_elsewhere'] ?? false);
-
-        if (! $administeredElsewhere && ($temp === null || $temp === '')) {
-            throw ValidationException::withMessages([
-                'temp_recorded' => 'Temperature recording is required for this vaccine.',
-            ]);
-        }
-
-        if ($temp !== null && $temp !== '' && (! is_numeric($temp) || (float) $temp < 30 || (float) $temp > 45)) {
-            throw ValidationException::withMessages([
-                'temp_recorded' => 'Temperature must be a number between 30 and 45.',
             ]);
         }
     }

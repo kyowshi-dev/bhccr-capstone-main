@@ -98,13 +98,49 @@ class ImmunizationIndexTest extends TestCase
         $this->infantIn(1, now()->subDays(42));
         $this->infantIn(1, now()->subDays(41));
 
-        $this->get(route('immunizations.index'))
+        $this->get(route('immunizations.index', [
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->addWeek()->toDateString(),
+        ]))
             ->assertOk()
             ->assertViewHas('dueTodayCount', 2);
 
-        $this->get(route('immunizations.index', ['date' => now()->addDay()->toDateString()]))
+        $this->get(route('immunizations.index', [
+            'date_from' => now()->addDay()->toDateString(),
+            'date_to' => now()->addWeek()->toDateString(),
+        ]))
             ->assertOk()
             ->assertViewHas('dueTodayCount', 1);
+    }
+
+    public function test_month_filter_shows_patients_due_in_selected_month(): void
+    {
+        $this->actingAs($this->userWithPermission());
+
+        $this->infantIn(1, now()->subDays(42));
+
+        $this->get(route('immunizations.index', ['month' => now()->format('Y-m')]))
+            ->assertOk()
+            ->assertViewHas('dueTodayCount', fn (int $count) => $count >= 1);
+
+        $this->get(route('immunizations.index', ['month' => now()->subMonths(2)->format('Y-m')]))
+            ->assertOk()
+            ->assertViewHas('dueTodayCount', 0);
+    }
+
+    public function test_date_range_overrides_month_filter(): void
+    {
+        $this->actingAs($this->userWithPermission());
+
+        $this->infantIn(1, now()->subDays(42));
+
+        $this->get(route('immunizations.index', [
+            'month' => now()->subMonths(2)->format('Y-m'),
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->addWeek()->toDateString(),
+        ]))
+            ->assertOk()
+            ->assertViewHas('dueTodayCount', fn (int $count) => $count >= 1);
     }
 
     public function test_zone_filter_scopes_due_queue(): void
