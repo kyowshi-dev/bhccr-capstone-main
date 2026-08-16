@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'BHCIS') - Sta. Ana</title>
-    
+
+    <link rel="icon" type="image/svg+xml" href="{{ asset('img/logo.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/layout.js', 'resources/js/charts.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/layout.js'])
     @livewireStyles
 
 </head>
@@ -155,8 +156,16 @@
                             $roleName = $authUser->role?->role_name ?? 'User';
                             $username = (string) $authUser->username;
                             $initials = mb_strtoupper(mb_substr($username, 0, 1));
-                            $notifications = $authUser->notifications()->latest()->take(5)->get();
-                            $unreadCount = $authUser->unreadNotifications->count();
+                            $notifications = Cache::remember(
+                                "header_notifications_{$authUser->id}",
+                                now()->addMinute(),
+                                fn () => $authUser->notifications()->latest()->take(5)->get(),
+                            );
+                            $unreadCount = Cache::remember(
+                                "header_unread_count_{$authUser->id}",
+                                now()->addMinute(),
+                                fn () => $authUser->notifications()->whereNull('read_at')->count(),
+                            );
                         @endphp
                         
                         <!-- Notifications Dropdown -->
@@ -320,7 +329,7 @@
                         </nav>
                     @endif
 
-                    <div class="lg:px-2 animate-in opacity-0 delay-2">
+                    <div class="lg:px-2">
                         @yield('content')
                     </div>
 
