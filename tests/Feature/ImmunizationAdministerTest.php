@@ -76,6 +76,15 @@ class ImmunizationAdministerTest extends TestCase
         }
     }
 
+    private function validAdministerPayload(Vaccine $vaccine, array $overrides = []): array
+    {
+        return array_merge([
+            'vaccine_id' => $vaccine->id,
+            'child_weight_kg' => '6.5',
+            'child_height_cm' => '65',
+        ], $overrides);
+    }
+
     public function test_user_without_permission_is_forbidden(): void
     {
         $this->actingAs($this->createUserWithPermissions([]));
@@ -92,10 +101,8 @@ class ImmunizationAdministerTest extends TestCase
         $this->actingAs($this->authorizedUser());
         $infant = $this->makeInfant(now()->subDays(30));
 
-        $this->post(route('immunizations.administer', $infant->id), [
-            'vaccine_id' => $this->vaccine('PENTA')->id,
-            'temp_recorded' => '36.5',
-        ])->assertRedirect(route('immunizations.patient', $infant->id))->assertSessionHasErrors('date_given');
+        $this->post(route('immunizations.administer', $infant->id), $this->validAdministerPayload($this->vaccine('PENTA')))
+            ->assertRedirect(route('immunizations.patient', $infant->id))->assertSessionHasErrors('date_given');
     }
 
     public function test_administer_allows_overdue_dose(): void
@@ -104,10 +111,8 @@ class ImmunizationAdministerTest extends TestCase
         $infant = $this->makeInfant(now()->subDays(100));
 
         $this->from(route('immunizations.patient', $infant->id))
-            ->post(route('immunizations.administer', $infant->id), [
-                'vaccine_id' => $this->vaccine('PENTA')->id,
-                'temp_recorded' => '36.5',
-            ])->assertRedirect(route('immunizations.patient', $infant->id))->assertSessionHasNoErrors();
+            ->post(route('immunizations.administer', $infant->id), $this->validAdministerPayload($this->vaccine('PENTA')))
+            ->assertRedirect(route('immunizations.patient', $infant->id))->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('immunization_records', [
             'patient_id' => $infant->id,
@@ -122,10 +127,8 @@ class ImmunizationAdministerTest extends TestCase
         $this->actingAs($this->authorizedUser());
         $infant = $this->makeInfant(now()->subDays(300));
 
-        $this->post(route('immunizations.administer', $infant->id), [
-            'vaccine_id' => $this->vaccine('ROTA')->id,
-            'temp_recorded' => '36.5',
-        ])->assertSessionHasErrors('override_reason');
+        $this->post(route('immunizations.administer', $infant->id), $this->validAdministerPayload($this->vaccine('ROTA')))
+            ->assertSessionHasErrors('override_reason');
     }
 
     public function test_administer_allows_out_of_window_with_override_reason(): void
@@ -134,11 +137,9 @@ class ImmunizationAdministerTest extends TestCase
         $infant = $this->makeInfant(now()->subDays(300));
 
         $this->from(route('immunizations.patient', $infant->id))
-            ->post(route('immunizations.administer', $infant->id), [
-                'vaccine_id' => $this->vaccine('ROTA')->id,
-                'temp_recorded' => '36.5',
+            ->post(route('immunizations.administer', $infant->id), $this->validAdministerPayload($this->vaccine('ROTA'), [
                 'override_reason' => 'Catch-up per physician advice',
-            ])->assertRedirect(route('immunizations.patient', $infant->id))->assertSessionHasNoErrors();
+            ]))->assertRedirect(route('immunizations.patient', $infant->id))->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('immunization_records', [
             'patient_id' => $infant->id,
@@ -147,25 +148,13 @@ class ImmunizationAdministerTest extends TestCase
         ]);
     }
 
-    public function test_administer_requires_temp_for_injectable_child_vaccine(): void
-    {
-        $this->actingAs($this->authorizedUser());
-        $infant = $this->makeInfant(now()->subDays(70));
-
-        $this->post(route('immunizations.administer', $infant->id), [
-            'vaccine_id' => $this->vaccine('PENTA')->id,
-        ])->assertSessionHasErrors('temp_recorded');
-    }
-
     public function test_administer_computes_next_due_date(): void
     {
         $this->actingAs($this->authorizedUser());
         $infant = $this->makeInfant(now()->subDays(70));
 
-        $this->post(route('immunizations.administer', $infant->id), [
-            'vaccine_id' => $this->vaccine('PENTA')->id,
-            'temp_recorded' => '36.5',
-        ])->assertSessionHasNoErrors();
+        $this->post(route('immunizations.administer', $infant->id), $this->validAdministerPayload($this->vaccine('PENTA')))
+            ->assertSessionHasNoErrors();
 
         $record = Immunization::where('vaccine_id', $this->vaccine('PENTA')->id)
             ->where('patient_id', $infant->id)
@@ -182,15 +171,11 @@ class ImmunizationAdministerTest extends TestCase
         $this->actingAs($this->authorizedUser());
         $infant = $this->makeInfant(now()->subDays(10));
 
-        $this->post(route('immunizations.administer', $infant->id), [
-            'vaccine_id' => $this->vaccine('HEPA_B_24H')->id,
-            'temp_recorded' => '36.5',
-        ])->assertSessionHasNoErrors();
+        $this->post(route('immunizations.administer', $infant->id), $this->validAdministerPayload($this->vaccine('HEPA_B_24H')))
+            ->assertSessionHasNoErrors();
 
-        $this->post(route('immunizations.administer', $infant->id), [
-            'vaccine_id' => $this->vaccine('HEPA_B_GT24')->id,
-            'temp_recorded' => '36.5',
-        ])->assertSessionHasErrors('vaccine_id');
+        $this->post(route('immunizations.administer', $infant->id), $this->validAdministerPayload($this->vaccine('HEPA_B_GT24')))
+            ->assertSessionHasErrors('vaccine_id');
     }
 
     public function test_administer_rejects_completed_series(): void
@@ -201,10 +186,8 @@ class ImmunizationAdministerTest extends TestCase
         $pentA = $this->vaccine('PENTA');
         $this->doseSeries($infant, $pentA, 3, $dob);
 
-        $this->post(route('immunizations.administer', $infant->id), [
-            'vaccine_id' => $pentA->id,
-            'temp_recorded' => '36.5',
-        ])->assertSessionHasErrors('dose_number');
+        $this->post(route('immunizations.administer', $infant->id), $this->validAdministerPayload($pentA))
+            ->assertSessionHasErrors('dose_number');
     }
 
     public function test_mark_done_records_overdue_dose_as_today_without_date_or_temp(): void

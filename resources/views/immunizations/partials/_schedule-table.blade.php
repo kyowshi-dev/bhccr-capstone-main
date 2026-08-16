@@ -91,7 +91,7 @@
                                     @forelse ($dosesGiven as $dose)
                                         <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap"
                                               style="background: rgba(0,0,0,0.05); color: var(--ink);">
-                                            D{{ $dose->dose_number }} · {{ \Carbon\Carbon::parse($dose->date_given)->format('M j') }}
+                                            {{ $item->vaccine->vaccine_name }} {{ $dose->dose_number }} · {{ \Carbon\Carbon::parse($dose->date_given)->format('M j') }}
                                             @if ($dose->temp_recorded !== null)
                                                 · {{ number_format((float) $dose->temp_recorded, 1) }}°
                                             @endif
@@ -139,7 +139,6 @@
                                                     vaccineId: {{ $vaccineId }},
                                                     vaccineName: @js($item->vaccine->vaccine_name),
                                                     doseNumber: {{ $nextDose }},
-                                                    requiresTemp: {{ $requiresTemp ? 'true' : 'false' }},
                                                     outOfWindow: {{ ($elig['state'] ?? '') === 'out_of_window' ? 'true' : 'false' }}
                                                 })"
                                                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition hover:shadow-md"

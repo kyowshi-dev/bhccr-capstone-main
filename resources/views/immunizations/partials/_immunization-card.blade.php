@@ -115,14 +115,14 @@
                 $dosesText = $doseSchedules->count().' ('.implode(', ', $doseLabels->all()).')';
                 $given = $recordsByVaccine->get($vaccine->id, collect())->sortBy('dose_number');
                 $remarks = $given->filter(fn ($d) => trim((string) ($d->notes ?? '')) !== '')
-                    ->map(fn ($d) => 'D'.$d->dose_number.': '.$d->notes);
+                    ->map(fn ($d) => $vaccine->vaccine_name.' '.$d->dose_number.': '.$d->notes);
             @endphp
             <tr>
                 <td class="vac-name">{{ $vaccine->vaccine_name }}</td>
                 <td class="vac-doses">{{ $dosesText }}</td>
                 <td class="vac-dates">
                     @foreach ($given as $dose)
-                        <span class="dose-line">D{{ $dose->dose_number }}: {{ \Carbon\Carbon::parse($dose->date_given)->format('m/d/Y') }}</span>
+                        <span class="dose-line">{{ $vaccine->vaccine_name }} {{ $dose->dose_number }}: {{ \Carbon\Carbon::parse($dose->date_given)->format('m/d/Y') }}</span>
                     @endforeach
                 </td>
                 <td class="vac-remarks">{{ $remarks->join('; ') }}</td>

@@ -1,5 +1,5 @@
 @php
-    $adminErrors = $errors->hasAny(['vaccine_id', 'dose_number', 'date_given', 'temp_recorded', 'override_reason', 'notes']);
+    $adminErrors = $errors->hasAny(['vaccine_id', 'dose_number', 'date_given', 'temp_recorded', 'child_weight_kg', 'child_height_cm', 'override_reason', 'notes']);
     $reopenVaccine = $adminErrors ? $vaccines->firstWhere('id', (int) old('vaccine_id')) : null;
     $reopenRequiresTemp = $adminErrors && ($errors->has('temp_recorded') || old('temp_recorded') !== null);
     $reopenOutOfWindow = $adminErrors && ($errors->has('override_reason') || old('override_reason') !== null);
@@ -38,8 +38,7 @@
                         <div>
                             <h3 id="administerModalTitle" class="font-display font-semibold text-lg" style="color: var(--ink);">Record dose</h3>
                             <p class="text-sm mt-0.5" style="color: var(--ink-muted);">
-                                <span x-text="vaccineName" class="font-medium" style="color: var(--ink);"></span>
-                                <span x-show="doseNumber" x-text="` · dose ${doseNumber}`"></span>
+                                <span x-show="vaccineName" x-text="vaccineName + (doseNumber ? ` ${doseNumber}` : '')" class="font-medium" style="color: var(--ink);"></span>
                             </p>
                         </div>
                         <button type="button" @click="adminOpen = false" aria-label="Close" class="rounded-lg p-1.5 transition-colors hover:bg-black/5" style="color: var(--ink-muted);">
@@ -66,19 +65,46 @@
                             @enderror
                         </div>
 
-                        <div x-show="requiresTemp">
+                        <div>
                             <label for="administer_temp" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
-                                Body temperature (°C) <span style="color: var(--danger);">*</span>
+                                Body temperature (°C)
                             </label>
                             <input id="administer_temp" name="temp_recorded" type="number" step="0.1" min="30" max="45"
-                                   :required="requiresTemp"
                                    value="{{ old('temp_recorded') }}" placeholder="e.g. 36.5"
                                    class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
                                    style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                            <p class="mt-1 text-xs" style="color: var(--ink-subtle);">Recorded before administering injectable vaccines.</p>
+                            <p class="mt-1 text-xs" style="color: var(--ink-subtle);">Optional. Record before administering injectable vaccines.</p>
                             @error('temp_recorded')
                                 <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
                             @enderror
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="administer_weight" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
+                                    Weight (kg) <span style="color: var(--danger);">*</span>
+                                </label>
+                                <input id="administer_weight" name="child_weight_kg" type="number" step="0.01" min="0" max="100"
+                                       value="{{ old('child_weight_kg') }}" placeholder="e.g. 6.5" required
+                                       class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+                                       style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                                @error('child_weight_kg')
+                                    <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="administer_height" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
+                                    Height (cm) <span style="color: var(--danger);">*</span>
+                                </label>
+                                <input id="administer_height" name="child_height_cm" type="number" step="0.1" min="20" max="200"
+                                       value="{{ old('child_height_cm') }}" placeholder="e.g. 65" required
+                                       class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+                                       style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                                @error('child_height_cm')
+                                    <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
 
                         <div x-show="outOfWindow">
@@ -128,7 +154,6 @@
             vaccineId: null,
             vaccineName: '',
             doseNumber: null,
-            requiresTemp: false,
             outOfWindow: false,
             init() {
                 this.$watch('adminOpen', (open) => {
@@ -139,7 +164,6 @@
                 if (! hasErrors) return;
                 this.vaccineId = {{ (int) old('vaccine_id', 0) }} || null;
                 this.vaccineName = @js($reopenVaccine?->vaccine_name ?? '');
-                this.requiresTemp = {{ $reopenRequiresTemp ? 'true' : 'false' }};
                 this.outOfWindow = {{ $reopenOutOfWindow ? 'true' : 'false' }};
                 this.adminOpen = true;
             },
@@ -147,7 +171,6 @@
                 this.vaccineId = detail.vaccineId ?? null;
                 this.vaccineName = detail.vaccineName ?? '';
                 this.doseNumber = detail.doseNumber ?? null;
-                this.requiresTemp = Boolean(detail.requiresTemp);
                 this.outOfWindow = Boolean(detail.outOfWindow);
                 this.adminOpen = true;
                 this.$nextTick(() => document.getElementById('administer_date')?.focus());

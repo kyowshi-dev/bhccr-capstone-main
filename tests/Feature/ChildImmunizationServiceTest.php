@@ -174,6 +174,8 @@ class ChildImmunizationServiceTest extends TestCase
         $pentA = $this->vaccine('PENTA');
 
         $record = $this->service->administer($patient, $pentA, [
+            'child_weight_kg' => '6.5',
+            'child_height_cm' => '65',
             'temp_recorded' => '36.8',
             'notes' => 'OK',
         ]);
@@ -196,8 +198,8 @@ class ChildImmunizationServiceTest extends TestCase
         $patient = $this->makePatient(now()->subDays(120));
         $pentA = $this->vaccine('PENTA');
 
-        $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5', 'date_given' => now()->subDays(40)]);
-        $second = $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5']);
+        $this->service->administer($patient, $pentA, ['child_weight_kg' => '6.5', 'child_height_cm' => '65', 'date_given' => now()->subDays(40)]);
+        $second = $this->service->administer($patient, $pentA, ['child_weight_kg' => '6.5', 'child_height_cm' => '65']);
 
         $this->assertSame(2, $second->dose_number);
     }
@@ -207,10 +209,10 @@ class ChildImmunizationServiceTest extends TestCase
         $patient = $this->makePatient(now()->subDays(120));
         $pentA = $this->vaccine('PENTA');
 
-        $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5', 'date_given' => now()->subDays(10)->toDateString()]);
+        $this->service->administer($patient, $pentA, ['child_weight_kg' => '6.5', 'child_height_cm' => '65', 'date_given' => now()->subDays(10)->toDateString()]);
 
         $this->expectException(ValidationException::class);
-        $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5']);
+        $this->service->administer($patient, $pentA, ['child_weight_kg' => '6.5', 'child_height_cm' => '65']);
     }
 
     public function test_status_is_waiting_when_interval_since_last_dose_not_elapsed(): void
@@ -218,17 +220,9 @@ class ChildImmunizationServiceTest extends TestCase
         $patient = $this->makePatient(now()->subDays(120));
         $pentA = $this->vaccine('PENTA');
 
-        $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5', 'date_given' => now()->subDays(10)->toDateString()]);
+        $this->service->administer($patient, $pentA, ['child_weight_kg' => '6.5', 'child_height_cm' => '65', 'date_given' => now()->subDays(10)->toDateString()]);
 
         $this->assertSame('waiting', $this->service->statusFor($patient, $pentA));
-    }
-
-    public function test_administer_requires_temp_when_schedule_requires_it(): void
-    {
-        $patient = $this->makePatient(now()->subDays(70));
-
-        $this->expectException(ValidationException::class);
-        $this->service->administer($patient, $this->vaccine('PENTA'), []);
     }
 
     public function test_administer_rejects_too_early(): void
@@ -236,7 +230,7 @@ class ChildImmunizationServiceTest extends TestCase
         $patient = $this->makePatient(now()->subDays(30));
 
         $this->expectException(ValidationException::class);
-        $this->service->administer($patient, $this->vaccine('PENTA'), ['temp_recorded' => '36.5']);
+        $this->service->administer($patient, $this->vaccine('PENTA'), ['child_weight_kg' => '6.5', 'child_height_cm' => '65']);
     }
 
     public function test_administer_rejects_out_of_window_without_override_reason(): void
@@ -244,7 +238,7 @@ class ChildImmunizationServiceTest extends TestCase
         $patient = $this->makePatient(now()->subDays(300));
 
         $this->expectException(ValidationException::class);
-        $this->service->administer($patient, $this->vaccine('ROTA'), ['temp_recorded' => '36.5']);
+        $this->service->administer($patient, $this->vaccine('ROTA'), ['child_weight_kg' => '6.5', 'child_height_cm' => '65']);
     }
 
     public function test_administer_allows_out_of_window_with_override_reason(): void
@@ -252,7 +246,8 @@ class ChildImmunizationServiceTest extends TestCase
         $patient = $this->makePatient(now()->subDays(300));
 
         $record = $this->service->administer($patient, $this->vaccine('ROTA'), [
-            'temp_recorded' => '36.5',
+            'child_weight_kg' => '6.5',
+            'child_height_cm' => '65',
             'override_reason' => 'Catch-up per physician advice',
         ]);
 
@@ -274,24 +269,24 @@ class ChildImmunizationServiceTest extends TestCase
         }
 
         $this->expectException(ValidationException::class);
-        $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5']);
+        $this->service->administer($patient, $pentA, ['child_weight_kg' => '6.5', 'child_height_cm' => '65']);
     }
 
     public function test_group_guard_blocks_alternative_birth_dose(): void
     {
         $patient = $this->makePatient(now()->subDays(10));
 
-        $this->service->administer($patient, $this->vaccine('HEPA_B_24H'), ['temp_recorded' => '36.5']);
+        $this->service->administer($patient, $this->vaccine('HEPA_B_24H'), ['child_weight_kg' => '3.2', 'child_height_cm' => '50']);
 
         $this->expectException(ValidationException::class);
-        $this->service->administer($patient, $this->vaccine('HEPA_B_GT24'), ['temp_recorded' => '36.5']);
+        $this->service->administer($patient, $this->vaccine('HEPA_B_GT24'), ['child_weight_kg' => '3.2', 'child_height_cm' => '50']);
     }
 
     public function test_group_guard_allows_late_dose_without_birth_dose(): void
     {
         $patient = $this->makePatient(now()->subDays(90));
 
-        $record = $this->service->administer($patient, $this->vaccine('HEPA_B_GT24'), ['temp_recorded' => '36.5']);
+        $record = $this->service->administer($patient, $this->vaccine('HEPA_B_GT24'), ['child_weight_kg' => '6.5', 'child_height_cm' => '65']);
 
         $this->assertSame(1, $record->dose_number);
     }
@@ -300,7 +295,7 @@ class ChildImmunizationServiceTest extends TestCase
     {
         $patient = $this->makePatient(now()->subDays(100));
 
-        $this->service->administer($patient, $this->vaccine('HEPA_B_24H'), ['temp_recorded' => '36.5']);
+        $this->service->administer($patient, $this->vaccine('HEPA_B_24H'), ['child_weight_kg' => '3.2', 'child_height_cm' => '50']);
 
         $this->assertSame('completed', $this->service->statusFor($patient, $this->vaccine('HEPA_B_GT24')));
     }
@@ -315,7 +310,7 @@ class ChildImmunizationServiceTest extends TestCase
             ->filter(fn (array $entry) => in_array($entry['vaccine']->vaccine_code, $hepCodes, true));
         $this->assertNotEmpty($overdueBefore);
 
-        $this->service->administer($patient, $this->vaccine('HEPA_B_24H'), ['temp_recorded' => '36.5']);
+        $this->service->administer($patient, $this->vaccine('HEPA_B_24H'), ['child_weight_kg' => '3.2', 'child_height_cm' => '50']);
 
         $overdueAfter = $this->service->queue('overdue')
             ->filter(fn (array $entry) => in_array($entry['vaccine']->vaccine_code, $hepCodes, true));
@@ -326,7 +321,7 @@ class ChildImmunizationServiceTest extends TestCase
     {
         $patient = $this->makePatient(now()->subDays(100));
 
-        $this->service->administer($patient, $this->vaccine('HEPA_B_GT24'), ['temp_recorded' => '36.5']);
+        $this->service->administer($patient, $this->vaccine('HEPA_B_GT24'), ['child_weight_kg' => '6.5', 'child_height_cm' => '65']);
 
         $this->assertSame('completed', $this->service->statusFor($patient, $this->vaccine('HEPA_B_24H')));
     }
@@ -354,7 +349,7 @@ class ChildImmunizationServiceTest extends TestCase
         $pentA = $this->vaccine('PENTA');
 
         $this->service->markNoShow($patient, $pentA);
-        $record = $this->service->administer($patient, $pentA, ['temp_recorded' => '36.5']);
+        $record = $this->service->administer($patient, $pentA, ['child_weight_kg' => '6.5', 'child_height_cm' => '65']);
 
         $this->assertSame(1, $record->dose_number);
         $this->assertDatabaseHas('immunization_status_events', [

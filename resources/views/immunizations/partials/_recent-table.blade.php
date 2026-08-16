@@ -33,7 +33,7 @@
                                 @foreach ($group as $r)
                                     <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap"
                                           style="background: rgba(0,0,0,0.05); color: var(--ink);">
-                                        {{ \Carbon\Carbon::parse($r->date_given)->format('M d') }} · {{ $r->vaccine_name }} · Dose {{ $r->dose_number }}
+                                        {{ \Carbon\Carbon::parse($r->date_given)->format('M d') }} · {{ $r->vaccine_name }} {{ $r->dose_number }}
                                     </span>
                                 @endforeach
                             </div>

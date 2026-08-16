@@ -15,6 +15,8 @@ use Illuminate\Support\Carbon;
  * @property int $dose_number
  * @property Carbon $date_given
  * @property numeric|null $temp_recorded
+ * @property numeric|null $child_weight_kg
+ * @property numeric|null $child_height_cm
  * @property int|null $administered_by
  * @property string|null $notes
  * @property bool $no_show
@@ -54,6 +56,8 @@ class Immunization extends Model
         'dose_number',
         'date_given',
         'temp_recorded',
+        'child_weight_kg',
+        'child_height_cm',
         'administered_by',
         'notes',
         'no_show',
@@ -66,6 +70,8 @@ class Immunization extends Model
             'dose_number' => 'integer',
             'date_given' => 'date',
             'temp_recorded' => 'decimal:2',
+            'child_weight_kg' => 'decimal:2',
+            'child_height_cm' => 'decimal:2',
             'no_show' => 'boolean',
             'no_show_at' => 'datetime',
         ];

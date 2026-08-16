@@ -27,6 +27,8 @@ class AdministerVaccineRequest extends FormRequest
             'dose_number' => ['nullable', 'integer', 'min:1', 'max:99'],
             'date_given' => ['nullable', 'date', 'before_or_equal:today'],
             'temp_recorded' => ['nullable', 'numeric', 'between:30,45'],
+            'child_weight_kg' => ['required', 'numeric', 'between:0,100'],
+            'child_height_cm' => ['required', 'numeric', 'between:20,200'],
             'override_reason' => ['nullable', 'string', 'max:500'],
             'notes' => ['nullable', 'string', 'max:500'],
         ];
