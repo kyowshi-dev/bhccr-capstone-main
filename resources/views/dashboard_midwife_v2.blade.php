@@ -178,7 +178,8 @@
                 if (this.query.length < 2) { this.results = []; return; }
                 this.loading = true;
                 try {
-                    const response = await fetch(`{{ route('search.patients') }}?query=${encodeURIComponent(this.query)}`);
+                    const response = await safeFetch(`{{ route('search.patients') }}?query=${encodeURIComponent(this.query)}`);
+                    this.results = response.ok ? await response.json() : [];
                     this.results = await response.json();
                 } catch (e) {
                     console.error('Search failed:', e);

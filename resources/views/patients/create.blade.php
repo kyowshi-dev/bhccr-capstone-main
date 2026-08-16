@@ -494,11 +494,10 @@
                     try {
                         const url = @json(route('search.households'))
                             + '?query=' + encodeURIComponent(this.surname.trim());
-                        const response = await fetch(url);
-                        const data = await response.json();
+                        const response = await safeFetch(url);
+                        const data = response.ok ? await response.json() : [];
                         this.surnameMatches = Array.isArray(data) ? data : [];
                     } catch (e) {
-                        console.error('Household match failed:', e);
                         this.surnameMatches = [];
                     }
                     this.surnameSearching = false;
@@ -529,11 +528,10 @@
 
                     this.autocompleteLoading = true;
                     try {
-                        const response = await fetch(`{{ route('search.households') }}?query=${encodeURIComponent(q)}`);
-                        this.autocompleteResults = await response.json();
+                        const response = await safeFetch(`{{ route('search.households') }}?query=${encodeURIComponent(q)}`);
+                        this.autocompleteResults = response.ok ? await response.json() : [];
                         this.dropdownOpen = this.autocompleteResults.length > 0;
                     } catch (e) {
-                        console.error('Household search failed:', e);
                         this.autocompleteResults = [];
                     } finally {
                         this.autocompleteLoading = false;

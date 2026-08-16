@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'BHCIS') - Sta. Ana</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('img/logo.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -85,6 +86,86 @@
             font-size: 0.78rem;
             color: var(--ink-muted);
         }
+
+        .otp-row {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .otp-digit {
+            width: clamp(2.75rem, 12.5vw, 3.25rem);
+            height: clamp(3rem, 13.5vw, 3.5rem);
+            text-align: center;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--ink);
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .otp-digit:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--ring);
+        }
+
+        .otp-digit.is-invalid {
+            border-color: var(--danger);
+        }
+
+        .otp-digit.is-invalid:focus {
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+        }
+
+        .otp-hint {
+            font-size: 0.75rem;
+            color: var(--ink-muted);
+        }
+
+        .resend-btn {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary);
+            text-decoration: underline;
+            transition: opacity 0.15s ease;
+        }
+
+        .resend-btn:disabled {
+            color: var(--ink-subtle);
+            text-decoration: none;
+            cursor: not-allowed;
+        }
+
+        .pw-wrap {
+            position: relative;
+        }
+
+        .pw-toggle {
+            position: absolute;
+            top: 50%;
+            right: 0.85rem;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            color: var(--ink-muted);
+            cursor: pointer;
+        }
+
+        .pw-toggle:hover {
+            color: var(--ink);
+        }
+
+        .pw-wrap .auth-input {
+            padding-right: 2.75rem;
+        }
     </style>
 </head>
 <body class="auth-body antialiased">
@@ -108,17 +189,13 @@
             }
 
             function refreshCsrfToken() {
-                fetch('{{ route('login') }}', {
+                safeFetch('{{ route('login') }}', {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',
                     },
-                    credentials: 'same-origin',
                 })
                 .then(function (response) {
-                    if (!response.ok) {
-                        throw new Error('Failed to refresh CSRF token');
-                    }
                     return response.json();
                 })
                 .then(function (data) {
@@ -144,6 +221,20 @@
             });
 
             setInterval(refreshCsrfToken, refreshIntervalMs);
+        })();
+
+        (function () {
+            Array.prototype.slice.call(document.querySelectorAll('.pw-toggle')).forEach(function (toggle) {
+                toggle.addEventListener('click', function () {
+                    var input = document.getElementById(toggle.getAttribute('aria-controls'));
+                    var show = input.type === 'password';
+                    input.type = show ? 'text' : 'password';
+                    var icon = toggle.querySelector('i');
+                    icon.classList.toggle('fa-eye', !show);
+                    icon.classList.toggle('fa-eye-slash', show);
+                    toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+                });
+            });
         })();
     </script>
 </body>

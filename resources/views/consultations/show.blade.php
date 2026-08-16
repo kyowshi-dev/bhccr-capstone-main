@@ -74,6 +74,7 @@
         'consultation' => $consultation,
         'latestVitals' => $latestVitals,
         'allVitals' => $allVitals,
+        'canEditComplaint' => ! in_array($consultation->status, \App\Enums\ConsultationStatus::terminalValues(), true),
     ])
 
     @php
@@ -580,9 +581,14 @@
                     return;
                 }
                 this.searching = true;
-                const response = await fetch('{{ route('search.diagnoses') }}?query=' + encodeURIComponent(this.query));
-                this.results = await response.json();
-                this.searching = false;
+                try {
+                    const response = await safeFetch('{{ route('search.diagnoses') }}?query=' + encodeURIComponent(this.query));
+                    this.results = response.ok ? await response.json() : [];
+                } catch (error) {
+                    this.results = [];
+                } finally {
+                    this.searching = false;
+                }
             },
             select(item) {
                 this.query = item.text;
@@ -617,8 +623,8 @@
                 }
                 this.searching = true;
                 try {
-                    const response = await fetch('{{ route('search.medicines') }}?query=' + encodeURIComponent(this.query));
-                    this.results = await response.json();
+                    const response = await safeFetch('{{ route('search.medicines') }}?query=' + encodeURIComponent(this.query));
+                    this.results = response.ok ? await response.json() : [];
                 } catch (error) {
                     this.results = [];
                 } finally {
