@@ -268,8 +268,9 @@ class SecurityTest extends TestCase
                 // First 5 should be allowed (will fail auth but not rate limit)
                 $this->assertTrue(in_array($response->status(), [200, 302]));
             } else {
-                // 6th should be rate limited
-                $this->assertEquals(429, $response->status());
+                // 6th should be rate limited: web requests get redirected back with a flash message
+                $response->assertStatus(302)
+                    ->assertSessionHas('error', 'Too many attempts. Please wait a moment before trying again.');
             }
         }
     }
@@ -285,7 +286,9 @@ class SecurityTest extends TestCase
             if ($i < 3) {
                 $this->assertTrue(in_array($response->status(), [200, 302]));
             } else {
-                $this->assertEquals(429, $response->status());
+                // 4th should be rate limited: web requests get redirected back with a flash message
+                $response->assertStatus(302)
+                    ->assertSessionHas('error', 'Too many attempts. Please wait a moment before trying again.');
             }
         }
     }
