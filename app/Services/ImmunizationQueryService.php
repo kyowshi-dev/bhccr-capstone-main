@@ -68,13 +68,45 @@ final class ImmunizationQueryService
     }
 
     /**
-     * @return array{totalGiven: int, patientsWithRecords: int}
+     * Adult (18+) enrollment and per-vaccine dose stats for the index dashboard.
+     *
+     * @return array{adultEnrolled: int, dosesByVaccine: Collection}
      */
-    public static function overallStats(): array
+    public static function adultStats(?int $zoneId = null): array
     {
+        $adultCutoff = Carbon::today()->subYears(18)->toDateString();
+
+        $patientBase = DB::table('patients')
+            ->join('households', 'patients.household_id', '=', 'households.id')
+            ->where('patients.date_of_birth', '<=', $adultCutoff);
+
+        if ($zoneId !== null) {
+            $patientBase->where('households.zone_id', $zoneId);
+        }
+
+        $adultEnrolled = (clone $patientBase)
+            ->where('patients.is_immunization_enrolled', true)
+            ->count();
+
+        $dosesByVaccine = DB::table('immunization_records')
+            ->where('immunization_records.no_show', false)
+            ->join('patients', 'immunization_records.patient_id', '=', 'patients.id')
+            ->join('households', 'patients.household_id', '=', 'households.id')
+            ->join('vaccines_lookup', 'immunization_records.vaccine_id', '=', 'vaccines_lookup.id')
+            ->whereIn('vaccines_lookup.category', ['Adult', 'Both'])
+            ->where('patients.date_of_birth', '<=', $adultCutoff)
+            ->when($zoneId !== null, fn ($query) => $query->where('households.zone_id', $zoneId))
+            ->select(
+                'vaccines_lookup.vaccine_name',
+                DB::raw('COUNT(immunization_records.id) as doses_count')
+            )
+            ->groupBy('vaccines_lookup.id', 'vaccines_lookup.vaccine_name', 'vaccines_lookup.sort_order')
+            ->orderBy('vaccines_lookup.sort_order')
+            ->get();
+
         return [
-            'totalGiven' => DB::table('immunization_records')->where('no_show', false)->count(),
-            'patientsWithRecords' => DB::table('immunization_records')->where('no_show', false)->distinct('patient_id')->count('patient_id'),
+            'adultEnrolled' => $adultEnrolled,
+            'dosesByVaccine' => $dosesByVaccine,
         ];
     }
 

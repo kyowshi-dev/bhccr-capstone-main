@@ -52,9 +52,6 @@
                 <p class="tb-sub">{{ fullName($patient->last_name, $patient->first_name, $patient->middle_name, $patient->suffix) }} · {{ $patient->patient_code }}</p>
             </div>
             <div class="tb-actions">
-                <a href="{{ route('immunizations.print-card.pdf', $patient->id) }}" target="_blank" rel="noopener" class="tb-btn">
-                    Download PDF
-                </a>
                 <button type="button" onclick="window.print()" class="tb-btn">
                     Print
                 </button>
