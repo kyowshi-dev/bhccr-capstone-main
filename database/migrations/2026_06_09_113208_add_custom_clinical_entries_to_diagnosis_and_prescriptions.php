@@ -72,13 +72,25 @@ return new class extends Migration
             });
         }
 
-        Schema::table('diagnosis_records', function (Blueprint $table) {
-            $table->dropColumn(['custom_diagnosis_code', 'custom_diagnosis_name']);
-        });
+        $diagnosisColumns = [];
+        if (Schema::hasColumn('diagnosis_records', 'custom_diagnosis_code')) {
+            $diagnosisColumns[] = 'custom_diagnosis_code';
+        }
+        if (Schema::hasColumn('diagnosis_records', 'custom_diagnosis_name')) {
+            $diagnosisColumns[] = 'custom_diagnosis_name';
+        }
 
-        Schema::table('prescriptions', function (Blueprint $table) {
-            $table->dropColumn('custom_medicine_name');
-        });
+        if ($diagnosisColumns !== []) {
+            Schema::table('diagnosis_records', function (Blueprint $table) use ($diagnosisColumns) {
+                $table->dropColumn($diagnosisColumns);
+            });
+        }
+
+        if (Schema::hasColumn('prescriptions', 'custom_medicine_name')) {
+            Schema::table('prescriptions', function (Blueprint $table) {
+                $table->dropColumn('custom_medicine_name');
+            });
+        }
     }
 
     private function makeForeignKeyNullableSqlite(string $table, string $column): void
