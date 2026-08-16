@@ -34,6 +34,8 @@ class DiagnosisRecord extends Model
     protected $fillable = [
         'consultation_id',
         'diagnosis_id',
+        'custom_diagnosis_code',
+        'custom_diagnosis_name',
         'remarks',
         'diagnosed_by',
     ];
