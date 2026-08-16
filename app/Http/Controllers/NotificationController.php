@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class NotificationController extends Controller
 {
@@ -12,6 +12,7 @@ class NotificationController extends Controller
     public function index()
     {
         $notifications = auth()->user()->notifications()->latest()->paginate(15);
+
         return view('notifications.index', compact('notifications'));
     }
 
@@ -22,7 +23,9 @@ class NotificationController extends Controller
     {
         $notification = auth()->user()->notifications()->findOrFail($notificationId);
         $notification->markAsRead();
-        
+
+        $this->forgetHeaderCache();
+
         return back()->with('success', 'Notification marked as read');
     }
 
@@ -31,8 +34,10 @@ class NotificationController extends Controller
      */
     public function markAllRead()
     {
-        auth()->user()->unreadNotifications->markAsRead();
-        
+        auth()->user()->unreadNotifications()->update(['read_at' => now()]);
+
+        $this->forgetHeaderCache();
+
         return back()->with('success', 'All notifications marked as read');
     }
 
@@ -43,7 +48,9 @@ class NotificationController extends Controller
     {
         $notification = auth()->user()->notifications()->findOrFail($notificationId);
         $notification->delete();
-        
+
+        $this->forgetHeaderCache();
+
         return back()->with('success', 'Notification deleted');
     }
 
@@ -53,7 +60,21 @@ class NotificationController extends Controller
     public function destroyAll()
     {
         auth()->user()->notifications()->delete();
-        
+
+        $this->forgetHeaderCache();
+
         return back()->with('success', 'All notifications deleted');
+    }
+
+    /**
+     * Invalidate the header dropdown caches for the authenticated user so
+     * the bell badge and recent list never serve stale data after a change.
+     */
+    private function forgetHeaderCache(): void
+    {
+        $user = auth()->user();
+
+        Cache::forget("header_notifications_{$user->id}");
+        Cache::forget("header_unread_count_{$user->id}");
     }
 }
