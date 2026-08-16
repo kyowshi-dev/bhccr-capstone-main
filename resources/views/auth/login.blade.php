@@ -46,8 +46,13 @@
 
         <div class="mb-5">
             <label for="password" class="block text-sm font-medium mb-2.5" style="color: var(--ink);">Password</label>
-            <input type="password" name="password" id="password"
-                   class="auth-input" placeholder="Password" required>
+            <div class="pw-wrap">
+                <input type="password" name="password" id="password"
+                       class="auth-input" placeholder="Password" required>
+                <button type="button" class="pw-toggle" aria-controls="password" aria-label="Show password">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                </button>
+            </div>
         </div>
 
         <div class="flex items-center justify-between mb-5 text-sm">
