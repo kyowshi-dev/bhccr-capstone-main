@@ -1,10 +1,10 @@
 <div class="mb-5 lg:mb-6" aria-live="polite">
     <div class="flex items-center justify-between gap-3 mb-2">
-        <p id="outwardReferralWizardStepLabel" class="text-xs lg:text-sm font-semibold" style="color: var(--ink);">Step 1 of 3</p>
+        <p id="outwardReferralWizardStepLabel" class="text-xs lg:text-sm font-semibold" style="color: var(--ink);">Step 1 of 2</p>
         <p id="outwardReferralWizardStepName" class="text-xs" style="color: var(--ink-muted);">Referral Details</p>
     </div>
     <div class="h-1.5 rounded-full overflow-hidden" style="background: var(--teal-soft);">
-        <div id="outwardReferralWizardProgressBar" class="h-full rounded-full transition-all duration-300 ease-out" style="width: 33%; background: var(--primary);"></div>
+        <div id="outwardReferralWizardProgressBar" class="h-full rounded-full transition-all duration-300 ease-out" style="width: 50%; background: var(--primary);"></div>
     </div>
 </div>
 
@@ -117,7 +117,21 @@
     <div id="outwardReferralWizardStep2" data-wizard-step="2" class="outward-referral-wizard-step hidden" aria-hidden="true">
         <div class="rounded-xl border px-3.5 py-3 mb-5 text-xs leading-relaxed" style="border-color: var(--border); background: var(--teal-soft); color: var(--primary);">
             <i class="fa-solid fa-eye mr-1.5" aria-hidden="true"></i>
-            Preview the referral summary below. Tap any field to edit inline - changes sync back to Step 1 automatically.
+            Review the referral summary below. Tap any field to edit inline. Once confirmed, the consultation and referral will be saved.
+        </div>
+
+        <div class="rounded-xl border overflow-hidden mb-5" style="border-color: var(--border); background: var(--bg-surface);">
+            <div class="px-4 py-3 border-b" style="border-color: var(--border); background: var(--bg-surface-elevated);">
+                <p class="text-xs font-semibold uppercase tracking-wider" style="color: var(--ink-muted);">Patient</p>
+                <p id="outward_confirm_patient_name" class="mt-1 font-semibold text-base" style="color: var(--ink);">-</p>
+                <p id="outward_confirm_patient_meta" class="text-xs mt-0.5" style="color: var(--ink-muted);">-</p>
+            </div>
+            <div class="px-4 py-3 border-b" style="border-color: var(--border); background: var(--bg-surface-elevated);">
+                <div class="rounded-lg border px-3 py-2.5 text-xs" style="border-color: var(--border); background: var(--bg-surface); color: var(--ink-muted);">
+                    <p class="font-semibold mb-1" style="color: var(--ink);">Vitals captured</p>
+                    <p id="outward_confirm_vitals" class="leading-relaxed">-</p>
+                </div>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6">
@@ -228,52 +242,6 @@
                         class="w-full rounded-md border-0 bg-transparent px-0 py-1 text-sm leading-relaxed resize-y min-h-[5.25rem] focus:outline-none focus:ring-0 border-b border-transparent focus:border-[var(--border)]"
                         style="color: var(--ink);"
                     ></textarea>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="outwardReferralWizardStep3" data-wizard-step="3" class="outward-referral-wizard-step hidden" aria-hidden="true">
-        <div class="rounded-xl border px-4 py-4 mb-5 text-sm leading-relaxed" style="border-color: var(--border); background: var(--teal-soft); color: var(--primary);">
-            <i class="fa-solid fa-circle-check mr-1.5" aria-hidden="true"></i>
-            Please review the referral summary below. Once confirmed, the consultation and referral will be saved.
-        </div>
-
-        <div class="rounded-xl border overflow-hidden" style="border-color: var(--border); background: var(--bg-surface);">
-            <div class="px-4 py-3 border-b" style="border-color: var(--border); background: var(--bg-surface-elevated);">
-                <p class="text-xs font-semibold uppercase tracking-wider" style="color: var(--ink-muted);">Patient</p>
-                <p id="outward_confirm_patient_name" class="mt-1 font-semibold text-base" style="color: var(--ink);">-</p>
-                <p id="outward_confirm_patient_meta" class="text-xs mt-0.5" style="color: var(--ink-muted);">-</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-0 md:divide-x" style="border-color: var(--border);">
-                <div class="p-4 space-y-4">
-                    <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-wider" style="color: var(--ink-muted);">Destination facility</p>
-                        <p id="outward_confirm_referred_to" class="mt-1 text-sm font-medium" style="color: var(--ink);">-</p>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-wider" style="color: var(--ink-muted);">Reasons for referral</p>
-                        <ul id="outward_confirm_reasons" class="mt-2 space-y-1 text-sm list-disc list-inside" style="color: var(--ink);"></ul>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-wider" style="color: var(--ink-muted);">Specific details</p>
-                        <p id="outward_confirm_reason_details" class="mt-1 text-sm whitespace-pre-line" style="color: var(--ink);">-</p>
-                    </div>
-                </div>
-                <div class="p-4 space-y-4">
-                    <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-wider" style="color: var(--ink-muted);">Pertinent history</p>
-                        <p id="outward_confirm_pertinent_history" class="mt-1 text-sm whitespace-pre-line" style="color: var(--ink);">-</p>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-wider" style="color: var(--ink-muted);">Actions taken</p>
-                        <p id="outward_confirm_actions_taken" class="mt-1 text-sm whitespace-pre-line" style="color: var(--ink);">-</p>
-                    </div>
-                    <div class="rounded-lg border px-3 py-2.5 text-xs" style="border-color: var(--border); background: var(--bg-surface-elevated); color: var(--ink-muted);">
-                        <p class="font-semibold mb-1" style="color: var(--ink);">Vitals captured</p>
-                        <p id="outward_confirm_vitals" class="leading-relaxed">-</p>
-                    </div>
                 </div>
             </div>
         </div>

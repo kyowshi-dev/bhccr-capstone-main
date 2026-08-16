@@ -275,6 +275,16 @@ final class ConsultationService
             ->update(['notes' => $notes, 'updated_at' => now()]);
     }
 
+    public static function updateComplaint(Consultation $consultation, ?string $complaintText): void
+    {
+        DB::table('consultations')
+            ->where('id', $consultation->id)
+            ->update([
+                'complaint_text' => $complaintText !== null ? trim($complaintText) : null,
+                'updated_at' => now(),
+            ]);
+    }
+
     public static function hasDiagnosis(int $consultationId): bool
     {
         return DB::table('diagnosis_records')->where('consultation_id', $consultationId)->exists();

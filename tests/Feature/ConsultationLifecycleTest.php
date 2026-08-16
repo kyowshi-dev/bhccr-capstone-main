@@ -231,6 +231,64 @@ class ConsultationLifecycleTest extends TestCase
             ->assertSee('Doctor');
     }
 
+    public function test_chief_complaint_can_be_updated_during_review(): void
+    {
+        [$bhw, $patientId] = $this->createClinicalFixture('BHW');
+
+        $this->actingAs($bhw)->post("/patients/{$patientId}/consultations", [
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'Checkup',
+            'purpose_of_visit' => 'General checkup',
+            'chief_complaint' => 'Fever',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 37.5,
+            'weight' => 60,
+            'height' => 165,
+        ]);
+
+        $consultationId = (int) DB::table('consultations')->where('patient_id', $patientId)->value('id');
+
+        $this->actingAs($bhw)
+            ->put("/consultations/{$consultationId}/complaint", [
+                'complaint_text' => 'Fever and cough for 3 days',
+            ])
+            ->assertRedirect(route('consultations.show', $consultationId));
+
+        $this->assertSame(
+            'Fever and cough for 3 days',
+            DB::table('consultations')->where('id', $consultationId)->value('complaint_text')
+        );
+    }
+
+    public function test_chief_complaint_cannot_be_updated_after_consultation_is_terminal(): void
+    {
+        [$bhw, $patientId] = $this->createClinicalFixture('BHW');
+        $bhwWorkerId = (int) DB::table('health_workers')->where('user_id', $bhw->id)->value('id');
+
+        $consultationId = DB::table('consultations')->insertGetId([
+            'patient_id' => $patientId,
+            'worker_id' => $bhwWorkerId,
+            'status' => 'completed',
+            'nature_of_visit' => 'Checkup',
+            'mode_of_transaction' => 'Walk-in',
+            'complaint_text' => 'Fever',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($bhw)
+            ->put("/consultations/{$consultationId}/complaint", [
+                'complaint_text' => 'Tampered complaint',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(
+            'Fever',
+            DB::table('consultations')->where('id', $consultationId)->value('complaint_text')
+        );
+    }
+
     /**
      * @return array{0: User, 1: int}
      */
