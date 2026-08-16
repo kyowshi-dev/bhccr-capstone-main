@@ -72,7 +72,7 @@
                     <tbody class="divide-y" style="border-color: var(--border);">
                         @foreach ($pregnancies as $pregnancy)
                             @php
-                                $nextVisit = $pregnancy->visits->sortByDesc('visit_date')->first()?->next_visit_date;
+                                $nextVisit = $pregnancy->latest_next_visit_date;
                                 $edcDate = $pregnancy->edc;
                                 $dueSoon = $edcDate !== null && \Carbon\Carbon::parse($edcDate)->lte(\Carbon\Carbon::today()->addDays(30));
                             @endphp
@@ -103,7 +103,7 @@
                                         -
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 whitespace-nowrap" style="color: var(--ink-muted);">{{ $pregnancy->visits->count() }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap" style="color: var(--ink-muted);">{{ $pregnancy->visits_count }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     @if ($nextVisit === null)
                                         <span style="color: var(--ink-subtle);">-</span>

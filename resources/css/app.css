@@ -328,6 +328,23 @@
     animation-delay: 0.35s;
 }
 
+/* Reduced motion: entry animations must never gate content visibility */
+@media (prefers-reduced-motion: reduce) {
+    .animate-in {
+        animation: none;
+        opacity: 1;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
 /* Checkbox normalization: consistent size + brand accent across the app */
 input[type="checkbox"],
 input[type="checkbox"].checkbox,
