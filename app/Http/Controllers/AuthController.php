@@ -98,8 +98,10 @@ class AuthController extends Controller
 
         $user = User::where('username', $validated['username'])->first();
 
-        if ($user && $user->email) {
-            $this->passwordReset->issueOtp($user);
+        if ($user && $user->email && ! $this->passwordReset->issueOtp($user)) {
+            return back()->withInput()->withErrors([
+                'username' => 'We could not send the verification code right now. Please try again in a few minutes.',
+            ]);
         }
 
         return redirect()->route('password.forgot.verify')
@@ -114,7 +116,18 @@ class AuthController extends Controller
             return redirect()->route('password.forgot');
         }
 
-        return view('auth.forgot-otp', ['username' => $username]);
+        $maskedEmail = null;
+
+        $user = User::where('username', $username)->first();
+
+        if ($user && $user->email) {
+            $maskedEmail = $this->maskEmail($user->email);
+        }
+
+        return view('auth.forgot-otp', [
+            'username' => $username,
+            'maskedEmail' => $maskedEmail,
+        ]);
     }
 
     public function submitForgotVerify(ResetPasswordRequest $request)
@@ -128,7 +141,7 @@ class AuthController extends Controller
         $validated = $request->validated();
 
         if ($validated['username'] !== $sessionUsername) {
-            return back()->withErrors(['otp' => 'Invalid or expired verification code.']);
+            return back()->withInput()->withErrors(['otp' => 'Invalid or expired verification code.']);
         }
 
         $user = $this->passwordReset->verifyAndReset(
@@ -138,11 +151,21 @@ class AuthController extends Controller
         );
 
         if (! $user) {
-            return back()->withErrors(['otp' => 'Invalid or expired verification code.']);
+            return back()->withInput()->withErrors(['otp' => 'Invalid or expired verification code.']);
         }
 
         $this->audit->log('password_reset', 'auth', $request, $user->id);
 
         return redirect()->route('login')->with('success', 'Your password has been reset. Please sign in with your new password.');
+    }
+
+    private function maskEmail(string $email): string
+    {
+        [$local, $domain] = explode('@', $email, 2);
+
+        $visibleLength = max(strlen($local) > 2 ? 2 : 1, 0);
+        $maskedLocal = substr($local, 0, $visibleLength).str_repeat('*', max(strlen($local) - $visibleLength, 1));
+
+        return $maskedLocal.'@'.$domain;
     }
 }

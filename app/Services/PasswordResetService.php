@@ -10,12 +10,12 @@ use Illuminate\Support\Facades\Mail;
 
 final class PasswordResetService
 {
-    public function issueOtp(User $user): void
+    public function issueOtp(User $user): bool
     {
         $otp = (string) random_int(100000, 999999);
         $expiresInMinutes = 15;
 
-        DB::table('password_resets')->insert([
+        $recordId = DB::table('password_resets')->insertGetId([
             'user_id' => $user->id,
             'token' => Hash::make($otp),
             'expires_at' => now()->addMinutes($expiresInMinutes),
@@ -24,9 +24,19 @@ final class PasswordResetService
             'updated_at' => now(),
         ]);
 
-        Mail::to($user->email)->send(new ForgotPasswordOtp($otp, $expiresInMinutes));
+        try {
+            Mail::to($user->email)->send(new ForgotPasswordOtp($otp, $expiresInMinutes));
+        } catch (\Throwable $e) {
+            DB::table('password_resets')->where('id', $recordId)->delete();
+
+            \Log::error("Failed to send password reset OTP to {$user->email}: {$e->getMessage()}");
+
+            return false;
+        }
 
         session()->put('password_reset_username', $user->username);
+
+        return true;
     }
 
     public function verifyAndReset(string $username, string $otp, string $newPassword): User|false
