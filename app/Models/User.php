@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Cache;
  * @property string $password
  * @property string|null $remember_token
  * @property bool $is_active
+ * @property int $failed_login_attempts
+ * @property Carbon|null $locked_until
  * @property int|null $role_id
  * @property string|null $profile_photo_path
  * @property string|null $bio
@@ -47,6 +49,8 @@ use Illuminate\Support\Facades\Cache;
  * @method static Builder<static>|User whereEmail($value)
  * @method static Builder<static>|User whereId($value)
  * @method static Builder<static>|User whereIsActive($value)
+ * @method static Builder<static>|User whereFailedLoginAttempts($value)
+ * @method static Builder<static>|User whereLockedUntil($value)
  * @method static Builder<static>|User wherePassword($value)
  * @method static Builder<static>|User whereProfilePhotoPath($value)
  * @method static Builder<static>|User whereRememberToken($value)
@@ -94,9 +98,47 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            // Is hashed in the database, but we want to treat it as a string when interacting with the model.
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'failed_login_attempts' => 'integer',
+            'locked_until' => 'datetime',
         ];
+    }
+
+    // ------------------------------------------------------------------
+    // Account lockout (brute-force protection)
+    // ------------------------------------------------------------------
+
+    public function isLocked(): bool
+    {
+        return $this->locked_until !== null && $this->locked_until->isFuture();
+    }
+
+    public function registerLoginFailure(): void
+    {
+        $this->failed_login_attempts++;
+
+        $maxAttempts = (int) ApplicationSetting::get('login_max_attempts', 5);
+
+        if ($this->failed_login_attempts >= $maxAttempts) {
+            $durationMinutes = (int) ApplicationSetting::get('lockout_duration_minutes', 15);
+            $this->locked_until = now()->addMinutes($durationMinutes);
+            $this->failed_login_attempts = 0;
+        }
+
+        $this->save();
+    }
+
+    public function clearLoginFailures(): void
+    {
+        if ($this->failed_login_attempts === 0 && $this->locked_until === null) {
+            return;
+        }
+
+        $this->failed_login_attempts = 0;
+        $this->locked_until = null;
+        $this->save();
     }
 
     public function permissions(): Attribute
