@@ -35,19 +35,39 @@ class AuthController extends Controller
     {
         $credentials = $request->validated();
 
+        $user = User::where('username', $credentials['username'])->first();
+
+        if ($user && $user->isLocked()) {
+            $this->audit->log('login_blocked_locked', 'auth', $request, $user->id);
+
+            $minutes = (int) max(1, ceil($user->locked_until->diffInMinutes(now())));
+
+            return back()->withErrors([
+                'username' => "This account is temporarily locked due to too many failed login attempts. Try again in {$minutes} minute(s).",
+            ])->onlyInput('username');
+        }
+
         $remember = $request->boolean('remember');
 
-        if (Auth::attempt([
+        if ($user && Auth::attempt([
             'username' => $credentials['username'],
             'password' => $credentials['password'],
             'is_active' => true,
         ], $remember)) {
+
+            $user->clearLoginFailures();
 
             $request->session()->regenerate();
 
             $this->audit->log('login', 'auth', $request, Auth::id());
 
             return redirect()->intended(route('dashboard'));
+        }
+
+        if ($user) {
+            $user->registerLoginFailure();
+
+            $this->audit->log('login_failed', 'auth', $request, $user->id);
         }
 
         return back()->withErrors([

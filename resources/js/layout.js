@@ -898,10 +898,33 @@ document.addEventListener("DOMContentLoaded", function () {
         (parseInt(window.BHCIS.sessionLifetimeMinutes, 10) || 120) * 60 * 1000;
     var HEARTBEAT_INTERVAL = 60 * 1000; // refresh the server idle clock at most once/min of activity
     var CHECK_INTERVAL = 30 * 1000; // idle re-evaluation cadence
+    var WARNING_MS = 60 * 1000; // modal warns with this much idle time left
     var lastActivityAt = Date.now();
     var lastHeartbeatAt = 0;
     var expiryShown = false;
     var checking = false;
+    var warningShown = false;
+    var warningTick = null;
+
+    var logoutForm = document.getElementById("headerLogoutForm");
+
+    function remainingMs() {
+        return lifetimeMs - (Date.now() - lastActivityAt);
+    }
+
+    function formatTime(ms) {
+        var totalSec = Math.max(0, Math.ceil(ms / 1000));
+        var m = Math.floor(totalSec / 60);
+        var s = totalSec % 60;
+        return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+    }
+
+    function maybeWarn() {
+        if (expiryShown || warningShown) return;
+        if (remainingMs() <= WARNING_MS) {
+            showWarningModal();
+        }
+    }
 
     function sendHeartbeat() {
         if (expiryShown || typeof heartbeatUrl !== "string") return;
@@ -931,6 +954,14 @@ document.addEventListener("DOMContentLoaded", function () {
     function showSessionExpired() {
         if (expiryShown) return;
         expiryShown = true;
+        if (warningTick) {
+            window.clearInterval(warningTick);
+            warningTick = null;
+        }
+        if (warningShown && typeof Swal !== "undefined") {
+            warningShown = false;
+            Swal.close();
+        }
 
         function redirectToLogin() {
             window.location.href =
@@ -952,6 +983,57 @@ document.addEventListener("DOMContentLoaded", function () {
             allowOutsideClick: false,
             allowEscapeKey: false,
         }).then(redirectToLogin);
+    }
+
+    function showWarningModal() {
+        if (warningShown || expiryShown || typeof Swal === "undefined") {
+            return;
+        }
+        warningShown = true;
+
+        Swal.fire({
+            title: "Session expiring soon",
+            html:
+                '<p class="text-sm" style="color: var(--ink);">Your session will expire in ' +
+                '<strong id="sessionWarningCountdown" style="color: var(--danger);">' +
+                formatTime(remainingMs()) +
+                "</strong> due to inactivity. Continue working to keep your session active.</p>",
+            icon: "warning",
+            confirmButtonText: "Continue session",
+            cancelButtonText: "Log out",
+            showCancelButton: true,
+            confirmButtonColor: "#0d4a3c",
+            cancelButtonColor: "#dc2626",
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: function () {
+                warningTick = window.setInterval(function () {
+                    var el = document.getElementById("sessionWarningCountdown");
+                    if (el) el.textContent = formatTime(remainingMs());
+                }, 1000);
+            },
+            willClose: function () {
+                if (warningTick) {
+                    window.clearInterval(warningTick);
+                    warningTick = null;
+                }
+            },
+        }).then(function (result) {
+            warningShown = false;
+            if (result.isConfirmed) {
+                lastActivityAt = Date.now();
+                sendHeartbeat();
+            } else if (
+                result.isDismissed &&
+                result.dismiss === Swal.DismissReason.cancel
+            ) {
+                if (logoutForm) {
+                    logoutForm.submit();
+                } else {
+                    window.location.href = loginUrl;
+                }
+            }
+        });
     }
 
     function checkSessionStatus() {
@@ -981,6 +1063,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Session still alive on the server (e.g. active in another tab):
                 // restart our idle countdown so we re-check after a full timeout.
                 lastActivityAt = Date.now();
+                if (warningShown && typeof Swal !== "undefined") {
+                    warningShown = false;
+                    Swal.close();
+                }
             })
             .catch(function () {
                 // Transient failure; retried on the next tick.
@@ -1002,11 +1088,16 @@ document.addEventListener("DOMContentLoaded", function () {
     document.addEventListener("visibilitychange", function () {
         if (!document.hidden) {
             tick();
+            maybeWarn();
         }
     });
-    window.addEventListener("focus", tick);
+    window.addEventListener("focus", function () {
+        tick();
+        maybeWarn();
+    });
 
     setInterval(tick, CHECK_INTERVAL);
+    setInterval(maybeWarn, 1000);
     setTimeout(checkSessionStatus, 1500);
 })();
 
@@ -1213,6 +1304,7 @@ window.closeConsultationOutwardReferralWizard =
     closeConsultationOutwardReferralWizard;
 window.outwardReferralWizardGoNext = outwardReferralWizardGoNext;
 window.outwardReferralWizardGoBack = outwardReferralWizardGoBack;
+window.safeFetch = safeFetch;
 
 // Auto-fit: scale the app to the viewport so smaller desktop displays
 // (e.g. 1280x720) get the density the design assumes (~1440x900).

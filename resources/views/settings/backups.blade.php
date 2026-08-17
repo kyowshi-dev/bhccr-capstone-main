@@ -27,7 +27,7 @@
         <div class="rounded-xl border p-5 lg:p-6" style="background: var(--bg-surface); border-color: var(--border);">
             <h2 class="font-display font-semibold text-lg mb-4" style="color: var(--ink);">Export Database</h2>
             <p class="text-sm mb-4" style="color: var(--ink-muted);">Current database: <strong style="color: var(--ink);">{{ $databaseName }}</strong> ({{ $driver }}). Download a full copy now and store it in a safe place for disaster recovery.</p>
-            <form action="{{ route('settings.backups.export') }}" method="POST" class="inline-flex flex-col items-start gap-3" data-disable-on-submit>
+            <form action="{{ route('settings.backups.export') }}" method="POST" class="inline-flex flex-col items-start gap-3" data-disable-on-submit data-no-loading>
                 @csrf
                 <div class="w-full">
                     <label for="current_password_export" class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Confirm your password</label>

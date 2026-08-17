@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Rules\CurrentPassword;
+use App\Rules\PasswordPolicyRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePasswordRequest extends FormRequest
@@ -16,7 +17,7 @@ class UpdatePasswordRequest extends FormRequest
     {
         return [
             'current_password' => ['required', new CurrentPassword],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', new PasswordPolicyRule, 'confirmed'],
         ];
     }
 }

@@ -75,14 +75,9 @@
                             <option value="Family Planning" @selected(old('purpose_of_visit') === 'Family Planning')>Family Planning</option>
                             <option value="Prenatal" @selected(old('purpose_of_visit') === 'Prenatal')>Prenatal</option>
                             <option value="Postpartum" @selected(old('purpose_of_visit') === 'Postpartum')>Postpartum</option>
-                            <option value="Tuberculosis" @selected(old('purpose_of_visit') === 'Tuberculosis')>Tuberculosis</option>
                             <option value="Child Immunization" @selected(old('purpose_of_visit') === 'Child Immunization')>Child Immunization</option>
-                            <option value="Child Nutrition" @selected(old('purpose_of_visit') === 'Child Nutrition')>Child Nutrition</option>
                             <option value="Sick Children" @selected(old('purpose_of_visit') === 'Sick Children')>Sick Children</option>
                             <option value="Firecracker Injury" @selected(old('purpose_of_visit') === 'Firecracker Injury')>Firecracker Injury</option>
-                            <option value="Adult Immunization" @selected(old('purpose_of_visit') === 'Adult Immunization')>Adult Immunization</option>
-                            <option value="Dogbite" @selected(old('purpose_of_visit') === 'Dogbite')>Dogbite</option>
-                            <option value="Dengue" @selected(old('purpose_of_visit') === 'Dengue')>Dengue</option>
                         </select>
                     </div>
 

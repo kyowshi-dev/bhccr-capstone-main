@@ -189,7 +189,7 @@
             }
 
             function refreshCsrfToken() {
-                safeFetch('{{ route('login') }}', {
+                fetch('{{ route('login') }}', {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',

@@ -3,12 +3,16 @@
 use App\Http\Middleware\DisableBackCache;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrackPageVisit;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Session\TokenMismatchException;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -31,6 +35,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Record successful page loads in the session trail for breadcrumbs
         $middleware->appendToGroup('web', TrackPageVisit::class);
+
+        // Add hardening security headers to every web response
+        $middleware->appendToGroup('web', SecurityHeaders::class);
 
         // Trust forwarding headers from tunnel proxies (ngrok, Cloudflare Tunnel)
         // so generated URLs use https:// when the app is reached through them
@@ -117,6 +124,21 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if (app()->hasDebugModeEnabled()) {
+                return null;
+            }
+
+            // Only brand actual server errors as 500. Let the framework handle
+            // expected HTTP statuses (403, 404, 405, 503, ...) with its own pages.
+            if ($e instanceof HttpException && $e->getStatusCode() !== 500) {
+                return null;
+            }
+
+            // Let the framework handle these natively instead of turning them
+            // into a 500: form validation failures redirect back with errors,
+            // unauthenticated requests redirect to login, etc.
+            if ($e instanceof ValidationException
+                || $e instanceof AuthenticationException
+                || $e instanceof HttpResponseException) {
                 return null;
             }
 

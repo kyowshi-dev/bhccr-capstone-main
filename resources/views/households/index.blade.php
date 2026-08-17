@@ -134,7 +134,7 @@
         <div class="flex-1">
             <p class="text-sm font-semibold" style="color: var(--primary);"><span id="selectedCount">0</span> selected</p>
         </div>
-        <form id="csvExportForm" method="POST" action="{{ route('households.export.csv') }}" style="display: inline;">
+        <form id="csvExportForm" method="POST" action="{{ route('households.export.csv') }}" data-no-loading style="display: inline;">
             @csrf
             <button type="button" onclick="submitBulkAction('csvExportForm')"
                     class="inline-flex items-center justify-center px-3 py-2 rounded-lg text-xs font-semibold transition"
@@ -142,7 +142,7 @@
                 Export CSV
             </button>
         </form>
-        <form id="pdfExportForm" method="POST" action="{{ route('households.export.pdf') }}" style="display: inline;">
+        <form id="pdfExportForm" method="POST" action="{{ route('households.export.pdf') }}" data-no-loading style="display: inline;">
             @csrf
             <button type="button" onclick="submitBulkAction('pdfExportForm')"
                     class="inline-flex items-center justify-center px-3 py-2 rounded-lg text-xs font-semibold transition"

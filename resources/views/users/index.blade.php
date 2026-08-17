@@ -140,15 +140,39 @@
             title: 'Disable User?',
             text: 'Are you sure you want to disable this user? They will no longer be able to access the system.',
             icon: 'warning',
+            input: 'password',
+            inputLabel: 'Your Password',
+            inputPlaceholder: 'Enter your password',
+            inputAttributes: {
+                autocapitalize: 'off',
+                autocorrect: 'off'
+            },
             showCancelButton: true,
             confirmButtonColor: 'var(--danger)',
             cancelButtonColor: '#6b7280',
             confirmButtonText: 'Yes, Disable',
-            cancelButtonText: 'Cancel'
+            cancelButtonText: 'Cancel',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Please enter your password';
+                }
+            }
         }).then((result) => {
             if (result.isConfirmed) {
                 const form = document.getElementById('disableForm');
                 form.action = '/users/' + userId + '/disable';
+
+                const passwordInput = document.createElement('input');
+                passwordInput.type = 'hidden';
+                passwordInput.name = 'password';
+                passwordInput.value = result.value;
+
+                const existingPassword = form.querySelector('input[name="password"]');
+                if (existingPassword) {
+                    existingPassword.remove();
+                }
+
+                form.appendChild(passwordInput);
                 form.submit();
             }
         });

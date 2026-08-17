@@ -65,14 +65,21 @@ class UserManagementController extends Controller
     {
         $this->authorizePermission('users');
 
-        UserManagementService::update($user, $request->validated());
+        $validated = $request->validated();
+
+        // Admins cannot change their own role.
+        if ($user->id === auth()->id()) {
+            $validated['role_id'] = $user->role_id;
+        }
+
+        UserManagementService::update($user, $validated);
 
         return redirect()
             ->route('users.index')
             ->with('success', 'User updated successfully.');
     }
 
-    public function disable(User $user): RedirectResponse
+    public function disable(RestrictUserRequest $request, User $user): RedirectResponse
     {
         $this->authorizePermission('users');
 

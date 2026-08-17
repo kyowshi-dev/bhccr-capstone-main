@@ -33,16 +33,36 @@
                     <legend class="sr-only">Infant identity</legend>
 
                     <div class="sm:col-span-2">
-                        <label for="enroll_first_name" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
-                            First name <span style="color: var(--danger);">*</span>
-                        </label>
-                        <input x-ref="firstName" id="enroll_first_name" name="first_name" type="text" required minlength="2" maxlength="50"
-                               value="{{ old('first_name') }}" autocomplete="off"
-                               class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
-                               style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                        @error('first_name')
-                            <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
-                        @enderror
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label for="enroll_first_name" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
+                                    First name <span style="color: var(--danger);">*</span>
+                                </label>
+                                <input x-ref="firstName" id="enroll_first_name" name="first_name" type="text" required minlength="2" maxlength="50"
+                                       value="{{ old('first_name') }}" autocomplete="off"
+                                       class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+                                       style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                                @error('first_name')
+                                    <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="enroll_last_name" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
+                                    Last name / family name <span style="color: var(--danger);">*</span>
+                                </label>
+                                <input id="enroll_last_name" name="last_name" type="text" required minlength="2" maxlength="50"
+                                       value="{{ old('last_name') }}"
+                                       x-model="surname"
+                                       @input.debounce.300ms="searchMatches()"
+                                       autocomplete="off"
+                                       class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+                                       style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                                @error('last_name')
+                                    <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -51,22 +71,6 @@
                                class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
                                style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                         @error('middle_name')
-                            <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="enroll_last_name" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
-                            Last name / family name <span style="color: var(--danger);">*</span>
-                        </label>
-                        <input id="enroll_last_name" name="last_name" type="text" required minlength="2" maxlength="50"
-                               value="{{ old('last_name') }}"
-                               x-model="surname"
-                               @input.debounce.300ms="searchMatches()"
-                               autocomplete="off"
-                               class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
-                               style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                        @error('last_name')
                             <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
                         @enderror
                     </div>
@@ -113,74 +117,78 @@
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label for="enroll_mother" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
-                            Mother's full name <span style="color: var(--danger);">*</span>
-                        </label>
-                        <input id="enroll_mother" name="mother_name" type="text" required minlength="2" maxlength="255"
-                               value="{{ old('mother_name') }}"
-                               x-model="motherQuery"
-                               @input.debounce.300ms="searchMothers()"
-                               autocomplete="off"
-                               placeholder="Search existing patient or type the full name"
-                               class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
-                               style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                        <input type="hidden" name="mother_id" :value="motherSelected ? motherSelected.id : ''">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label for="enroll_mother" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">
+                                    Mother's full name <span style="color: var(--danger);">*</span>
+                                </label>
+                                <input id="enroll_mother" name="mother_name" type="text" required minlength="2" maxlength="255"
+                                       value="{{ old('mother_name') }}"
+                                       x-model="motherQuery"
+                                       @input.debounce.300ms="searchMothers()"
+                                       autocomplete="off"
+                                       placeholder="Search existing patient or type the full name"
+                                       class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+                                       style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                                <input type="hidden" name="mother_id" :value="motherSelected ? motherSelected.id : ''">
 
-                        <div x-show="motherSelected" x-cloak class="mt-2 mb-2 rounded-xl border px-4 py-3 flex items-center justify-between gap-3" style="border-color: var(--primary); background: var(--teal-soft);">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <i class="fa-solid fa-user text-sm" style="color: var(--primary);" aria-hidden="true"></i>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-medium truncate" style="color: var(--ink);" x-text="motherSelected?.text"></p>
-                                    <p class="text-xs" style="color: var(--ink-muted);" x-text="motherSelected?.subtext"></p>
+                                <div x-show="motherSelected" x-cloak class="mt-2 mb-2 rounded-xl border px-4 py-3 flex items-center justify-between gap-3" style="border-color: var(--primary); background: var(--teal-soft);">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <i class="fa-solid fa-user text-sm" style="color: var(--primary);" aria-hidden="true"></i>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium truncate" style="color: var(--ink);" x-text="motherSelected?.text"></p>
+                                            <p class="text-xs" style="color: var(--ink-muted);" x-text="motherSelected?.subtext"></p>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="unlinkMother()" class="shrink-0 text-xs font-semibold hover:underline" style="color: var(--primary);">Remove</button>
                                 </div>
+
+                                <div x-show="!motherSelected && motherQuery.trim().length >= 2" class="mt-2 space-y-2">
+                                    <p class="text-xs font-medium" style="color: var(--ink-muted);" x-show="searchingMothers">
+                                        <i class="fa-solid fa-spinner fa-spin mr-1" aria-hidden="true"></i>Searching patients…
+                                    </p>
+
+                                    <template x-for="mother in motherMatches" :key="mother.id">
+                                        <button type="button" @click="linkMother(mother)"
+                                                class="w-full flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors hover:bg-black/[0.03]"
+                                                style="border-color: var(--border); background: var(--bg-surface);">
+                                            <span class="flex items-center gap-2.5 min-w-0">
+                                                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style="background: var(--teal-soft); color: var(--primary);">
+                                                    <i class="fa-solid fa-user text-xs" aria-hidden="true"></i>
+                                                </span>
+                                                <span class="min-w-0">
+                                                    <span class="block text-sm font-medium truncate" style="color: var(--ink);" x-text="mother.text"></span>
+                                                    <span class="block text-xs" style="color: var(--ink-muted);" x-text="mother.subtext"></span>
+                                                </span>
+                                            </span>
+                                            <span class="shrink-0 text-xs font-semibold" style="color: var(--primary);">Link</span>
+                                        </button>
+                                    </template>
+
+                                    <p x-show="!searchingMothers && motherMatches.length === 0" class="rounded-xl border border-dashed px-4 py-3 text-xs" style="border-color: var(--border); color: var(--ink-muted);">
+                                        No matching patient. The typed name will be saved as the mother's name.
+                                    </p>
+                                </div>
+
+                                @error('mother_name')
+                                    <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
+                                @enderror
+                                @error('mother_id')
+                                    <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
+                                @enderror
                             </div>
-                            <button type="button" @click="unlinkMother()" class="shrink-0 text-xs font-semibold hover:underline" style="color: var(--primary);">Remove</button>
+
+                            <div>
+                                <label for="enroll_father" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Father's full name</label>
+                                <input id="enroll_father" name="father_name" type="text" maxlength="255" value="{{ old('father_name') }}"
+                                       autocomplete="off"
+                                       class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+                                       style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                                @error('father_name')
+                                    <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
-
-                        <div x-show="!motherSelected && motherQuery.trim().length >= 2" class="mt-2 space-y-2">
-                            <p class="text-xs font-medium" style="color: var(--ink-muted);" x-show="searchingMothers">
-                                <i class="fa-solid fa-spinner fa-spin mr-1" aria-hidden="true"></i>Searching patients…
-                            </p>
-
-                            <template x-for="mother in motherMatches" :key="mother.id">
-                                <button type="button" @click="linkMother(mother)"
-                                        class="w-full flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors hover:bg-black/[0.03]"
-                                        style="border-color: var(--border); background: var(--bg-surface);">
-                                    <span class="flex items-center gap-2.5 min-w-0">
-                                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style="background: var(--teal-soft); color: var(--primary);">
-                                            <i class="fa-solid fa-user text-xs" aria-hidden="true"></i>
-                                        </span>
-                                        <span class="min-w-0">
-                                            <span class="block text-sm font-medium truncate" style="color: var(--ink);" x-text="mother.text"></span>
-                                            <span class="block text-xs" style="color: var(--ink-muted);" x-text="mother.subtext"></span>
-                                        </span>
-                                    </span>
-                                    <span class="shrink-0 text-xs font-semibold" style="color: var(--primary);">Link</span>
-                                </button>
-                            </template>
-
-                            <p x-show="!searchingMothers && motherMatches.length === 0" class="rounded-xl border border-dashed px-4 py-3 text-xs" style="border-color: var(--border); color: var(--ink-muted);">
-                                No matching patient. The typed name will be saved as the mother's name.
-                            </p>
-                        </div>
-
-                        @error('mother_name')
-                            <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
-                        @enderror
-                        @error('mother_id')
-                            <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="enroll_father" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Father's full name</label>
-                        <input id="enroll_father" name="father_name" type="text" maxlength="255" value="{{ old('father_name') }}"
-                               autocomplete="off"
-                               class="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
-                               style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
-                        @error('father_name')
-                            <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p>
-                        @enderror
                     </div>
                 </fieldset>
 

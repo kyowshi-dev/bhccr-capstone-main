@@ -142,9 +142,9 @@
             </nav>
         </aside>
 
-        <div class="flex-1 flex flex-col min-w-0" x-data="{ headerSticky: false }" @scroll.window="headerSticky = window.scrollY > 275">
+        <div class="flex-1 flex flex-col min-w-0">
             
-            <header :class="{ 'sticky top-0': headerSticky }" class="app-header z-40 shrink-0 flex justify-between items-center px-4 lg:px-6 py-1 border-b border-white/10 shadow-sm"
+            <header class="app-header sticky top-0 z-40 shrink-0 flex justify-between items-center px-4 lg:px-6 py-1 border-b border-white/10 shadow-sm"
                     style="background: linear-gradient(180deg, #0b4438 0%, #0a3d32 100%);">
                 <button @click="sidebarOpen = true" class="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors text-white/90">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -289,7 +289,7 @@
                                 </div>
 
                                 <div class="p-3 border-t border-border">
-                                    <form action="{{ route('logout') }}" method="POST" class="w-full">
+                                    <form id="headerLogoutForm" action="{{ route('logout') }}" method="POST" class="w-full">
                                         @csrf
                                         <button type="submit" class="w-full inline-flex items-center justify-center rounded-lg text-sm font-semibold transition-all duration-200 hover:bg-black/5 active:scale-[0.98] border border-border text-ink py-1.5 bg-transparent">
                                             Logout
