@@ -128,20 +128,35 @@
                 <label for="role_id" class="block text-xs lg:text-sm font-medium text-ink mb-1">
                     Role <span class="text-danger">*</span>
                 </label>
-                <select
-                    id="role_id"
-                    name="role_id"
-                    class="block w-full px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl border border-border shadow-sm focus:border-accent-blue focus:ring-accent-blue text-sm"
-                    required
-                >
-                    <option value="">Select a role</option>
-                    @foreach ($roles as $role)
-                        <option value="{{ $role->id }}" @selected(old('role_id', $user->role_id) == $role->id)>{{ $role->role_name }}</option>
-                    @endforeach
-                </select>
-                @error('role_id')
-                    <p class="mt-1 text-xs text-danger">{{ $message }}</p>
-                @enderror
+                @if ($user->id === auth()->id())
+                    <input type="hidden" name="role_id" value="{{ $user->role_id }}">
+                    <select
+                        id="role_id"
+                        name="role_id"
+                        disabled
+                        class="block w-full px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl border border-border shadow-sm text-sm opacity-60 cursor-not-allowed"
+                    >
+                        @foreach ($roles as $role)
+                            <option value="{{ $role->id }}" @selected($user->role_id == $role->id)>{{ $role->role_name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-ink-muted">You cannot change your own role.</p>
+                @else
+                    <select
+                        id="role_id"
+                        name="role_id"
+                        class="block w-full px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl border border-border shadow-sm focus:border-accent-blue focus:ring-accent-blue text-sm"
+                        required
+                    >
+                        <option value="">Select a role</option>
+                        @foreach ($roles as $role)
+                            <option value="{{ $role->id }}" @selected(old('role_id', $user->role_id) == $role->id)>{{ $role->role_name }}</option>
+                        @endforeach
+                    </select>
+                    @error('role_id')
+                        <p class="mt-1 text-xs text-danger">{{ $message }}</p>
+                    @enderror
+                @endif
             </div>
 
             <div>
@@ -156,6 +171,24 @@
                     placeholder="Leave blank to keep current password"
                 >
             </div>
+
+            <div id="role-confirm-password" class="hidden md:col-span-2">
+                <label for="current_password" class="block text-xs lg:text-sm font-medium text-ink mb-1">
+                    Current Password <span class="text-danger">*</span>
+                </label>
+                <input
+                    type="password"
+                    id="current_password"
+                    name="current_password"
+                    autocomplete="current-password"
+                    class="block w-full px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl border border-border shadow-sm focus:border-accent-blue focus:ring-accent-blue text-sm"
+                    placeholder="Enter your password to confirm the role change"
+                >
+                @error('current_password')
+                    <p class="mt-1 text-xs text-danger">{{ $message }}</p>
+                @enderror
+                <p class="mt-1 text-xs text-ink-muted">Role changes require your current password for security.</p>
+            </div>
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-2 lg:gap-3 pt-2">
@@ -169,4 +202,28 @@
         </div>
     </form>
 </div>
+
+<script>
+    const originalRoleId = {{ $user->role_id }};
+    const roleSelect = document.getElementById('role_id');
+    const confirmBlock = document.getElementById('role-confirm-password');
+
+    function toggleRoleConfirmation() {
+        if (!roleSelect || !confirmBlock) {
+            return;
+        }
+
+        const roleChanged = String(roleSelect.value) !== String(originalRoleId);
+        confirmBlock.classList.toggle('hidden', !roleChanged);
+
+        if (!roleChanged) {
+            document.getElementById('current_password').value = '';
+        }
+    }
+
+    if (roleSelect) {
+        roleSelect.addEventListener('change', toggleRoleConfirmation);
+        toggleRoleConfirmation();
+    }
+</script>
 @endsection
