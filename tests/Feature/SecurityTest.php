@@ -76,6 +76,7 @@ class SecurityTest extends TestCase
             'password' => 'NewPassword123!@#',
             'password_confirmation' => 'NewPassword123!@#',
             'role_id' => $roleId,
+            'current_password' => 'password',
         ]);
 
         $updated = $userToUpdate->fresh();
