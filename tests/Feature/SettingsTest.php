@@ -83,15 +83,15 @@ class SettingsTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('settings.account.update'), [
             'current_password' => 'oldpass',
-            'password' => 'newpassword8',
-            'password_confirmation' => 'newpassword8',
+            'password' => 'NewPassword8',
+            'password_confirmation' => 'NewPassword8',
         ]);
 
         $response->assertRedirect(route('settings.account'));
         $response->assertSessionHas('success');
 
         $user->refresh();
-        $this->assertTrue(Hash::check('newpassword8', $user->password));
+        $this->assertTrue(Hash::check('NewPassword8', $user->password));
     }
 
     public function test_update_password_fails_with_wrong_current_password(): void
