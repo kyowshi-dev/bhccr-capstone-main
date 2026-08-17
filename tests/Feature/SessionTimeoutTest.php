@@ -28,10 +28,16 @@ class SessionTimeoutTest extends TestCase
 
         $response = $this->actingAs($user)->put(route('profile.settings.update'), [
             'session_timeout' => 30,
+            'login_max_attempts' => 5,
+            'lockout_duration_minutes' => 15,
+            'password_min_length' => 8,
+            'password_require_uppercase' => true,
+            'password_require_number' => true,
+            'password_require_symbol' => false,
         ]);
 
         $response->assertRedirect(route('profile.settings'));
-        $response->assertSessionHas('success', 'Session timeout updated successfully.');
+        $response->assertSessionHas('success', 'Security settings updated successfully.');
 
         $this->assertEquals('30', ApplicationSetting::get('session_timeout'));
     }
