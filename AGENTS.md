@@ -28,6 +28,13 @@ Laravel 12 app: **BHCIS System Sta. Ana** — Barangay Health Center Information
 - SweetAlert2 (`Swal.fire`) for confirmations/errors, not native dialogs
 - Two distinct UI modes: interactive screens (`@extends('layouts.app')`) vs. DOH print/PDF forms (black 1px borders, fixed grids — never app-shell tokens)
 
+## Security headers / CSP rules
+
+- Alpine.js 3 evaluates `x-data`/`x-on` expressions via `new Function`, so `script-src` MUST include `'unsafe-eval'` (plus `'unsafe-inline'` for inline handlers) or every interactive page silently breaks — this happened once: adding a CSP without `unsafe-eval` crashed Alpine on the dashboard
+- `layouts/bare.blade.php` and `consultations/handout.blade.php` load Alpine from the jsDelivr CDN, so `script-src` MUST also allow `https:` or those pages lose Alpine (handout sheet toggles) — check all Alpine sources (bundled via Vite vs CDN) when changing `script-src`
+- After adding/changing security headers, verify with a real browser check (console + JS behavior) on an interactive page (dashboard) and a CDN-Alpine page (handout), not just HTTP status tests
+- When removing a feature that shipped frontend assets (e.g. charts), delete its JS imports/assets too — orphaned `resources/js/charts.js` imports a stale vendor path and stale cached pages can produce Livewire `MethodNotFoundException` 500s (e.g. `toJSON`) until a hard refresh
+
 ## On-demand skills
 
 - Load `security-review` skill before auth/input/API/payment/sensitive-feature changes; `coding-standards` and `tdd-workflow` for new code. These are invoked on demand, not always-loaded.

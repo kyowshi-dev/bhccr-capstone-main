@@ -34,14 +34,21 @@
 
         @if ($errors->any())
             <div class="mb-4 p-3 text-sm border-l-4 bg-danger-soft" style="border-left-color: var(--danger); color: var(--danger);">
-                <p class="font-medium text-sm">Login failed. {{ $errors->first() }}</p>
+                @if (session('locked_until'))
+                    <p class="font-medium text-sm">
+                        Login failed. This account is temporarily locked due to too many failed login attempts.
+                        Try again in <span id="lock-countdown" data-locked-until="{{ (int) session('locked_until') }}">--:--</span>.
+                    </p>
+                @else
+                    <p class="font-medium text-sm">Login failed. {{ $errors->first() }}</p>
+                @endif
             </div>
         @endif
 
         <div class="mb-4">
             <label for="username" class="block text-sm font-medium mb-2.5" style="color: var(--ink);">Username</label>
             <input type="text" name="username" id="username" value="{{ old('username') }}"
-                   class="auth-input" placeholder="Username" required autofocus>
+                   class="auth-input" placeholder="Username" required>
         </div>
 
         <div class="mb-5">
@@ -75,4 +82,38 @@
         </a>
     </p>
 </div>
+
+<script>
+    (function () {
+        var username = document.getElementById('username');
+        var password = document.getElementById('password');
+        var hasErrors = {{ $errors->any() ? 'true' : 'false' }};
+
+        if (hasErrors && password) {
+            password.focus();
+        } else if (username) {
+            username.focus();
+        }
+
+        var countdown = document.getElementById('lock-countdown');
+
+        if (countdown) {
+            var lockedUntil = parseInt(countdown.getAttribute('data-locked-until'), 10) * 1000;
+
+            function pad(n) {
+                return String(n).padStart(2, '0');
+            }
+
+            function render() {
+                var diff = Math.max(0, lockedUntil - Date.now());
+                var minutes = Math.floor(diff / 60000);
+                var seconds = Math.floor((diff % 60000) / 1000);
+                countdown.textContent = pad(minutes) + ':' + pad(seconds);
+            }
+
+            render();
+            setInterval(render, 1000);
+        }
+    })();
+</script>
 @endsection

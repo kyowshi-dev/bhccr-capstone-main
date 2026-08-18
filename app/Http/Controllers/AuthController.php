@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\ResetPasswordRequest;
+use App\Models\ApplicationSetting;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\PasswordResetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -40,11 +42,12 @@ class AuthController extends Controller
         if ($user && $user->isLocked()) {
             $this->audit->log('login_blocked_locked', 'auth', $request, $user->id);
 
-            $minutes = (int) max(1, ceil($user->locked_until->diffInMinutes(now())));
-
-            return back()->withErrors([
-                'username' => "This account is temporarily locked due to too many failed login attempts. Try again in {$minutes} minute(s).",
-            ])->onlyInput('username');
+            return back()
+                ->withErrors([
+                    'username' => 'This account is temporarily locked due to too many failed login attempts.',
+                ])
+                ->with('locked_until', $user->locked_until->timestamp)
+                ->onlyInput('username');
         }
 
         $remember = $request->boolean('remember');
@@ -68,6 +71,24 @@ class AuthController extends Controller
             $user->registerLoginFailure();
 
             $this->audit->log('login_failed', 'auth', $request, $user->id);
+
+            if ($user->isLocked()) {
+                return back()
+                    ->withErrors([
+                        'username' => 'This account is temporarily locked due to too many failed login attempts.',
+                    ])
+                    ->with('locked_until', $user->locked_until->timestamp)
+                    ->onlyInput('username');
+            }
+
+            $maxAttempts = (int) ApplicationSetting::get('login_max_attempts', 5);
+            $remaining = max(1, $maxAttempts - $user->failed_login_attempts);
+
+            return back()->withErrors([
+                'username' => 'The provided credentials do not match our records. '
+                    .$remaining.' '.Str::plural('attempt', $remaining)
+                    .' remaining before your account is temporarily locked.',
+            ])->onlyInput('username');
         }
 
         return back()->withErrors([

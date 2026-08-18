@@ -46,7 +46,7 @@ class SecurityHeaders
             "base-uri 'self'",
             "object-src 'none'",
             "frame-ancestors 'none'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
             "style-src 'self' 'unsafe-inline' https:",
             "img-src 'self' data: https:",
             "font-src 'self' https: data:",
