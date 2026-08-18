@@ -24,10 +24,9 @@ final class MaternalIntakeService
         array $intake,
         HealthWorker $worker,
         ?Pregnancy $pregnancy = null,
-        ?int $originConsultationId = null,
     ): int {
-        return DB::transaction(function () use ($patient, $purpose, $intake, $worker, $pregnancy, $originConsultationId): int {
-            $consultation = $this->resolveConsultation($patient, $originConsultationId);
+        return DB::transaction(function () use ($patient, $purpose, $intake, $worker, $pregnancy): int {
+            $consultation = $this->resolveConsultation($patient);
 
             if ($consultation !== null) {
                 return $this->attachToConsultation(
@@ -50,20 +49,15 @@ final class MaternalIntakeService
     }
 
     /**
-     * Prefer the explicitly selected origin consultation, falling back to the
-     * patient's latest consultation from today, then to nothing.
+     * The patient's latest consultation from today, or nothing.
      */
-    private function resolveConsultation(Patient $patient, ?int $originConsultationId): ?stdClass
+    private function resolveConsultation(Patient $patient): ?stdClass
     {
-        $query = DB::table('consultations')->where('patient_id', $patient->id);
-
-        if ($originConsultationId !== null) {
-            $query->where('id', $originConsultationId);
-        } else {
-            $query->whereDate('created_at', Carbon::today())->orderByDesc('created_at');
-        }
-
-        return $query->first();
+        return DB::table('consultations')
+            ->where('patient_id', $patient->id)
+            ->whereDate('created_at', Carbon::today())
+            ->orderByDesc('created_at')
+            ->first();
     }
 
     private function attachToConsultation(

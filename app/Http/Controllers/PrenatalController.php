@@ -52,10 +52,6 @@ class PrenatalController extends Controller
             'patient' => $patient->load(['household.zone', 'maternalProfile']),
             'pregnancies' => $this->query->pregnanciesForPatient($patient),
             'profile' => $patient->maternalProfile,
-            'consultations' => $patient->consultations()
-                ->orderByDesc('created_at')
-                ->limit(30)
-                ->get(),
         ]);
     }
 
@@ -109,7 +105,6 @@ class PrenatalController extends Controller
             $request->validated(),
             $worker,
             $pregnancy,
-            $request->integer('consultation_id') ?: null,
         );
 
         $data = $request->validated();

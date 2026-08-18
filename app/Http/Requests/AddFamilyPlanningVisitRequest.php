@@ -6,7 +6,6 @@ use App\Models\FamilyPlanningClient;
 use App\Services\VitalsService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class AddFamilyPlanningVisitRequest extends FormRequest
 {
@@ -21,30 +20,24 @@ class AddFamilyPlanningVisitRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'mode_of_transaction' => ['required', 'string', 'max:255'],
-            'nature_of_visit' => ['required', 'string', 'max:255'],
+            'mode_of_transaction' => ['required', 'string', 'in:Walk-in,Visited,Referral'],
+            'nature_of_visit' => ['required', 'string', 'in:New Consultation/Case,Follow-up Visit'],
             'chief_complaint' => ['nullable', 'string', 'max:500'],
             'visit_date' => ['required', 'date', 'before_or_equal:today'],
             'method' => ['required', 'string', 'in:'.implode(',', FamilyPlanningClient::METHODS)],
-            'schedule_next_visit' => ['nullable', 'date'],
-            'consultation_id' => $this->consultationRule(),
+            'schedule_next_visit' => ['nullable', 'date', 'after:visit_date'],
             ...VitalsService::rules(required: true),
         ];
     }
 
     /**
-     * @return array<mixed>
+     * @return array<string, string>
      */
-    private function consultationRule(): array
+    #[\Override]
+    public function messages(): array
     {
-        $rules = ['nullable', 'integer'];
-
-        $client = $this->route('client');
-
-        if ($client instanceof FamilyPlanningClient) {
-            $rules[] = Rule::exists('consultations', 'id')->where('patient_id', $client->patient_id);
-        }
-
-        return $rules;
+        return [
+            'schedule_next_visit.after' => 'The next follow-up date must be after the visit date.',
+        ];
     }
 }

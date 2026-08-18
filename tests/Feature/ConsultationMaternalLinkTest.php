@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\PostnatalRecord;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tests\Concerns\AssignsRolesAndPermissions;
 use Tests\TestCase;
@@ -65,111 +64,6 @@ class ConsultationMaternalLinkTest extends TestCase
         ])->assertSessionHasErrors('purpose_of_visit');
     }
 
-    public function test_prenatal_visit_can_be_linked_to_a_consultation(): void
-    {
-        $user = $this->createMaternalWorker();
-        $patientId = $this->createPatient();
-        $pregnancyId = DB::table('pregnancies')->insertGetId([
-            'patient_id' => $patientId,
-            'status' => 'active',
-            'gravidity' => 1,
-            'parity' => 0,
-            'term' => 0,
-            'preterm' => 0,
-            'livebirth' => 0,
-            'abortion' => 0,
-            'lmp' => '2026-01-10',
-            'edc' => '2026-10-17',
-            'syphilis_result' => 'negative',
-            'penicillin' => 'no',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        $consultationId = $this->createConsultation($patientId);
-
-        $this->actingAs($user)->post(route('maternal.prenatal.visits.store', $pregnancyId), [
-            'visit_date' => now()->toDateString(),
-            'mode_of_transaction' => 'Walk-in',
-            'nature_of_visit' => 'New Consultation/Case',
-            'bp_systolic' => 120,
-            'bp_diastolic' => 80,
-            'temperature' => 36.5,
-            'weight' => 60,
-            'height' => 160,
-            'fundic_height_cm' => 24.5,
-            'fetal_heart_tone_bpm' => 140,
-            'consultation_id' => $consultationId,
-        ])->assertRedirect(route('maternal.prenatal.patient', $patientId));
-
-        $this->assertSame(
-            $consultationId,
-            (int) DB::table('prenatal_visits')->where('pregnancy_id', $pregnancyId)->value('consultation_id')
-        );
-    }
-
-    public function test_maternal_record_rejects_foreign_patient_consultation_id(): void
-    {
-        $user = $this->createMaternalWorker();
-        $patientId = $this->createPatient();
-        $otherPatientId = $this->createPatient();
-        $pregnancyId = DB::table('pregnancies')->insertGetId([
-            'patient_id' => $patientId,
-            'status' => 'active',
-            'gravidity' => 1,
-            'parity' => 0,
-            'term' => 0,
-            'preterm' => 0,
-            'livebirth' => 0,
-            'abortion' => 0,
-            'lmp' => '2026-01-10',
-            'edc' => '2026-10-17',
-            'syphilis_result' => 'negative',
-            'penicillin' => 'no',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        $foreignConsultationId = $this->createConsultation($otherPatientId);
-
-        $this->actingAs($user)->post(route('maternal.prenatal.visits.store', $pregnancyId), [
-            'visit_date' => now()->toDateString(),
-            'mode_of_transaction' => 'Walk-in',
-            'nature_of_visit' => 'New Consultation/Case',
-            'bp_systolic' => 120,
-            'bp_diastolic' => 80,
-            'temperature' => 36.5,
-            'weight' => 60,
-            'height' => 160,
-            'consultation_id' => $foreignConsultationId,
-        ])->assertSessionHasErrors('consultation_id');
-
-        $this->assertDatabaseCount('prenatal_visits', 0);
-    }
-
-    public function test_prenatal_visit_origin_consultation_can_be_cleared_on_update(): void
-    {
-        $user = $this->createMaternalWorker();
-        $patientId = $this->createPatient();
-        $pregnancyId = $this->createPregnancy($patientId);
-        $consultationId = $this->createConsultation($patientId);
-
-        $visitId = DB::table('prenatal_visits')->insertGetId([
-            'pregnancy_id' => $pregnancyId,
-            'consultation_id' => $consultationId,
-            'visit_date' => now()->toDateString(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $this->actingAs($user)->put(route('maternal.prenatal.visits.update', $visitId), [
-            'visit_date' => now()->toDateString(),
-            'consultation_id' => '',
-        ])->assertRedirect(route('maternal.prenatal.patient', $patientId));
-
-        $this->assertNull(
-            DB::table('prenatal_visits')->where('id', $visitId)->value('consultation_id')
-        );
-    }
-
     public function test_prenatal_visit_creation_creates_consultation_in_doctor_queue(): void
     {
         $user = $this->createMaternalWorker();
@@ -226,37 +120,6 @@ class ConsultationMaternalLinkTest extends TestCase
         $this->assertSame(
             $consultationId,
             (int) DB::table('prenatal_visits')->where('pregnancy_id', $pregnancyId)->value('consultation_id')
-        );
-    }
-
-    public function test_origin_consultation_from_previous_day_is_honored_and_resolved(): void
-    {
-        $user = $this->createMaternalWorker();
-        $patientId = $this->createPatient();
-        $pregnancyId = $this->createPregnancy($patientId);
-        $consultationId = $this->createConsultation($patientId, now()->subDay());
-
-        $this->actingAs($user)->post(route('maternal.prenatal.visits.store', $pregnancyId), [
-            'visit_date' => now()->toDateString(),
-            'mode_of_transaction' => 'Walk-in',
-            'nature_of_visit' => 'New Consultation/Case',
-            'bp_systolic' => 120,
-            'bp_diastolic' => 80,
-            'temperature' => 36.5,
-            'weight' => 60,
-            'height' => 160,
-            'consultation_id' => $consultationId,
-        ])->assertRedirect(route('maternal.prenatal.patient', $patientId));
-
-        $this->assertDatabaseCount('consultations', 1);
-
-        $this->assertSame(
-            $consultationId,
-            (int) DB::table('prenatal_visits')->where('pregnancy_id', $pregnancyId)->value('consultation_id')
-        );
-        $this->assertSame(
-            'doctor_review',
-            DB::table('consultations')->where('id', $consultationId)->value('status')
         );
     }
 
@@ -331,112 +194,6 @@ class ConsultationMaternalLinkTest extends TestCase
         $this->assertSame(
             'doctor_review',
             DB::table('consultations')->where('id', $consultationId)->value('status')
-        );
-    }
-
-    public function test_postnatal_store_can_be_linked_to_a_consultation(): void
-    {
-        $user = $this->createMaternalWorker();
-        $patientId = $this->createPatient();
-        $consultationId = $this->createConsultation($patientId);
-
-        $this->actingAs($user)->post("/patients/{$patientId}/postnatal", [
-            'consultation_id' => $consultationId,
-            'pregnancy_outcome' => 'live_birth',
-            'place_delivered' => 'health_center',
-            'mode_of_delivery' => 'normal_vaginal',
-            'attendant_at_birth' => 'midwife',
-            'delivery_date' => now()->toDateString(),
-            'delivery_time' => '08:30',
-            'breastfeeding_date' => now()->toDateString(),
-            'breastfeeding_time' => '10:00',
-            'child_last_name' => 'Doe',
-            'child_first_name' => 'Baby',
-            'child_sex' => 'M',
-        ])->assertRedirect(route('maternal.postnatal.patient', $patientId));
-
-        $this->assertSame(
-            $consultationId,
-            (int) DB::table('postnatal_records')->where('patient_id', $patientId)->value('consultation_id')
-        );
-    }
-
-    public function test_postpartum_visit_completion_records_consultation_link(): void
-    {
-        $user = $this->createMaternalWorker();
-        $patientId = $this->createPatient();
-        $consultationId = $this->createConsultation($patientId);
-
-        $record = PostnatalRecord::create([
-            'patient_id' => $patientId,
-            'pregnancy_outcome' => 'live_birth',
-            'place_delivered' => 'health_center',
-            'mode_of_delivery' => 'normal_vaginal',
-            'attendant_at_birth' => 'midwife',
-            'delivery_date' => now()->subDays(2)->toDateString(),
-            'delivery_time' => '08:30',
-            'breastfeeding_date' => now()->subDays(2)->toDateString(),
-            'breastfeeding_time' => '10:00',
-            'child_last_name' => 'Doe',
-            'child_first_name' => 'Baby',
-            'child_sex' => 'M',
-        ]);
-
-        $this->actingAs($user)
-            ->post(route('maternal.postnatal.complete-visit', $record->id), [
-                'slot' => 'postpartum_7d_date',
-                'date' => now()->toDateString(),
-                'mode_of_transaction' => 'Walk-in',
-                'nature_of_visit' => 'New Consultation/Case',
-                'bp_systolic' => 120,
-                'bp_diastolic' => 80,
-                'temperature' => 36.5,
-                'weight' => 60,
-                'height' => 160,
-                'consultation_id' => $consultationId,
-            ])->assertRedirect(route('maternal.postnatal.patient', $patientId));
-
-        $this->assertSame(
-            $consultationId,
-            (int) DB::table('postnatal_records')->where('id', $record->id)->value('consultation_id')
-        );
-        $this->assertNotNull(
-            DB::table('postnatal_records')->where('id', $record->id)->value('postpartum_7d_date')
-        );
-    }
-
-    public function test_family_planning_visit_can_be_linked_to_a_consultation(): void
-    {
-        $user = $this->createMaternalWorker();
-        $patientId = $this->createPatient();
-        $consultationId = $this->createConsultation($patientId);
-
-        $clientId = DB::table('family_planning_clients')->insertGetId([
-            'patient_id' => $patientId,
-            'type_of_client' => 'continuing_user',
-            'method' => 'Pills',
-            'is_active' => true,
-            'recorded_by' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $this->actingAs($user)->post("/maternal/family-planning/{$clientId}/visits", [
-            'visit_date' => now()->toDateString(),
-            'method' => 'Pills',
-            'mode_of_transaction' => 'Walk-in',
-            'nature_of_visit' => 'New Consultation/Case',
-            'bp_systolic' => 120,
-            'bp_diastolic' => 80,
-            'temperature' => 36.5,
-            'weight' => 60,
-            'height' => 160,
-            'consultation_id' => $consultationId,
-        ])->assertRedirect(route('maternal.family-planning.patient', $patientId));
-
-        $this->assertSame(
-            $consultationId,
-            (int) DB::table('family_planning_visits')->where('client_id', $clientId)->value('consultation_id')
         );
     }
 
@@ -581,7 +338,7 @@ class ConsultationMaternalLinkTest extends TestCase
         ]);
     }
 
-    private function createConsultation(int $patientId, ?Carbon $createdAt = null): int
+    private function createConsultation(int $patientId): int
     {
         $worker = DB::table('health_workers')->orderBy('id')->first();
 
@@ -591,8 +348,8 @@ class ConsultationMaternalLinkTest extends TestCase
             'status' => 'nurse_review',
             'nature_of_visit' => 'Checkup',
             'mode_of_transaction' => 'Walk-in',
-            'created_at' => $createdAt ?? now(),
-            'updated_at' => $createdAt ?? now(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 }

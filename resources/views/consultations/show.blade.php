@@ -411,7 +411,7 @@
 
             @if ($linkedPrenatalVisits->isEmpty() && $linkedPostnatal === null && $linkedFpVisits->isEmpty())
                 <p class="mt-4 text-sm" style="color: var(--ink-muted);">
-                    No maternal records are linked to this consultation yet. Add one from the maternal module and select this consultation as its origin.
+                    No maternal records are linked to this consultation yet. Record a maternal visit for this patient and it will be attached to this consultation automatically.
                 </p>
             @else
                 <div class="mt-4 space-y-4">

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\FamilyPlanningClient;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -18,11 +19,22 @@ class UpdateFamilyPlanningClientRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type_of_client' => ['required', 'in:new_acceptor,continuing_user,drop_out,others'],
-            'method' => ['required', 'string', 'in:Pills,Injectable,DMPA,Implant,IUD,Condom,BTL,Calendar/Rhythm,LAM,Others'],
+            'type_of_client' => ['required', 'in:'.implode(',', array_keys(FamilyPlanningClient::TYPES))],
+            'method' => ['required', 'string', 'in:'.implode(',', FamilyPlanningClient::METHODS)],
             'drop_out_reason' => ['nullable', 'required_if:type_of_client,drop_out', 'string', 'max:500'],
-            'schedule_next_visit' => ['nullable', 'date'],
+            'schedule_next_visit' => ['nullable', 'date', 'after_or_equal:today'],
             'is_active' => ['nullable', 'boolean'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    #[\Override]
+    public function messages(): array
+    {
+        return [
+            'schedule_next_visit.after_or_equal' => 'The next follow-up date cannot be in the past.',
         ];
     }
 }

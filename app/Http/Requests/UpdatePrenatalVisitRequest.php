@@ -2,10 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Models\PrenatalVisit;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdatePrenatalVisitRequest extends FormRequest
 {
@@ -20,27 +18,22 @@ class UpdatePrenatalVisitRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'visit_date' => ['required', 'date'],
+            'visit_date' => ['required', 'date', 'before_or_equal:today'],
             'fundic_height_cm' => ['nullable', 'numeric', 'min:0', 'max:99.9'],
             'fetal_heart_tone_bpm' => ['nullable', 'integer', 'min:60', 'max:220'],
-            'next_visit_date' => ['nullable', 'date'],
-            'consultation_id' => $this->consultationRule(),
+            'next_visit_date' => ['nullable', 'date', 'after:visit_date'],
         ];
     }
 
     /**
-     * @return array<mixed>
+     * @return array<string, string>
      */
-    private function consultationRule(): array
+    #[\Override]
+    public function messages(): array
     {
-        $rules = ['nullable', 'integer'];
-
-        $visit = $this->route('visit');
-
-        if ($visit instanceof PrenatalVisit) {
-            $rules[] = Rule::exists('consultations', 'id')->where('patient_id', $visit->pregnancy->patient_id);
-        }
-
-        return $rules;
+        return [
+            'visit_date.before_or_equal' => 'The visit date cannot be in the future.',
+            'next_visit_date.after' => 'The next visit date must be after the visit date.',
+        ];
     }
 }

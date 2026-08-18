@@ -192,8 +192,7 @@
                                             visit_date: '{{ $visit->visit_date?->format('Y-m-d') }}',
                                             fundic_height_cm: {{ $trend['fundic_height_cm'] ?? 'null' }},
                                             fetal_heart_tone_bpm: {{ $visit->fetal_heart_tone_bpm ?? 'null' }},
-                                            next_visit_date: '{{ $visit->next_visit_date?->format('Y-m-d') }}',
-                                            consultation_id: {{ $visit->consultation_id ?? 'null' }}
+                                            next_visit_date: '{{ $visit->next_visit_date?->format('Y-m-d') }}'
                                         })"
                                                 class="text-xs font-semibold hover:underline" style="color: var(--accent-blue);">Edit</button>
                                     </td>
@@ -284,7 +283,8 @@
     <x-modal name="record-visit-modal" title="Record prenatal visit" maxWidth="max-w-3xl"
              x-data="{ open: {{ old('intent') === 'record-visit' ? 'true' : 'false' }} }"
              x-on:open-record-visit.window="open = true" x-on:close.window="open = false">
-        <form method="POST" action="{{ route('maternal.prenatal.visits.store', $active->id) }}" class="space-y-5">
+        <form method="POST" action="{{ route('maternal.prenatal.visits.store', $active->id) }}" class="space-y-5"
+              x-data="{ visitDate: '{{ old('visit_date', now()->toDateString()) }}' }">
             @csrf
             <input type="hidden" name="intent" value="record-visit">
 
@@ -295,13 +295,14 @@
                         <x-slot:label>Visit date</x-slot:label>
                         <x-slot:control>
                             <input id="visit_date" type="date" name="visit_date" value="{{ old('visit_date', now()->toDateString()) }}" max="{{ now()->toDateString() }}" required
+                                   x-model="visitDate" @change="visitDate = $event.target.value"
                                    class="w-full rounded-lg border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-blue">
                         </x-slot:control>
                     </x-field>
                     <x-field name="next_visit_date">
                         <x-slot:label>Next visit</x-slot:label>
                         <x-slot:control>
-                            <input id="next_visit_date" type="date" name="next_visit_date" value="{{ old('next_visit_date') }}"
+                            <input id="next_visit_date" type="date" name="next_visit_date" value="{{ old('next_visit_date') }}" :min="visitDate"
                                    class="w-full rounded-lg border border-border px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-blue">
                         </x-slot:control>
                     </x-field>
@@ -367,16 +368,10 @@
             </div>
             <div>
                 <label for="ev_next_visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Next visit</label>
-                <input id="ev_next_visit_date" type="date" name="next_visit_date" x-model="visit.next_visit_date"
+                <input id="ev_next_visit_date" type="date" name="next_visit_date" x-model="visit.next_visit_date" :min="visit.visit_date"
                        class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                        style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
             </div>
-            @include('maternal.partials.consultation-select', [
-                'fieldName' => 'consultation_id',
-                'consultations' => $consultations,
-                'selected' => $visit->consultation_id ?? null,
-                'xModel' => 'visit.consultation_id',
-            ])
             <div class="flex justify-end gap-2 pt-1">
                 <button type="button" @click="$dispatch('close')" class="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:bg-black/[0.03]"
                         style="border-color: var(--border); color: var(--ink-muted);">Cancel</button>
@@ -605,15 +600,14 @@
 <script>
     function visitEditor() {
         return {
-            visit: { id: null, visit_date: '', fundic_height_cm: null, fetal_heart_tone_bpm: null, next_visit_date: '', consultation_id: null },
+            visit: { id: null, visit_date: '', fundic_height_cm: null, fetal_heart_tone_bpm: null, next_visit_date: '' },
             setVisit(d) {
                 this.visit = {
                     id: d.id,
                     visit_date: d.visit_date || '',
                     fundic_height_cm: d.fundic_height_cm ?? null,
                     fetal_heart_tone_bpm: d.fetal_heart_tone_bpm ?? null,
-                    next_visit_date: d.next_visit_date || '',
-                    consultation_id: d.consultation_id ?? null
+                    next_visit_date: d.next_visit_date || ''
                 };
             }
         };

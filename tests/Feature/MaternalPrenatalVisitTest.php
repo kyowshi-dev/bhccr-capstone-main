@@ -156,4 +156,175 @@ class MaternalPrenatalVisitTest extends TestCase
         $this->assertTrue($pregnancy->iron_taken);
         $this->assertNotNull($pregnancy->tt_date);
     }
+
+    public function test_next_visit_date_cannot_be_before_visit_date(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $pregnancy = $this->pregnancy();
+
+        $this->post(route('maternal.prenatal.visits.store', $pregnancy->id), [
+            'visit_date' => now()->toDateString(),
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+            'next_visit_date' => now()->subWeek()->toDateString(),
+        ])->assertSessionHasErrors('next_visit_date');
+
+        $this->assertDatabaseCount('prenatal_visits', 0);
+    }
+
+    public function test_next_visit_date_cannot_be_the_same_day_as_visit_date(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $pregnancy = $this->pregnancy();
+
+        $this->post(route('maternal.prenatal.visits.store', $pregnancy->id), [
+            'visit_date' => now()->toDateString(),
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+            'next_visit_date' => now()->toDateString(),
+        ])->assertSessionHasErrors('next_visit_date');
+
+        $this->assertDatabaseCount('prenatal_visits', 0);
+    }
+
+    public function test_visit_date_cannot_be_in_the_future(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $pregnancy = $this->pregnancy();
+
+        $this->post(route('maternal.prenatal.visits.store', $pregnancy->id), [
+            'visit_date' => now()->addWeek()->toDateString(),
+        ])->assertSessionHasErrors('visit_date');
+
+        $this->assertDatabaseCount('prenatal_visits', 0);
+    }
+
+    public function test_visit_date_cannot_be_before_lmp(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $pregnancy = $this->pregnancy();
+
+        $this->post(route('maternal.prenatal.visits.store', $pregnancy->id), [
+            'visit_date' => '2026-01-05',
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+        ])->assertSessionHasErrors('visit_date');
+
+        $this->assertDatabaseCount('prenatal_visits', 0);
+    }
+
+    public function test_mode_and_nature_of_visit_are_whitelisted(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $pregnancy = $this->pregnancy();
+
+        $this->post(route('maternal.prenatal.visits.store', $pregnancy->id), [
+            'visit_date' => now()->toDateString(),
+            'mode_of_transaction' => 'Carriage return',
+            'nature_of_visit' => 'garbage',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+        ])->assertSessionHasErrors(['mode_of_transaction', 'nature_of_visit']);
+
+        $this->assertDatabaseCount('prenatal_visits', 0);
+    }
+
+    public function test_update_rejects_future_visit_date_and_backdated_next_visit(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $pregnancy = $this->pregnancy();
+
+        $this->post(route('maternal.prenatal.visits.store', $pregnancy->id), [
+            'visit_date' => now()->toDateString(),
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+        ])->assertRedirect();
+
+        $visit = PrenatalVisit::where('pregnancy_id', $pregnancy->id)->firstOrFail();
+
+        $this->put(route('maternal.prenatal.visits.update', $visit->id), [
+            'visit_date' => now()->addWeek()->toDateString(),
+        ])->assertSessionHasErrors('visit_date');
+
+        $this->put(route('maternal.prenatal.visits.update', $visit->id), [
+            'visit_date' => now()->toDateString(),
+            'next_visit_date' => now()->subWeek()->toDateString(),
+        ])->assertSessionHasErrors('next_visit_date');
+    }
+
+    public function test_edc_must_be_after_lmp_on_registration(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $pregnancy = $this->pregnancy();
+
+        $this->put(route('maternal.pregnancies.update', $pregnancy->id), [
+            'status' => Pregnancy::STATUS_ACTIVE,
+            'gravidity' => 1,
+            'parity' => 0,
+            'term' => 0,
+            'preterm' => 0,
+            'livebirth' => 0,
+            'abortion' => 0,
+            'lmp' => '2026-01-10',
+            'edc' => '2025-12-01',
+            'syphilis_result' => 'negative',
+            'penicillin' => 'no',
+        ])->assertSessionHasErrors('edc');
+    }
+
+    public function test_pregnancy_update_rejects_future_lmp_and_edc_before_lmp(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $pregnancy = $this->pregnancy();
+
+        $this->put(route('maternal.pregnancies.update', $pregnancy->id), [
+            'status' => Pregnancy::STATUS_ACTIVE,
+            'gravidity' => 1,
+            'parity' => 0,
+            'term' => 0,
+            'preterm' => 0,
+            'livebirth' => 0,
+            'abortion' => 0,
+            'lmp' => now()->addWeek()->toDateString(),
+            'syphilis_result' => 'negative',
+            'penicillin' => 'no',
+        ])->assertSessionHasErrors('lmp');
+
+        $this->put(route('maternal.pregnancies.update', $pregnancy->id), [
+            'status' => Pregnancy::STATUS_ACTIVE,
+            'gravidity' => 1,
+            'parity' => 0,
+            'term' => 0,
+            'preterm' => 0,
+            'livebirth' => 0,
+            'abortion' => 0,
+            'lmp' => '2026-01-10',
+            'edc' => '2026-01-05',
+            'syphilis_result' => 'negative',
+            'penicillin' => 'no',
+        ])->assertSessionHasErrors('edc');
+    }
 }

@@ -25,14 +25,26 @@ class UpdatePregnancyRequest extends FormRequest
             'preterm' => ['required', 'integer', 'min:0', 'max:25'],
             'livebirth' => ['required', 'integer', 'min:0', 'max:25'],
             'abortion' => ['required', 'integer', 'min:0', 'max:25'],
-            'lmp' => ['required', 'date'],
-            'edc' => ['nullable', 'date'],
+            'lmp' => ['required', 'date', 'before_or_equal:today'],
+            'edc' => ['nullable', 'date', 'after:lmp'],
             'aog_weeks' => ['nullable', 'integer', 'min:0', 'max:45'],
             'syphilis_result' => ['required', 'in:negative,positive'],
             'penicillin' => ['required', 'in:no,yes'],
             'tt_date' => ['nullable', 'date', 'before_or_equal:today'],
             'iron_taken' => ['nullable', 'boolean'],
             'others' => ['nullable', 'string', 'max:500'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    #[\Override]
+    public function messages(): array
+    {
+        return [
+            'lmp.before_or_equal' => 'The LMP cannot be in the future.',
+            'edc.after' => 'The EDC must be after the LMP.',
         ];
     }
 }

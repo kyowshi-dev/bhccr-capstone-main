@@ -140,5 +140,18 @@ class MaternalPrenatalFlowsheetTest extends TestCase
         $this->assertStringContainsString('name="visit_date"', $matches[1]);
         $this->assertStringContainsString('name="bp_systolic"', $matches[1]);
         $this->assertStringContainsString('name="fundic_height_cm"', $matches[1]);
+
+        $this->assertSame(
+            1,
+            preg_match(
+                '#<form method="POST" x-bind:action="`http://localhost/prenatal-visits/\$\{visit\.id\}`"[^>]*>(.*?)</form>#s',
+                $html,
+                $editMatches,
+            ),
+        );
+
+        $this->assertStringNotContainsString('name="consultation_id"', $editMatches[1]);
+        $this->assertStringContainsString('name="visit_date"', $editMatches[1]);
+        $this->assertStringContainsString('name="next_visit_date"', $editMatches[1]);
     }
 }

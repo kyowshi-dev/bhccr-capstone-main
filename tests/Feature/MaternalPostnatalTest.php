@@ -300,4 +300,105 @@ class MaternalPostnatalTest extends TestCase
         $this->assertSame(1, PostnatalRecord::where('patient_id', $mother->id)->count());
         $this->assertSame(2, Patient::where('household_id', $mother->household_id)->count());
     }
+
+    public function test_breastfeeding_date_cannot_be_before_delivery_date(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload([
+            'delivery_date' => now()->subDay()->toDateString(),
+            'breastfeeding_date' => now()->subDays(3)->toDateString(),
+        ]))->assertSessionHasErrors('breastfeeding_date');
+
+        $this->assertDatabaseCount('postnatal_records', 0);
+    }
+
+    public function test_postpartum_slot_date_cannot_be_before_delivery_date(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload())->assertRedirect();
+
+        $record = PostnatalRecord::where('patient_id', $mother->id)->firstOrFail();
+
+        $this->put(route('maternal.postnatal.update', $record->id), $this->validPayload([
+            'delivery_date' => now()->toDateString(),
+            'postpartum_24h_date' => now()->subDay()->toDateString(),
+        ]))->assertSessionHasErrors('postpartum_24h_date');
+    }
+
+    public function test_update_rejects_future_delivery_and_breastfeeding_dates(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload())->assertRedirect();
+
+        $record = PostnatalRecord::where('patient_id', $mother->id)->firstOrFail();
+
+        $this->put(route('maternal.postnatal.update', $record->id), $this->validPayload([
+            'delivery_date' => now()->addDay()->toDateString(),
+        ]))->assertSessionHasErrors('delivery_date');
+
+        $this->put(route('maternal.postnatal.update', $record->id), $this->validPayload([
+            'breastfeeding_date' => now()->addDay()->toDateString(),
+        ]))->assertSessionHasErrors('breastfeeding_date');
+    }
+
+    public function test_future_vitamin_a_and_iron_dates_are_rejected(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload([
+            'vitamin_a_date' => now()->addDay()->toDateString(),
+            'iron_date' => now()->addDay()->toDateString(),
+        ]))->assertSessionHasErrors(['vitamin_a_date', 'iron_date']);
+
+        $this->assertDatabaseCount('postnatal_records', 0);
+    }
+
+    public function test_complete_visit_rejects_date_before_delivery(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload([
+            'delivery_date' => now()->subDays(2)->toDateString(),
+            'breastfeeding_date' => now()->subDays(2)->toDateString(),
+        ]))->assertRedirect();
+
+        $record = PostnatalRecord::where('patient_id', $mother->id)->firstOrFail();
+
+        $this->post(route('maternal.postnatal.complete-visit', $record->id), [
+            'slot' => 'postpartum_7d_date',
+            'date' => now()->subDays(3)->toDateString(),
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+        ])->assertSessionHasErrors('slot');
+
+        $this->assertNull($record->fresh()->postpartum_7d_date);
+    }
+
+    public function test_postpartum_page_splits_schedule_and_record_visit_cards(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $mother = $this->mother();
+
+        $this->post(route('maternal.postnatal.store', $mother->id), $this->validPayload())->assertRedirect();
+
+        $this->get(route('maternal.postnatal.patient', $mother->id))
+            ->assertOk()
+            ->assertSee('Postpartum schedule')
+            ->assertSee('0 of 4 completed')
+            ->assertSee('Record postpartum visit')
+            ->assertSee('Save visit');
+    }
 }

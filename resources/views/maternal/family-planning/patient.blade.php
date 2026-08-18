@@ -86,23 +86,19 @@
             @if ($client !== null)
                 <x-card>
                     <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">Record follow-up visit</h2>
-                    <form method="POST" action="{{ route('maternal.family-planning.visits.store', $client->id) }}" class="space-y-3">
+                    <form method="POST" action="{{ route('maternal.family-planning.visits.store', $client->id) }}" class="space-y-3"
+                          x-data="{ visitDate: '{{ old('visit_date', now()->toDateString()) }}' }">
                         @csrf
                         <div>
                             <label for="visit_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: var(--danger);">*</span></label>
                             <input id="visit_date" type="date" name="visit_date" value="{{ old('visit_date', now()->toDateString()) }}" max="{{ now()->toDateString() }}"
+                                   x-model="visitDate" @change="visitDate = $event.target.value"
                                    class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                    style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                             @error('visit_date') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
                         </div>
 
                         @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'fp_'])
-
-                        @include('maternal.partials.consultation-select', [
-                            'fieldName' => 'consultation_id',
-                            'consultations' => $consultations,
-                            'selected' => old('consultation_id'),
-                        ])
 
                         <div>
                             <label for="method" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Method <span style="color: var(--danger);">*</span></label>
@@ -116,7 +112,7 @@
                         </div>
                         <div>
                             <label for="schedule_next_visit" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Next follow-up</label>
-                            <input id="schedule_next_visit" type="date" name="schedule_next_visit" value="{{ old('schedule_next_visit', $client->schedule_next_visit?->format('Y-m-d')) }}"
+                            <input id="schedule_next_visit" type="date" name="schedule_next_visit" value="{{ old('schedule_next_visit', $client->schedule_next_visit?->format('Y-m-d')) }}" :min="visitDate"
                                    class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                    style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                             @error('schedule_next_visit') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
@@ -237,7 +233,7 @@
         </div>
         <div>
             <label for="schedule_next_visit" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Next follow-up</label>
-            <input id="schedule_next_visit" type="date" name="schedule_next_visit" value="{{ old('schedule_next_visit') }}"
+            <input id="schedule_next_visit" type="date" name="schedule_next_visit" value="{{ old('schedule_next_visit') }}" min="{{ now()->toDateString() }}"
                    class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                    style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
             @error('schedule_next_visit') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
@@ -285,7 +281,7 @@
             </div>
             <div>
                 <label for="edit_schedule_next_visit" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Next follow-up</label>
-                <input id="edit_schedule_next_visit" type="date" name="schedule_next_visit" value="{{ old('schedule_next_visit', $client->schedule_next_visit?->format('Y-m-d')) }}"
+                <input id="edit_schedule_next_visit" type="date" name="schedule_next_visit" value="{{ old('schedule_next_visit', $client->schedule_next_visit?->format('Y-m-d')) }}" min="{{ now()->toDateString() }}"
                        class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                        style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                 @error('schedule_next_visit') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror

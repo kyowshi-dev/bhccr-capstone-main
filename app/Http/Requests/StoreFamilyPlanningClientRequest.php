@@ -22,7 +22,18 @@ class StoreFamilyPlanningClientRequest extends FormRequest
             'type_of_client' => ['required', 'in:'.implode(',', array_keys(FamilyPlanningClient::TYPES))],
             'method' => ['required', 'string', 'in:'.implode(',', FamilyPlanningClient::METHODS)],
             'drop_out_reason' => ['nullable', 'required_if:type_of_client,drop_out', 'string', 'max:500'],
-            'schedule_next_visit' => ['nullable', 'date'],
+            'schedule_next_visit' => ['nullable', 'date', 'after_or_equal:today'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    #[\Override]
+    public function messages(): array
+    {
+        return [
+            'schedule_next_visit.after_or_equal' => 'The next follow-up date cannot be in the past.',
         ];
     }
 }

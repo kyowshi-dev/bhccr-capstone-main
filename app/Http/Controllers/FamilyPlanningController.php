@@ -51,10 +51,6 @@ class FamilyPlanningController extends Controller
                 ->orderByDesc('id')
                 ->get(),
             'visitHistory' => $client?->visits()->orderByDesc('visit_date')->get() ?? collect(),
-            'consultations' => $patient->consultations()
-                ->orderByDesc('created_at')
-                ->limit(30)
-                ->get(),
         ]);
     }
 
@@ -89,7 +85,6 @@ class FamilyPlanningController extends Controller
             $request->validated(),
             $worker,
             $pregnancy,
-            $request->integer('consultation_id') ?: null,
         );
 
         $data = $request->validated();

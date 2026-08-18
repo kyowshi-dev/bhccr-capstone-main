@@ -96,46 +96,67 @@
     @endif
 
     @if ($current !== null)
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-            <div class="lg:col-span-1 space-y-4 lg:space-y-6">
-                <x-card>
-                    <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">Postpartum schedule</h2>
+        @php
+            $slots = [
+                ['col' => 'postpartum_24h_date', 'window' => 1, 'label' => '24 hours'],
+                ['col' => 'postpartum_7d_date', 'window' => 7, 'label' => '7 days'],
+                ['col' => 'postpartum_14d_date', 'window' => 14, 'label' => '14 days'],
+                ['col' => 'postpartum_28d_date', 'window' => 28, 'label' => '28 days'],
+            ];
+            $completedSlots = collect($slots)->filter(fn ($slot) => $current->{$slot['col']} !== null)->count();
+        @endphp
+
+        <x-card>
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h2 class="font-display font-semibold text-lg" style="color: var(--ink);">Postpartum schedule</h2>
+                    @if ($completedSlots === count($slots))
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--teal-soft); color: var(--primary);">
+                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i> All {{ $completedSlots }} visits completed
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--accent-soft); color: var(--ink-muted);">
+                            <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i> {{ $completedSlots }} of {{ count($slots) }} completed
+                        </span>
+                    @endif
+                </div>
+                <p class="text-xs" style="color: var(--ink-muted);">Delivered {{ $current->delivery_date->format('M d, Y') }}</p>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                @foreach ($slots as $slot)
                     @php
-                        $slots = [
-                            ['col' => 'postpartum_24h_date', 'window' => 1, 'label' => '24 hours'],
-                            ['col' => 'postpartum_7d_date', 'window' => 7, 'label' => '7 days'],
-                            ['col' => 'postpartum_14d_date', 'window' => 14, 'label' => '14 days'],
-                            ['col' => 'postpartum_28d_date', 'window' => 28, 'label' => '28 days'],
-                        ];
+                        $targetDate = \Carbon\Carbon::parse($current->delivery_date)->addDays($slot['window']);
+                        $done = $current->{$slot['col']} !== null;
+                        $overdue = ! $done && $targetDate->lt(\Carbon\Carbon::today());
                     @endphp
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                        @foreach ($slots as $slot)
-                            @php
-                                $targetDate = \Carbon\Carbon::parse($current->delivery_date)->addDays($slot['window']);
-                                $done = $current->{$slot['col']} !== null;
-                                $overdue = ! $done && $targetDate->lt(\Carbon\Carbon::today());
-                            @endphp
-                            <div class="rounded-lg border p-3" style="border-color: var(--border);">
-                                <p class="text-[10px] uppercase tracking-wide font-semibold" style="color: var(--ink-muted);">{{ $slot['label'] }} visit</p>
-                                <p class="mt-1 text-sm font-semibold" style="color: {{ $done ? 'var(--primary)' : ($overdue ? 'var(--danger)' : 'var(--accent-blue)') }};">
-                                    <i class="fa-solid {{ $done ? 'fa-circle-check' : ($overdue ? 'fa-circle-exclamation' : 'fa-regular fa-calendar') }}" aria-hidden="true"></i>
-                                    @if ($done)
-                                        {{ \Carbon\Carbon::parse($current->{$slot['col']})->format('M d, Y') }}
-                                    @else
-                                        {{ $overdue ? 'Overdue' : 'Due' }} {{ $targetDate->format('M d') }}
-                                    @endif
-                                </p>
-                            </div>
-                        @endforeach
+                    <div class="rounded-lg border p-3" style="border-color: var(--border);">
+                        <p class="text-[10px] uppercase tracking-wide font-semibold" style="color: var(--ink-muted);">{{ $slot['label'] }} visit</p>
+                        <p class="mt-1 text-sm font-semibold" style="color: {{ $done ? 'var(--primary)' : ($overdue ? 'var(--danger)' : 'var(--accent-blue)') }};">
+                            <i class="fa-solid {{ $done ? 'fa-circle-check' : ($overdue ? 'fa-circle-exclamation' : 'fa-regular fa-calendar') }}" aria-hidden="true"></i>
+                            @if ($done)
+                                {{ \Carbon\Carbon::parse($current->{$slot['col']})->format('M d, Y') }}
+                            @else
+                                {{ $overdue ? 'Overdue' : 'Due' }} {{ $targetDate->format('M d') }}
+                            @endif
+                        </p>
                     </div>
-                    <form method="POST" action="{{ route('maternal.postnatal.complete-visit', $current->id) }}" class="mt-4 pt-4 border-t space-y-3"
-                          style="border-color: var(--border);"
-                          x-data="ppSuggest('{{ $current->delivery_date->format('Y-m-d') }}')" x-init="$nextTick(suggest)">
-                        @csrf
-                        <div>
-                            <label for="pp_slot" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Record completed visit</label>
-                            <div class="flex gap-2">
-                                <select id="pp_slot" name="slot" class="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                @endforeach
+            </div>
+        </x-card>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+            <div class="lg:col-span-1">
+                <x-card>
+                    <h2 class="font-display font-semibold text-lg mb-3" style="color: var(--ink);">Record postpartum visit</h2>
+                    @if ($completedSlots === count($slots))
+                        <p class="text-sm" style="color: var(--ink-subtle);">All postpartum visits for this delivery have been recorded.</p>
+                    @else
+                        <form method="POST" action="{{ route('maternal.postnatal.complete-visit', $current->id) }}" class="space-y-3"
+                              x-data="ppSuggest('{{ $current->delivery_date->format('Y-m-d') }}')" x-init="$nextTick(suggest)">
+                            @csrf
+                            <div>
+                                <label for="pp_slot" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Postpartum slot <span style="color: var(--danger);">*</span></label>
+                                <select id="pp_slot" name="slot" class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                         style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                                     @foreach ($slots as $slot)
                                         @if ($current->{$slot['col']} === null)
@@ -143,19 +164,24 @@
                                         @endif
                                     @endforeach
                                 </select>
-                                <input type="date" name="date" value="{{ now()->toDateString() }}" max="{{ now()->toDateString() }}"
-                                       class="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                                       style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                                @error('slot') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
                             </div>
-                        </div>
+                            <div>
+                                <label for="pp_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Visit date <span style="color: var(--danger);">*</span></label>
+                                <input id="pp_date" type="date" name="date" value="{{ old('date', now()->toDateString()) }}" max="{{ now()->toDateString() }}"
+                                       class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                                       style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
+                                @error('date') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
+                            </div>
 
-                        @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'pp_'])
+                            @include('maternal.partials.consultation-intake', ['fieldPrefix' => 'pp_'])
 
-                        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md"
-                                style="background: var(--primary);">
-                            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save visit
-                        </button>
-                    </form>
+                            <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-md"
+                                    style="background: var(--primary);">
+                                <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save visit
+                            </button>
+                        </form>
+                    @endif
                 </x-card>
             </div>
 
@@ -234,11 +260,6 @@
                 @error('pregnancy_outcome') <p class="mt-1 text-xs font-medium" style="color: var(--danger);">{{ $message }}</p> @enderror
             </div>
         </div>
-        @include('maternal.partials.consultation-select', [
-            'fieldName' => 'consultation_id',
-            'consultations' => $consultations,
-            'selected' => old('consultation_id'),
-        ])
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div>
                 <label for="pn_place_delivered" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Place <span style="color: var(--danger);">*</span></label>
@@ -398,7 +419,8 @@
     <x-modal name="edit-postnatal-modal" title="Edit postnatal record"
              x-data="{{ old('intent') === 'edit-postnatal' ? '{ open: true }' : '{ open: false }' }}"
              x-on:open-edit-postnatal.window="open = true" x-on:close.window="open = false">
-        <form method="POST" action="{{ route('maternal.postnatal.update', $current->id) }}" class="space-y-3" x-data="{ outcome: @js($current->pregnancy_outcome) }">
+        <form method="POST" action="{{ route('maternal.postnatal.update', $current->id) }}" class="space-y-3"
+                  x-data="{ outcome: @js($current->pregnancy_outcome), deliveryDate: @js($current->delivery_date->format('Y-m-d')) }">
             @csrf
             @method('PUT')
             <input type="hidden" name="intent" value="edit-postnatal">
@@ -419,11 +441,6 @@
                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                 </div>
             </div>
-            @include('maternal.partials.consultation-select', [
-                'fieldName' => 'consultation_id',
-                'consultations' => $consultations,
-                'selected' => old('consultation_id', $current->consultation_id),
-            ])
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
                     <label for="ep_place_delivered" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Place</label>
@@ -456,7 +473,8 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                     <label for="ep_delivery_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Delivery date</label>
-                    <input id="ep_delivery_date" type="date" name="delivery_date" value="{{ old('delivery_date', $current->delivery_date->format('Y-m-d')) }}"
+                    <input id="ep_delivery_date" type="date" name="delivery_date" max="{{ now()->toDateString() }}" value="{{ old('delivery_date', $current->delivery_date->format('Y-m-d')) }}"
+                           x-model="deliveryDate" @change="deliveryDate = $event.target.value"
                            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                 </div>
@@ -468,7 +486,7 @@
                 </div>
                 <div>
                     <label for="ep_bf_date" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">Breastfeeding date</label>
-                    <input id="ep_bf_date" type="date" name="breastfeeding_date" value="{{ old('breastfeeding_date', $current->breastfeeding_date->format('Y-m-d')) }}"
+                    <input id="ep_bf_date" type="date" name="breastfeeding_date" max="{{ now()->toDateString() }}" :min="deliveryDate" value="{{ old('breastfeeding_date', $current->breastfeeding_date->format('Y-m-d')) }}"
                            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                            style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                 </div>
@@ -483,7 +501,7 @@
                 @foreach ([['postpartum_24h_date', '24h visit'], ['postpartum_7d_date', '7d visit'], ['postpartum_14d_date', '14d visit'], ['postpartum_28d_date', '28d visit']] as [$field, $label])
                     <div>
                         <label for="ep_{{ $field }}" class="mb-1 block text-xs font-medium" style="color: var(--ink-muted);">{{ $label }}</label>
-                        <input id="ep_{{ $field }}" type="date" name="{{ $field }}" value="{{ old($field, $current->{$field}?->format('Y-m-d')) }}"
+                        <input id="ep_{{ $field }}" type="date" name="{{ $field }}" :min="deliveryDate" value="{{ old($field, $current->{$field}?->format('Y-m-d')) }}"
                                class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                style="border-color: var(--border); color: var(--ink); --tw-ring-color: var(--accent-blue);">
                     </div>

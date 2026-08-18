@@ -50,10 +50,6 @@ class PostnatalController extends Controller
                 ->where('status', Pregnancy::STATUS_ACTIVE)
                 ->orderByDesc('lmp')
                 ->get(),
-            'consultations' => $patient->consultations()
-                ->orderByDesc('created_at')
-                ->limit(30)
-                ->get(),
         ]);
     }
 
@@ -88,7 +84,6 @@ class PostnatalController extends Controller
             $request->validated(),
             $worker,
             $pregnancy,
-            $request->integer('consultation_id') ?: null,
         );
 
         $record->update([

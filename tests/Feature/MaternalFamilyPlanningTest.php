@@ -206,4 +206,92 @@ class MaternalFamilyPlanningTest extends TestCase
             ->assertOk()
             ->assertViewHas('clients');
     }
+
+    public function test_schedule_next_visit_cannot_be_before_visit_date(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $patient = $this->patient();
+
+        $client = FamilyPlanningClient::create([
+            'patient_id' => $patient->id,
+            'type_of_client' => FamilyPlanningClient::TYPE_NEW_ACCEPTOR,
+            'method' => 'Pills',
+            'is_active' => true,
+        ]);
+
+        $this->post(route('maternal.family-planning.visits.store', $client->id), [
+            'visit_date' => now()->toDateString(),
+            'method' => 'Pills',
+            'mode_of_transaction' => 'Walk-in',
+            'nature_of_visit' => 'New Consultation/Case',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+            'schedule_next_visit' => now()->subWeek()->toDateString(),
+        ])->assertSessionHasErrors('schedule_next_visit');
+
+        $this->assertDatabaseCount('family_planning_visits', 0);
+    }
+
+    public function test_follow_up_visit_rejects_garbage_mode_and_nature(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $patient = $this->patient();
+
+        $client = FamilyPlanningClient::create([
+            'patient_id' => $patient->id,
+            'type_of_client' => FamilyPlanningClient::TYPE_NEW_ACCEPTOR,
+            'method' => 'Pills',
+            'is_active' => true,
+        ]);
+
+        $this->post(route('maternal.family-planning.visits.store', $client->id), [
+            'visit_date' => now()->toDateString(),
+            'method' => 'Pills',
+            'mode_of_transaction' => 'Carriage return',
+            'nature_of_visit' => 'garbage',
+            'bp_systolic' => 120,
+            'bp_diastolic' => 80,
+            'temperature' => 36.5,
+            'weight' => 60,
+            'height' => 160,
+        ])->assertSessionHasErrors(['mode_of_transaction', 'nature_of_visit']);
+
+        $this->assertDatabaseCount('family_planning_visits', 0);
+    }
+
+    public function test_register_rejects_past_schedule_next_visit(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $patient = $this->patient();
+
+        $this->post(route('maternal.family-planning.store', $patient->id), [
+            'type_of_client' => FamilyPlanningClient::TYPE_NEW_ACCEPTOR,
+            'method' => 'Injectable',
+            'schedule_next_visit' => now()->subDay()->toDateString(),
+        ])->assertSessionHasErrors('schedule_next_visit');
+
+        $this->assertDatabaseCount('family_planning_clients', 0);
+    }
+
+    public function test_update_rejects_past_schedule_next_visit(): void
+    {
+        $this->actingAs($this->authorizedUser());
+        $patient = $this->patient();
+
+        $client = FamilyPlanningClient::create([
+            'patient_id' => $patient->id,
+            'type_of_client' => FamilyPlanningClient::TYPE_NEW_ACCEPTOR,
+            'method' => 'Pills',
+            'is_active' => true,
+        ]);
+
+        $this->put(route('maternal.family-planning.update', $client->id), [
+            'type_of_client' => FamilyPlanningClient::TYPE_NEW_ACCEPTOR,
+            'method' => 'Pills',
+            'schedule_next_visit' => now()->subDay()->toDateString(),
+        ])->assertSessionHasErrors('schedule_next_visit');
+    }
 }
