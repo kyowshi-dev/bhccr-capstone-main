@@ -444,7 +444,6 @@
                 this.clearCheckinHost(container);
                 try {
                     const response = await safeFetch(this.checkinUrl(patientId));
-                    const data = response.ok ? await response.json() : {};
                     if (! response.ok) throw new Error(`HTTP ${response.status}`);
                     const html = await response.text();
                     if (this.expandedPatientId !== patientId || seq !== this.checkinSeq) return;

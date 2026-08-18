@@ -14,7 +14,7 @@
 
         <a href="{{ route('users.index') }}"
            class="inline-flex items-center px-3 lg:px-4 py-2 rounded-xl border border-border bg-surface text-xs lg:text-sm font-medium text-ink hover:bg-teal-soft transition">
-            ← Back
+            Back
         </a>
     </div>
 

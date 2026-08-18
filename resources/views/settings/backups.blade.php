@@ -9,7 +9,7 @@
             <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">Backups</h1>
             <p class="text-sm mt-1" style="color: var(--ink-muted);">Export the database for backup or transfer to another server.</p>
         </div>
-        <a href="{{ route('settings.index') }}" class="text-sm font-medium transition hover:underline" style="color: var(--primary);">← Back to Settings</a>
+        <a href="{{ route('settings.index') }}" class="text-sm font-medium transition hover:underline" style="color: var(--primary);">Back to Settings</a>
     </div>
 
     @if (session('success'))

@@ -14,7 +14,7 @@
 
 <div class="space-y-5 lg:space-y-6" x-data='infantEnroll()'>
     <div>
-        <a href="{{ route('immunizations.index', ['mode' => 'child']) }}" class="text-sm font-medium hover:underline mb-1 inline-block" style="color: var(--primary);">← Back to immunization queue</a>
+        <a href="{{ route('immunizations.index', ['mode' => 'child']) }}" class="text-sm font-medium hover:underline mb-1 inline-block" style="color: var(--primary);">Back to immunization queue</a>
         <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">Enroll infant</h1>
         <p class="text-sm mt-1" style="color: var(--ink-muted);">Quick-add an infant and attach them to a household.</p>
     </div>

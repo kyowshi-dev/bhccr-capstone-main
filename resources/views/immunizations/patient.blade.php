@@ -14,7 +14,7 @@
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
             @if (! $isBare)
-                <a href="{{ route('patients.show', $patient->id) }}" class="text-sm font-medium hover:underline mb-1 inline-block" style="color: var(--primary);">← Back to patient</a>
+                <a href="{{ route('patients.show', $patient->id) }}" class="text-sm font-medium hover:underline mb-1 inline-block" style="color: var(--primary);">Back to patient</a>
             @else
                 <p class="text-xs font-medium mb-1" style="color: var(--ink-muted);">Patient immunization record</p>
             @endif

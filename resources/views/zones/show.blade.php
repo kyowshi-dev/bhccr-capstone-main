@@ -6,7 +6,7 @@
 <div class="space-y-5 lg:space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-            <a href="{{ route('zones.index') }}" class="text-sm font-medium hover:underline mb-1 inline-block" style="color: var(--primary);">← Back to zones</a>
+            <a href="{{ route('zones.index') }}" class="text-sm font-medium hover:underline mb-1 inline-block" style="color: var(--primary);">Back to zones</a>
             <h1 class="font-display font-semibold text-2xl lg:text-3xl" style="color: var(--ink);">Zone {{ $zone->zone_number }}</h1>
             <p class="text-sm mt-1" style="color: var(--ink-muted);">Zone details and management</p>
         </div>

@@ -93,7 +93,7 @@
     </form>
 
     <p class="text-center text-xs mt-5" style="color: var(--ink-muted);">
-        <a href="{{ route('login') }}" class="font-medium" style="color: var(--primary); text-decoration: underline;">← Back to sign in</a>
+        <a href="{{ route('login') }}" class="font-medium" style="color: var(--primary); text-decoration: underline;">Back to sign in</a>
     </p>
 
     <p class="text-center text-xs mt-6" style="color: var(--ink-muted);">
