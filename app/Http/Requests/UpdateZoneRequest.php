@@ -17,7 +17,7 @@ class UpdateZoneRequest extends FormRequest
         $id = $this->route('id');
 
         return [
-            'zone_number' => ['required', 'string', 'max:255', Rule::unique('zones', 'zone_number')->ignore($id)],
+            'zone_number' => ['required', 'string', 'max:255', 'regex:/^[\p{L}\p{M}\d\s\-\.#]+$/u', Rule::unique('zones', 'zone_number')->ignore($id)],
             'assigned_worker_id' => ['nullable', 'exists:health_workers,id'],
         ];
     }

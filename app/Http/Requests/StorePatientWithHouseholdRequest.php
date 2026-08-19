@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Patient;
+use App\Rules\NameCharacters;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -37,25 +38,25 @@ class StorePatientWithHouseholdRequest extends FormRequest
 
             // New household fields (only if creating)
             'new_household_zone_id' => ['nullable', 'required_if:create_new_household,1', 'integer', 'exists:zones,id'],
-            'new_household_family_name_head' => ['nullable', 'required_if:create_new_household,1', 'string', 'max:255'],
+            'new_household_family_name_head' => ['nullable', 'required_if:create_new_household,1', 'string', 'max:255', new NameCharacters],
             'new_household_contact_number' => ['nullable', 'string', 'max:32', 'regex:/^[0-9+\-\s()]*$/'],
 
             // Patient data
-            'first_name' => ['required', 'string', 'min:2', 'max:50', 'regex:/^[a-zA-Z\s\-\.]+$/'],
-            'last_name' => ['required', 'string', 'min:2', 'max:50', 'regex:/^[a-zA-Z\s\-\.]+$/'],
-            'middle_name' => ['nullable', 'string', 'max:50', 'regex:/^[a-zA-Z\s\-\.]+$/'],
+            'first_name' => ['required', 'string', 'min:2', 'max:50', new NameCharacters],
+            'last_name' => ['required', 'string', 'min:2', 'max:50', new NameCharacters],
+            'middle_name' => ['nullable', 'string', 'max:50', new NameCharacters],
 
             'sex' => 'required|in:Male,Female',
             'date_of_birth' => 'required|date|before:today',
-            'birth_place' => 'nullable|string|max:255',
+            'birth_place' => ['nullable', 'string', 'max:255', 'regex:/^[\p{L}\p{M}\d\s\-\.\',]+$/u'],
 
             'civil_status' => 'nullable|in:Single (Walang Asawa),Married (May Asawa),Annulled (Hiwalay),Widow/er (Balo),Separated (Hiwalay),Co-Habitation (Paninirahang magkasama)',
             'blood_type' => 'nullable|in:A+,A-,B+,B-,O+,O-,AB+,AB-',
             'educational_attainment' => 'nullable|string',
             'employment_status' => 'nullable|string|max:100',
 
-            'mother_name' => ['required', 'string', 'max:255'],
-            'spouse_name' => ['required', 'string', 'max:255'],
+            'mother_name' => ['required', 'string', 'max:255', new NameCharacters],
+            'spouse_name' => ['required', 'string', 'max:255', new NameCharacters],
             'family_relationship' => ['required', 'in:'.implode(',', Patient::FAMILY_RELATIONSHIP_OPTIONS)],
             'is_philhealth_member' => ['required', 'in:y,n'],
             'philhealth_no' => ['nullable', 'string', 'max:20'],
@@ -63,7 +64,7 @@ class StorePatientWithHouseholdRequest extends FormRequest
             'status_type' => ['nullable', 'in:'.implode(',', Patient::PHILHEALTH_STATUS_TYPES)],
             'is_pcb_member' => ['required', 'in:y,n'],
 
-            'suffix' => 'nullable|string|max:50',
+            'suffix' => ['nullable', 'string', 'max:50', new NameCharacters],
             'has_4ps' => 'nullable|boolean',
             'has_nhts' => 'nullable|boolean',
         ];
@@ -75,9 +76,9 @@ class StorePatientWithHouseholdRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'first_name.regex' => 'First name cannot contain numbers or special symbols.',
-            'last_name.regex' => 'Last name cannot contain numbers or special symbols.',
-            'middle_name.regex' => 'Middle name cannot contain numbers or special symbols.',
+            'first_name.name_characters' => 'First name cannot contain numbers or special symbols.',
+            'last_name.name_characters' => 'Last name cannot contain numbers or special symbols.',
+            'middle_name.name_characters' => 'Middle name cannot contain numbers or special symbols.',
             'date_of_birth.before' => 'Birth date cannot be in the future.',
             'household_id.required' => 'You must select an existing household or create a new one.',
             'new_household_zone_id.required_if' => 'Zone is required when creating a new household.',

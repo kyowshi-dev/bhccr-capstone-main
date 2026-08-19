@@ -47,14 +47,14 @@ final class PatientService
         }
 
         // --- 1. HANDLE HOUSEHOLD CREATION OR SELECTION ---
-        $householdId = $validated['household_id'];
+        $householdId = $validated['household_id'] ?? null;
         $createdHousehold = null;
 
         if ((int) $validated['create_new_household'] === 1) {
             $createdHousehold = Household::create([
                 'zone_id' => $validated['new_household_zone_id'],
                 'family_name_head' => trim($validated['new_household_family_name_head']),
-                'contact_number' => $validated['new_household_contact_number'] !== null ? trim($validated['new_household_contact_number']) : null,
+                'contact_number' => ($validated['new_household_contact_number'] ?? null) !== null ? trim($validated['new_household_contact_number']) : null,
             ]);
             $householdId = $createdHousehold->id;
         }
@@ -89,14 +89,14 @@ final class PatientService
             'last_name' => ucwords(strtolower($validated['last_name'])),
             'middle_name' => $validated['middle_name'] ? ucfirst(strtolower($validated['middle_name'])) : null,
 
-            'suffix' => $validated['suffix'],
+            'suffix' => $validated['suffix'] ?? null,
             'sex' => $validated['sex'],
             'date_of_birth' => $validated['date_of_birth'],
-            'birth_place' => $validated['birth_place'],
-            'blood_type' => $validated['blood_type'],
-            'civil_status' => $validated['civil_status'],
-            'educational_attainment' => $validated['educational_attainment'],
-            'employment_status' => $validated['employment_status'],
+            'birth_place' => $validated['birth_place'] ?? null,
+            'blood_type' => $validated['blood_type'] ?? null,
+            'civil_status' => $validated['civil_status'] ?? null,
+            'educational_attainment' => $validated['educational_attainment'] ?? null,
+            'employment_status' => $validated['employment_status'] ?? null,
 
             'mother_name' => $validated['mother_name'],
             'spouse_name' => $validated['spouse_name'],
