@@ -14,11 +14,11 @@
             <a href="{{ route('medicines.edit', $medicine->id) }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md" style="background: var(--primary);">
                 Edit
             </a>
-            <form action="{{ route('medicines.destroy', $medicine->id) }}" method="POST" class="inline confirm-delete-form" data-message="Are you sure you want to delete this medicine?">
+            <form action="{{ route('medicines.destroy', $medicine->id) }}" method="POST" class="inline confirm-delete-form" data-message="Archive this medicine? It will be hidden from the active list and can be restored anytime.">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition duration-200 hover:shadow-md" style="background: var(--danger);">
-                    Delete
+                    Archive
                 </button>
             </form>
         </div>

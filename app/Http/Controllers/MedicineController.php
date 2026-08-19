@@ -6,27 +6,46 @@ use App\Http\Requests\ImportMedicineRequest;
 use App\Http\Requests\StoreMedicineRequest;
 use App\Http\Requests\UpdateMedicineRequest;
 use App\Models\AuditLog;
+use App\Models\Medicine;
 use App\Services\MedicineImportService;
 use App\Services\MedicineService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class MedicineController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorizePermission('medicines');
 
-        $medicines = DB::table('medicines_lookup')
+        $status = $request->input('status', 'active');
+
+        if (! in_array($status, ['active', 'all', 'archived'], true)) {
+            $status = 'active';
+        }
+
+        $query = match ($status) {
+            'all' => Medicine::withTrashed(),
+            'archived' => Medicine::onlyTrashed(),
+            default => Medicine::query(),
+        };
+
+        $medicines = $query
             ->orderBy('name')
-            ->paginate(25)
+            ->paginate(pageSize(25))
             ->withQueryString();
+
+        $activeCount = Medicine::query()->count();
+        $archivedCount = Medicine::onlyTrashed()->count();
 
         return view('medicines.index', [
             'medicines' => $medicines,
+            'status' => $status,
+            'activeCount' => $activeCount,
+            'archivedCount' => $archivedCount,
+            'totalCount' => $activeCount + $archivedCount,
         ]);
     }
 
@@ -143,19 +162,22 @@ class MedicineController extends Controller
     {
         $this->authorizePermission('medicines');
 
-        MedicineService::findOrFail($id);
-
-        if (MedicineService::isUsedInPrescriptions($id)) {
-            return redirect()
-                ->route('medicines.index')
-                ->with('error', 'Cannot delete medicine that is used in prescriptions.');
-        }
-
         MedicineService::destroy($id);
 
         return redirect()
             ->route('medicines.index')
-            ->with('success', 'Medicine deleted successfully.');
+            ->with('success', 'Medicine archived.');
+    }
+
+    public function restore($id): RedirectResponse
+    {
+        $this->authorizePermission('medicines');
+
+        MedicineService::restore($id);
+
+        return redirect()
+            ->route('medicines.index')
+            ->with('success', 'Medicine restored successfully.');
     }
 
     public function bulkDestroy(Request $request): RedirectResponse
@@ -171,42 +193,54 @@ class MedicineController extends Controller
         }
 
         $deleted = 0;
-        $failed = [];
 
         foreach ($ids as $id) {
-            $medicine = DB::table('medicines_lookup')->where('id', $id)->first();
+            $medicine = Medicine::query()->find($id);
 
             if (! $medicine) {
-                $failed[] = "Medicine ID {$id} not found.";
-
                 continue;
             }
 
-            if (MedicineService::isUsedInPrescriptions($id)) {
-                $failed[] = "{$medicine->name} is used in prescriptions.";
-
-                continue;
-            }
-
-            try {
-                MedicineService::destroy($id);
-                $deleted++;
-            } catch (\Exception $e) {
-                $failed[] = "{$medicine->name}: DB error.";
-            }
+            $medicine->delete();
+            $deleted++;
         }
 
-        $message = '';
-        if ($deleted > 0) {
-            $message .= "{$deleted} medicine".($deleted > 1 ? 's' : '').' deleted successfully.';
-        }
-        if (! empty($failed)) {
-            $message .= ' '.count($failed).' could not be deleted.';
-        }
+        $message = "{$deleted} medicine".($deleted > 1 ? 's' : '').' archived.';
 
         return redirect()
             ->route('medicines.index')
-            ->with($deleted > 0 ? 'success' : 'error', $message)
-            ->with('delete_errors', $failed);
+            ->with('success', $message);
+    }
+
+    public function bulkRestore(Request $request): RedirectResponse
+    {
+        $this->authorizePermission('medicines');
+
+        $ids = $request->input('ids', []);
+
+        if (! is_array($ids) || empty($ids)) {
+            return redirect()
+                ->route('medicines.index')
+                ->with('error', 'No medicines selected.');
+        }
+
+        $restored = 0;
+
+        foreach ($ids as $id) {
+            $medicine = Medicine::onlyTrashed()->find($id);
+
+            if (! $medicine) {
+                continue;
+            }
+
+            $medicine->restore();
+            $restored++;
+        }
+
+        $message = "{$restored} medicine".($restored > 1 ? 's' : '').' restored.';
+
+        return redirect()
+            ->route('medicines.index')
+            ->with('success', $message);
     }
 }

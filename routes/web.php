@@ -416,6 +416,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/medicines/bulk-delete', [MedicineController::class, 'bulkDestroy'])
         ->middleware('permission:medicines')
         ->name('medicines.bulk-delete');
+    Route::post('/medicines/bulk-restore', [MedicineController::class, 'bulkRestore'])
+        ->middleware('permission:medicines')
+        ->name('medicines.bulk-restore');
     Route::get('/medicines/{id}', [MedicineController::class, 'show'])
         ->middleware('permission:medicines')
         ->name('medicines.show');
@@ -428,6 +431,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/medicines/{id}', [MedicineController::class, 'destroy'])
         ->middleware('permission:medicines')
         ->name('medicines.destroy');
+    Route::post('/medicines/{id}/restore', [MedicineController::class, 'restore'])
+        ->middleware('permission:medicines')
+        ->name('medicines.restore');
 
     // 12. SETTINGS
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
