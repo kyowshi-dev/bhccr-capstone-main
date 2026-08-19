@@ -64,7 +64,7 @@ class UserManagementTest extends TestCase
             ->assertSee('confirmDisableUser('.$bhw->id.')')
             ->assertDontSee('confirmDisableUser('.$admin->id.')');
 
-        $this->post(route('users.disable', $bhw), ['password' => 'password'])
+        $this->post(route('users.disable', $bhw), ['current_password' => 'password'])
             ->assertRedirect(route('users.index'));
 
         $this->assertFalse($bhw->fresh()->is_active);
@@ -79,12 +79,12 @@ class UserManagementTest extends TestCase
         $this->actingAs($admin);
 
         $this->post(route('users.disable', $bhw))
-            ->assertSessionHasErrors('password');
+            ->assertSessionHasErrors('current_password');
 
         $this->assertTrue($bhw->fresh()->is_active);
 
-        $this->post(route('users.disable', $bhw), ['password' => 'wrong-password'])
-            ->assertSessionHasErrors('password');
+        $this->post(route('users.disable', $bhw), ['current_password' => 'wrong-password'])
+            ->assertSessionHasErrors('current_password');
 
         $this->assertTrue($bhw->fresh()->is_active);
     }
@@ -96,7 +96,7 @@ class UserManagementTest extends TestCase
 
         $this->actingAs($admin);
 
-        $this->post(route('users.disable', $otherAdmin), ['password' => 'password'])
+        $this->post(route('users.disable', $otherAdmin), ['current_password' => 'password'])
             ->assertRedirect(route('users.index'));
 
         $this->assertTrue($otherAdmin->fresh()->is_active);

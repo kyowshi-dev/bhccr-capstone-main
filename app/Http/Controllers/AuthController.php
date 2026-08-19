@@ -50,6 +50,16 @@ class AuthController extends Controller
                 ->onlyInput('username');
         }
 
+        if ($user && ! $user->is_active) {
+            $this->audit->log('login_blocked_deactivated', 'auth', $request, $user->id);
+
+            return back()
+                ->withErrors([
+                    'username' => 'This account has been deactivated. Please contact your administrator.',
+                ])
+                ->onlyInput('username');
+        }
+
         $remember = $request->boolean('remember');
 
         if ($user && Auth::attempt([

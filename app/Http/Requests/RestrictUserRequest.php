@@ -14,7 +14,7 @@ class RestrictUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => ['required', 'current_password'],
+            'current_password' => ['required', 'current_password'],
         ];
     }
 }

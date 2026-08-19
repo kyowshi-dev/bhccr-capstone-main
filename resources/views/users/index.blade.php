@@ -121,7 +121,7 @@
     </div>
 
     <div class="mt-4">
-        {{ $users->links() }}
+        <x-pagination :paginator="$users" />
     </div>
 </div>
 
@@ -164,10 +164,10 @@
 
                 const passwordInput = document.createElement('input');
                 passwordInput.type = 'hidden';
-                passwordInput.name = 'password';
+                passwordInput.name = 'current_password';
                 passwordInput.value = result.value;
 
-                const existingPassword = form.querySelector('input[name="password"]');
+                const existingPassword = form.querySelector('input[name="current_password"]');
                 if (existingPassword) {
                     existingPassword.remove();
                 }
@@ -208,11 +208,11 @@
                 // Add password field to the form
                 const passwordInput = document.createElement('input');
                 passwordInput.type = 'hidden';
-                passwordInput.name = 'password';
+                passwordInput.name = 'current_password';
                 passwordInput.value = result.value;
                 
                 // Clear any existing password inputs
-                const existingPassword = form.querySelector('input[name="password"]');
+                const existingPassword = form.querySelector('input[name="current_password"]');
                 if (existingPassword) {
                     existingPassword.remove();
                 }

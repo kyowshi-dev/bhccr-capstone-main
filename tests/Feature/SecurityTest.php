@@ -341,7 +341,7 @@ class SecurityTest extends TestCase
         $this->actingAs($admin);
 
         $response = $this->delete("/users/{$admin->id}", [
-            'password' => 'password',
+            'current_password' => 'password',
         ]);
 
         $response->assertStatus(302);
@@ -374,7 +374,7 @@ class SecurityTest extends TestCase
         $this->actingAs($admin);
         $response = $this->delete("/medicines/{$medicineId}");
         $response->assertStatus(302);
-        $this->assertDatabaseMissing('medicines_lookup', ['id' => $medicineId]);
+        $this->assertSoftDeleted('medicines_lookup', ['id' => $medicineId]);
     }
 
     public function test_bhw_cannot_access_user_management(): void
@@ -505,6 +505,8 @@ class SecurityTest extends TestCase
         ]);
 
         $response->assertStatus(302);
+        $response->assertSessionHasErrors('username');
+        $response->assertSessionHasErrors('username', 'This account has been deactivated. Please contact your administrator.');
         $this->assertGuest();
     }
 

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Tests\Concerns\AssignsRolesAndPermissions;
 use Tests\TestCase;
@@ -15,6 +16,11 @@ class SettingsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The export/import routes share one throttle counter per user
+        // (throttle:3,60), and the array cache persists across tests in the
+        // same process. Reset it so the backup tests are not throttled.
+        Cache::flush();
     }
 
     public function test_guest_cannot_access_settings(): void
@@ -112,5 +118,46 @@ class SettingsTest extends TestCase
         $response->assertSessionHasErrors('current_password');
         $user->refresh();
         $this->assertTrue(Hash::check('oldpass', $user->password));
+    }
+
+    public function test_export_backup_requires_current_password(): void
+    {
+        $user = $this->createUserWithPermissions(['users']);
+
+        $this->actingAs($user)
+            ->post(route('settings.backups.export'))
+            ->assertSessionHasErrors('current_password');
+    }
+
+    public function test_export_backup_rejects_wrong_password(): void
+    {
+        $user = $this->createUserWithPermissions(['users']);
+
+        $this->actingAs($user)
+            ->post(route('settings.backups.export'), ['current_password' => 'wrong-password'])
+            ->assertSessionHasErrors('current_password');
+    }
+
+    public function test_export_backup_with_correct_password_reaches_service(): void
+    {
+        $user = $this->createUserWithPermissions(['users']);
+
+        // The test database is in-memory sqlite (":memory:"), so the service
+        // runs and reports that there is no database file. The key assertion is
+        // that validation passes (no current_password error) and the controller
+        // handles the service result instead of silently failing.
+        $this->actingAs($user)
+            ->post(route('settings.backups.export'), ['current_password' => 'password'])
+            ->assertSessionDoesntHaveErrors()
+            ->assertSessionHas('error');
+    }
+
+    public function test_import_backup_requires_current_password(): void
+    {
+        $user = $this->createUserWithPermissions(['users']);
+
+        $this->actingAs($user)
+            ->post(route('settings.backups.import'))
+            ->assertSessionHasErrors(['current_password', 'backup_file']);
     }
 }

@@ -239,6 +239,7 @@ final class BackupService
     {
         $cmd = [
             'mysqldump',
+            '--no-defaults', // MUST be the first option; mysql tools reject it anywhere else
             '-h', $conn['host'],
             '-P', (string) $conn['port'],
             '-u', $conn['username'],
@@ -246,7 +247,6 @@ final class BackupService
             '--quick',
             '--skip-lock-tables',
             '--skip-column-statistics',
-            '--no-defaults',
         ];
 
         // Explicitly pass empty password flag to prevent interactive prompt
@@ -263,11 +263,11 @@ final class BackupService
     {
         $cmd = [
             'mysql',
+            '--no-defaults', // MUST be the first option; mysql tools reject it anywhere else
             '-h', $conn['host'],
             '-P', (string) $conn['port'],
             '-u', $conn['username'],
             '--batch',       // Non-interactive, tab-separated output
-            '--no-defaults', // Don't read my.cnf files that may have conflicting settings
         ];
 
         // Explicitly pass empty password flag to prevent interactive prompt
