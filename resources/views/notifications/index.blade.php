@@ -35,7 +35,13 @@
                     <div class="p-4 rounded-lg border border-border hover:shadow-md transition-all duration-200 {{ is_null($notification->read_at) ? 'bg-teal-soft' : 'bg-surface' }}">
                         <div class="flex gap-4">
                             <div class="flex-1">
-                                <h3 class="font-semibold text-ink">{{ $notification->data['title'] ?? 'Notification' }}</h3>
+                                <h3 class="font-semibold text-ink">
+                                    @if (! empty($notification->data['url']))
+                                        <a href="{{ $notification->data['url'] }}" class="hover:text-primary transition-colors">{{ $notification->data['title'] ?? 'Notification' }}</a>
+                                    @else
+                                        {{ $notification->data['title'] ?? 'Notification' }}
+                                    @endif
+                                </h3>
                                 <p class="text-sm text-ink-muted mt-1">{{ $notification->data['message'] ?? '' }}</p>
                                 <p class="text-xs text-ink-subtle mt-3">
                                     <i class="fa-solid fa-clock mr-1" aria-hidden="true"></i>
@@ -66,7 +72,7 @@
 
             <!-- Pagination -->
             <div class="mt-6">
-                {{ $notifications->links() }}
+                <x-pagination :paginator="$notifications" />
             </div>
         @else
             <div class="rounded-lg border border-border p-12 text-center">

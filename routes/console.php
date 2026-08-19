@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Prune audit logs past their retention window (config: bhcis.audit_retention_days).
 Schedule::command('model:prune')->daily();
+
+// Daily immunization due/overdue digest for staff with the immunizations permission.
+Schedule::command('notifications:immunization-due')->dailyAt('08:00');

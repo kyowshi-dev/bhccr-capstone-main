@@ -49,7 +49,7 @@ final class ReferralService
      *
      * @param  array<string, mixed>  $validated
      */
-    public static function upsert(Consultation $consultation, array $validated, bool $keepExisting = false): void
+    public static function upsert(Consultation $consultation, array $validated, bool $keepExisting = false): OutwardReferral
     {
         $existing = $consultation->outwardReferral;
 
@@ -68,16 +68,16 @@ final class ReferralService
 
             $existing->update($payload + ['updated_at' => now()]);
 
-            return;
+            return $existing;
         }
 
         if ($existing) {
             $existing->update($payload + ['status' => OutwardReferral::STATUS_PENDING, 'updated_at' => now()]);
 
-            return;
+            return $existing;
         }
 
-        OutwardReferral::create([
+        $referral = OutwardReferral::create([
             'consultation_id' => $consultation->id,
             'destination_facility' => $payload['destination_facility'],
             'pertinent_history' => $payload['pertinent_history'],
@@ -85,6 +85,10 @@ final class ReferralService
             'specific_details' => $payload['specific_details'],
             'status' => OutwardReferral::STATUS_PENDING,
         ]);
+
+        self::notifyReferralCreated($consultation, $referral);
+
+        return $referral;
     }
 
     /**
@@ -153,5 +157,25 @@ final class ReferralService
                 'status' => $status,
                 'updated_at' => now(),
             ]);
+    }
+
+    /**
+     * Alert consultation staff when a pending referral row is created.
+     */
+    private static function notifyReferralCreated(Consultation $consultation, OutwardReferral $referral): void
+    {
+        $patient = $consultation->patient;
+        $name = trim(fullName($patient->last_name ?? null, $patient->first_name ?? null, $patient->middle_name ?? null, $patient->suffix ?? null));
+        $patientLabel = $name !== '' ? $name : 'Patient #'.$patient->id;
+
+        NotificationService::sendToPermissionHolders(
+            'consultations',
+            'referral_created',
+            'Referral created - '.$patientLabel.' → '.$referral->destination_facility,
+            'A new pending referral to '.$referral->destination_facility.' was created.',
+            route('consultations.show', $consultation->id),
+            patientIds: [$consultation->patient_id],
+            excludeUserId: auth()->id(),
+        );
     }
 }

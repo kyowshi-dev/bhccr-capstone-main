@@ -211,7 +211,13 @@
                                         <div class="px-4 py-3 border-b border-border hover:bg-black/3 transition-colors {{ is_null($notification->read_at) ? 'bg-teal-soft' : '' }}">
                                             <div class="flex gap-3">
                                                 <div class="flex-1">
-                                                    <p class="text-sm font-medium text-ink">{{ $notification->data['title'] ?? 'Notification' }}</p>
+                                                    <p class="text-sm font-medium text-ink">
+                                                        @if (! empty($notification->data['url']))
+                                                            <a href="{{ $notification->data['url'] }}" @click="notificationsOpen = false" class="hover:text-primary transition-colors">{{ $notification->data['title'] ?? 'Notification' }}</a>
+                                                        @else
+                                                            {{ $notification->data['title'] ?? 'Notification' }}
+                                                        @endif
+                                                    </p>
                                                     <p class="text-xs text-ink-muted mt-1">{{ $notification->data['message'] ?? '' }}</p>
                                                     <p class="text-xs text-ink-subtle mt-2">{{ $notification->created_at->diffForHumans() }}</p>
                                                 </div>
@@ -246,9 +252,13 @@
                                     @click="profileOpen = !profileOpen"
                                     @click.away="profileOpen = false"
                                     class="flex items-center gap-3 rounded-xl px-3 py-2 hover:shadow-sm transition-all duration-200  border border-white/20 hover:bg-white/15 text-white">
-                                <span class="h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold bg-white/20 text-white">
-                                    {{ $initials }}
-                                </span>
+                                @if ($authUser->profile_photo_path)
+                                    <img src="/storage/{{ $authUser->profile_photo_path }}" alt="{{ $username }}" class="h-8 w-8 rounded-full object-cover">
+                                @else
+                                    <span class="h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold bg-white/20 text-white">
+                                        {{ $initials }}
+                                    </span>
+                                @endif
                                 <span class="hidden sm:block text-left leading-tight">
                                     <span class="block text-sm font-semibold text-white">
                                     {{ ucwords($username) }}

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\OutwardReferral;
+use App\Services\NotificationService;
 use App\Services\ReferralQueryService;
 use App\Services\ReferralService;
 use Illuminate\Contracts\View\View;
@@ -20,7 +21,7 @@ class ReferralController extends Controller
             ? $request->input('status')
             : null;
 
-        $referrals = ReferralQueryService::paginateIndex($request->input('query', ''), $status, auth()->user());
+        $referrals = ReferralQueryService::paginateIndex($request->input('query', ''), $status, auth()->user(), pageSize(15));
         $totals = ReferralQueryService::totals(auth()->user());
 
         return view('referrals.index', [
@@ -58,8 +59,32 @@ class ReferralController extends Controller
             abort(404, 'Referral not found');
         }
 
+        $this->notifyStatusChange($referral, $validated['status']);
+
         return redirect()
             ->back()
             ->with('success', 'Referral status updated.');
+    }
+
+    /**
+     * Alert consultation staff when a referral's status changes.
+     */
+    private function notifyStatusChange(OutwardReferral $referral, string $status): void
+    {
+        $consultation = $referral->consultation;
+        $patient = $consultation->patient;
+        $name = trim(fullName($patient->last_name ?? null, $patient->first_name ?? null, $patient->middle_name ?? null, $patient->suffix ?? null));
+        $patientLabel = $name !== '' ? $name : 'Patient #'.$patient->id;
+        $label = OutwardReferral::STATUS_LABELS[$status] ?? ucfirst(str_replace('_', ' ', $status));
+
+        NotificationService::sendToPermissionHolders(
+            'consultations',
+            'referral_status_changed',
+            'Referral #'.$referral->id.' '.$label.' - '.$patientLabel,
+            'The referral to '.$referral->destination_facility.' was marked '.strtolower($label).'.',
+            route('consultations.show', $consultation->id),
+            patientIds: [$patient->id],
+            excludeUserId: auth()->id(),
+        );
     }
 }

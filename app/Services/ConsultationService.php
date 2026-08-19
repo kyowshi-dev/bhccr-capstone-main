@@ -39,16 +39,9 @@ final class ConsultationService
 
             $referralId = null;
             if (! empty($validated['refer_to_higher_facility'])) {
-                $referralId = DB::table('outward_referrals')->insertGetId([
-                    'consultation_id' => $consultationId,
-                    'destination_facility' => $validated['referred_to'],
-                    'pertinent_history' => $validated['pertinent_history'],
-                    'actions_taken' => $validated['actions_taken'] ?? null,
-                    'specific_details' => ReferralService::specificDetails($validated['referral_reasons'] ?? [], $validated['referral_reason_details'] ?? null),
-                    'status' => 'pending',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                $referral = ReferralService::upsert(Consultation::find($consultationId), $validated);
+
+                $referralId = $referral->id;
             }
 
             $vitalsPayload = VitalsService::fromInput($validated) + [

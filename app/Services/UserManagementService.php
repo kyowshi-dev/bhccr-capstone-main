@@ -14,7 +14,7 @@ final class UserManagementService
     {
         $role = Role::findOrFail($validated['role_id']);
 
-        DB::transaction(function () use ($validated, $role) {
+        $user = DB::transaction(function () use ($validated, $role) {
             $user = User::query()->create([
                 'username' => $validated['username'],
                 'email' => $validated['email'],
@@ -32,7 +32,18 @@ final class UserManagementService
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            return $user;
         });
+
+        NotificationService::sendToPermissionHolders(
+            'users',
+            'user_created',
+            'New user created - '.$user->username.' ('.$role->role_name.')',
+            'A new '.$role->role_name.' account was created.',
+            route('users.edit', $user->id),
+            excludeUserId: $user->id,
+        );
     }
 
     public static function update(User $user, array $validated): void
