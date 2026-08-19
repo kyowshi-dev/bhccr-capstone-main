@@ -24,7 +24,7 @@ class PatientController extends Controller
         $sort = $request->input('sort', 'created');
         $dir = $request->input('dir', $sort === 'name' ? 'asc' : 'desc');
 
-        $patients = PatientQueryService::paginateIndex($sort, $dir, auth()->user());
+        $patients = PatientQueryService::paginateIndex($sort, $dir, auth()->user(), pageSize(20));
 
         return view('patients.index', [
             'patients' => $patients,

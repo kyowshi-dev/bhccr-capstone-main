@@ -280,13 +280,8 @@
     </div>
 
     @if ($consultations->total() > 0)
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 min-h-[3rem]">
-            <p class="text-xs order-2 sm:order-1" style="color: var(--ink-muted);">
-                Showing <span class="font-medium" style="color: var(--ink);">{{ $consultations->firstItem() }}</span>–<span class="font-medium" style="color: var(--ink);">{{ $consultations->lastItem() }}</span> of <span class="font-medium" style="color: var(--ink);">{{ $consultations->total() }}</span> records
-            </p>
-            <div class="order-1 sm:order-2 flex justify-center sm:justify-end w-full sm:w-auto">
-                {{ $consultations->onEachSide(1)->links() }}
-            </div>
+        <div class="pt-2">
+            <x-pagination :paginator="$consultations" />
         </div>
     @endif
 </div>

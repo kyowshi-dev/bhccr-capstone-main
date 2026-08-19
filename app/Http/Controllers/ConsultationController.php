@@ -35,7 +35,7 @@ class ConsultationController extends Controller
     {
         $this->authorizePermission('consultations');
 
-        $consultations = ConsultationQueryService::paginateIndex($request->only(['sort', 'query', 'date_from', 'date_to']), auth()->user());
+        $consultations = ConsultationQueryService::paginateIndex($request->only(['sort', 'query', 'date_from', 'date_to']), auth()->user(), pageSize(15));
 
         $consultationIds = $consultations->pluck('id')->toArray();
         $diagnosisByConsultation = ConsultationQueryService::diagnosesByConsultation($consultationIds);

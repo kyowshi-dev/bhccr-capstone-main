@@ -220,13 +220,8 @@
         @endforeach
 
         @if ($report['totalRows'] > 0)
-            <div class="border-t px-3 lg:px-4 py-2 lg:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" style="border-color: var(--border);">
-                <p class="text-xs order-2 sm:order-1" style="color: var(--ink-muted);">
-                    Showing <span class="font-medium" style="color: var(--ink);">{{ $report['rows']->firstItem() }}</span>–<span class="font-medium" style="color: var(--ink);">{{ $report['rows']->lastItem() }}</span> of <span class="font-medium" style="color: var(--ink);">{{ $report['totalRows'] }}</span> records
-                </p>
-                <div class="order-1 sm:order-2 flex justify-center sm:justify-end min-h-[2.25rem] items-center">
-                    {{ $report['rows']->onEachSide(1)->links() }}
-                </div>
+            <div class="border-t px-3 lg:px-4 py-2 lg:py-3" style="border-color: var(--border);">
+                <x-pagination :paginator="$report['rows']" />
             </div>
         @endif
     </div>

@@ -70,11 +70,9 @@
             </div>
         </div>
 
-        @if ($zones->hasPages())
-            <div class="mt-4">
-                {{ $zones->links() }}
-            </div>
-        @endif
+        <div class="mt-4">
+            <x-pagination :paginator="$zones" />
+        </div>
     </div>
 </div>
 @endsection

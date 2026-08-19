@@ -31,7 +31,7 @@ class HouseholdController extends Controller
             'date_to' => $request->input('date_to', ''),
         ];
 
-        $households = HouseholdQueryService::paginateIndex($filters, $user);
+        $households = HouseholdQueryService::paginateIndex($filters, $user, pageSize(500));
         $allHouseholdsData = HouseholdQueryService::allFiltered($filters, $user);
 
         return view('households.index', [

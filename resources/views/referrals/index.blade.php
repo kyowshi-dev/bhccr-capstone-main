@@ -145,7 +145,7 @@
     </div>
 
     <div class="pt-4">
-        {{ $referrals->links() }}
+        <x-pagination :paginator="$referrals" />
     </div>
 </div>
 @endsection

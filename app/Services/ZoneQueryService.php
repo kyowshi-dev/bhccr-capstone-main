@@ -9,11 +9,11 @@ use Illuminate\Support\Collection;
 
 final class ZoneQueryService
 {
-    public static function paginated(): LengthAwarePaginator
+    public static function paginated(int $perPage = 10): LengthAwarePaginator
     {
         return Zone::with('assignedWorker')
             ->orderBy('zone_number')
-            ->paginate(10)
+            ->paginate($perPage)
             ->withQueryString();
     }
 

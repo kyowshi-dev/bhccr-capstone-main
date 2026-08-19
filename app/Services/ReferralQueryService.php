@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 final class ReferralQueryService
 {
-    public static function paginateIndex(string $query = '', ?string $status = null, ?User $user = null): LengthAwarePaginator
+    public static function paginateIndex(string $query = '', ?string $status = null, ?User $user = null, int $perPage = 15): LengthAwarePaginator
     {
         $builder = DB::table('outward_referrals')
             ->join('consultations', 'outward_referrals.consultation_id', '=', 'consultations.id')
@@ -46,7 +46,7 @@ final class ReferralQueryService
             $builder->where('outward_referrals.status', $status);
         }
 
-        return $builder->orderByDesc('outward_referrals.created_at')->paginate(15)->withQueryString();
+        return $builder->orderByDesc('outward_referrals.created_at')->paginate($perPage)->withQueryString();
     }
 
     public static function statusCounts(?User $user = null): Collection

@@ -256,7 +256,7 @@
         </div>
 
         <div class="px-4 lg:px-5 py-3 border-t" style="border-color: var(--border); background: var(--bg-surface);">
-            {{ $households->links() }}
+            <x-pagination :paginator="$households" />
         </div>
     </div>
 </div>

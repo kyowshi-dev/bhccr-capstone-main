@@ -86,7 +86,7 @@ class ReportController extends Controller
     public function mchEpiFp(Request $request)
     {
         $filters = MchEpiFpReportService::normalizeFilters($request->only([
-            'from', 'to', 'zone', 'program', 'search', 'page',
+            'from', 'to', 'zone', 'program', 'search', 'page', 'per_page',
         ]));
 
         $report = MchEpiFpReportService::query($filters, auth()->user());

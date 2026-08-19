@@ -19,9 +19,9 @@ class UserManagementController extends Controller
     {
         $this->authorizePermission('users');
 
-        $pageSize = auth()->user()->isAdmin() ? 10 : 15;
+        $pageSize = pageSize(auth()->user()->isAdmin() ? 10 : 15);
 
-        $users = User::with('role')->orderBy('username')->paginate($pageSize);
+        $users = User::with('role')->orderBy('username')->paginate($pageSize)->withQueryString();
 
         return view('users.index', [
             'users' => $users,

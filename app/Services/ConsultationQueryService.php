@@ -22,7 +22,7 @@ final class ConsultationQueryService
      *
      * @param  array{sort?: string, query?: string, date_from?: string, date_to?: string}  $filters
      */
-    public static function paginateIndex(array $filters = [], ?User $user = null): LengthAwarePaginator
+    public static function paginateIndex(array $filters = [], ?User $user = null, int $perPage = 15): LengthAwarePaginator
     {
         $query = Consultation::query()
             ->join('patients', 'consultations.patient_id', '=', 'patients.id')
@@ -95,7 +95,7 @@ final class ConsultationQueryService
             }
         }
 
-        return $query->paginate(15)->withQueryString();
+        return $query->paginate($perPage)->withQueryString();
     }
 
     /**

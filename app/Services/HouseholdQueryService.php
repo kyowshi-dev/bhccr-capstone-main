@@ -62,12 +62,12 @@ final class HouseholdQueryService
         return $query;
     }
 
-    public static function paginateIndex(array $filters, ?User $user = null): LengthAwarePaginator
+    public static function paginateIndex(array $filters, ?User $user = null, int $perPage = 500): LengthAwarePaginator
     {
         return self::filteredQuery($filters, $user)
             ->orderBy('zones.zone_number')
             ->orderBy('households.family_name_head')
-            ->paginate(500)
+            ->paginate($perPage)
             ->withQueryString();
     }
 

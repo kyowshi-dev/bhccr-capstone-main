@@ -64,6 +64,8 @@ final class MchEpiFpReportService
             ? (string) $input['program']
             : 'all';
 
+        $perPage = (int) ($input['per_page'] ?? self::DEFAULT_PER_PAGE);
+
         return [
             'from' => $from,
             'to' => $to,
@@ -71,7 +73,7 @@ final class MchEpiFpReportService
             'program' => $program,
             'search' => trim((string) ($input['search'] ?? '')),
             'page' => max(1, (int) ($input['page'] ?? $defaults['page'])),
-            'perPage' => max(1, (int) ($input['perPage'] ?? self::DEFAULT_PER_PAGE)),
+            'perPage' => in_array($perPage, pageSizeOptions(), true) ? $perPage : self::DEFAULT_PER_PAGE,
         ];
     }
 

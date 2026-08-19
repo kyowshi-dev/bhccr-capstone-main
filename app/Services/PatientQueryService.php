@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 final class PatientQueryService
 {
-    public static function paginateIndex(string $sort, string $dir, ?User $user = null): LengthAwarePaginator
+    public static function paginateIndex(string $sort, string $dir, ?User $user = null, int $perPage = 20): LengthAwarePaginator
     {
         $query = Patient::query()
             ->join('households', 'patients.household_id', '=', 'households.id')
@@ -47,6 +47,6 @@ final class PatientQueryService
             default => $query->orderBy('patients.created_at', $dir),
         };
 
-        return $query->paginate(20)->withQueryString();
+        return $query->paginate($perPage)->withQueryString();
     }
 }

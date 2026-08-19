@@ -16,7 +16,7 @@ class ZoneController extends Controller
         $this->authorizePermission('zones');
 
         return view('zones.index', [
-            'zones' => ZoneQueryService::paginated(),
+            'zones' => ZoneQueryService::paginated(pageSize(10)),
         ]);
     }
 
