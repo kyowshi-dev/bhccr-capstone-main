@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreMedicineRequest extends FormRequest
 {
@@ -14,7 +15,7 @@ class StoreMedicineRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'unique:medicines_lookup,name'],
+            'name' => ['required', 'string', 'max:255', Rule::unique('medicines_lookup', 'name')->whereNull('deleted_at')],
             'form' => ['nullable', 'string', 'max:255'],
         ];
     }

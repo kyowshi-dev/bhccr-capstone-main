@@ -17,7 +17,7 @@ class UpdateMedicineRequest extends FormRequest
         $id = $this->route('id');
 
         return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('medicines_lookup', 'name')->ignore($id)],
+            'name' => ['required', 'string', 'max:255', Rule::unique('medicines_lookup', 'name')->ignore($id)->whereNull('deleted_at')],
             'form' => ['nullable', 'string', 'max:255'],
         ];
     }

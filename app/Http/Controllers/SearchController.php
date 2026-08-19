@@ -294,6 +294,7 @@ class SearchController extends Controller
         }
 
         $medicines = DB::table('medicines_lookup')
+            ->whereNull('deleted_at')
             ->where('name', 'LIKE', "%{$query}%")
             ->select('id', 'name')
             ->limit(15)

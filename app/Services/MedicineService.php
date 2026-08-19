@@ -2,43 +2,30 @@
 
 namespace App\Services;
 
+use App\Models\Medicine;
 use Illuminate\Support\Facades\DB;
 
 final class MedicineService
 {
-    public static function findOrFail(int $id): object
+    public static function findOrFail(int $id): Medicine
     {
-        $medicine = DB::table('medicines_lookup')->where('id', $id)->first();
-
-        if (! $medicine) {
-            abort(404, 'Resource not found');
-        }
-
-        return $medicine;
+        return Medicine::query()->findOrFail($id);
     }
 
     public static function create(array $validated): void
     {
-        DB::table('medicines_lookup')->insert([
+        Medicine::query()->create([
             'name' => $validated['name'],
             'form' => $validated['form'] ?? null,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
     }
 
     public static function update(int $id, array $validated): void
     {
-        DB::table('medicines_lookup')->where('id', $id)->update([
+        self::findOrFail($id)->update([
             'name' => $validated['name'],
             'form' => $validated['form'] ?? null,
-            'updated_at' => now(),
         ]);
-    }
-
-    public static function isUsedInPrescriptions(int $id): bool
-    {
-        return DB::table('prescriptions')->where('medicine_id', $id)->exists();
     }
 
     public static function usage(int $id): array
@@ -54,6 +41,11 @@ final class MedicineService
 
     public static function destroy(int $id): void
     {
-        DB::table('medicines_lookup')->where('id', $id)->delete();
+        self::findOrFail($id)->delete();
+    }
+
+    public static function restore(int $id): void
+    {
+        Medicine::onlyTrashed()->findOrFail($id)->restore();
     }
 }
