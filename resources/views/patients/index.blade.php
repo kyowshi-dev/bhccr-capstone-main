@@ -152,13 +152,8 @@
             </table>
         </div>
         @if ($patients->total() > 0)
-            <div class="border-t px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" style="border-color: var(--border);">
-                <p class="text-xs order-2 sm:order-1" style="color: var(--ink-muted);">
-                    Showing <span class="font-medium" style="color: var(--ink);">{{ $patients->firstItem() }}</span>–<span class="font-medium" style="color: var(--ink);">{{ $patients->lastItem() }}</span> of <span class="font-medium" style="color: var(--ink);">{{ $patients->total() }}</span> records
-                </p>
-                <div class="order-1 sm:order-2 flex justify-center sm:justify-end min-h-[2.25rem] items-center">
-                    {{ $patients->onEachSide(1)->links() }}
-                </div>
+            <div class="border-t px-4 py-3" style="border-color: var(--border);">
+                <x-pagination :paginator="$patients" />
             </div>
         @endif
     </div>
@@ -175,8 +170,7 @@
                 this.loading = true;
                 try {
                     const response = await safeFetch(`{{ route('search.patients') }}?query=${this.query}`);
-                    this.results = response.ok ? await response.json() : [];
-                    const data = await response.json();
+                    const data = response.ok ? await response.json() : [];
                     this.results = data.map(item => ({
                         ...item,
                         text: item.text.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),

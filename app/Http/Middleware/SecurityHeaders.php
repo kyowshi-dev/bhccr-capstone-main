@@ -37,6 +37,16 @@ class SecurityHeaders
     {
         $response = $next($request);
 
+        // When the Vite dev server is running (public/hot present), @vite injects
+        // asset URLs from the dev server origin. The CSP must allow that plain-HTTP
+        // origin (plus its HMR websocket) or every stylesheet/script silently gets
+        // blocked and interactive pages break. Production builds have no hot file,
+        // so this never widens the policy outside local development.
+        $devOrigin = '';
+        if (app()->environment('local') && is_file(public_path('hot'))) {
+            $devOrigin = ' http://127.0.0.1:5173 http://localhost:5173';
+        }
+
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -46,11 +56,11 @@ class SecurityHeaders
             "base-uri 'self'",
             "object-src 'none'",
             "frame-ancestors 'none'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
-            "style-src 'self' 'unsafe-inline' https:",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:{$devOrigin}",
+            "style-src 'self' 'unsafe-inline' https:{$devOrigin}",
             "img-src 'self' data: https:",
-            "font-src 'self' https: data:",
-            "connect-src 'self'",
+            "font-src 'self' https: data:{$devOrigin}",
+            "connect-src 'self' ws://127.0.0.1:5173 ws://localhost:5173{$devOrigin}",
         ]));
 
         if ($request->isSecure()) {
