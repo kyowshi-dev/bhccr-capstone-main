@@ -82,6 +82,17 @@
             transform: scale(0.99);
         }
 
+        .auth-btn:disabled {
+            background: var(--ink-subtle);
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 1;
+        }
+
+        .auth-btn:disabled:hover {
+            opacity: 1;
+        }
+
         .muted-xs {
             font-size: 0.78rem;
             color: var(--ink-muted);

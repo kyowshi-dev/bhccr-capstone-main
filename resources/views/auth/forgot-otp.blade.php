@@ -84,7 +84,7 @@
             </div>
         </div>
 
-        <button type="submit" class="auth-btn">Reset password</button>
+        <button type="submit" class="auth-btn" id="submit-btn" disabled>Reset password</button>
     </form>
 
     <form id="resend-form" action="{{ route('password.forgot.submit') }}" method="POST" class="hidden">
@@ -108,16 +108,31 @@
 (function () {
     var boxes = Array.prototype.slice.call(document.querySelectorAll('.otp-digit'));
     var hidden = document.getElementById('otp');
+    var submitBtn = document.getElementById('submit-btn');
+    var password = document.getElementById('password');
+    var passwordConfirmation = document.getElementById('password_confirmation');
 
     function syncHidden() {
         hidden.value = boxes.map(function (b) { return b.value; }).join('');
     }
+
+    function updateSubmitState() {
+        var otpComplete = boxes.every(function (b) { return b.value; });
+        submitBtn.disabled = !(otpComplete && password.value && passwordConfirmation.value);
+    }
+
+    ['input', 'keyup'].forEach(function (eventName) {
+        password.addEventListener(eventName, updateSubmitState);
+        passwordConfirmation.addEventListener(eventName, updateSubmitState);
+    });
 
     var old = hidden.value.replace(/\D/g, '').slice(0, boxes.length);
     if (old) {
         old.split('').forEach(function (digit, index) { boxes[index].value = digit; });
         boxes[Math.min(old.length, boxes.length - 1)].focus();
     }
+
+    updateSubmitState();
 
     boxes.forEach(function (box, index) {
         box.addEventListener('input', function () {
@@ -136,6 +151,7 @@
             if (box.value && index < boxes.length - 1) {
                 boxes[index + 1].focus();
             }
+            updateSubmitState();
         });
 
         box.addEventListener('keydown', function (event) {
@@ -143,6 +159,7 @@
                 boxes[index - 1].focus();
                 boxes[index - 1].value = '';
                 syncHidden();
+                updateSubmitState();
                 event.preventDefault();
             } else if (event.key === 'ArrowLeft' && index > 0) {
                 boxes[index - 1].focus();
@@ -162,6 +179,7 @@
             }
             digits.forEach(function (digit, offset) { boxes[offset].value = digit; });
             syncHidden();
+            updateSubmitState();
             boxes[Math.min(digits.length, boxes.length - 1)].focus();
         });
     });
