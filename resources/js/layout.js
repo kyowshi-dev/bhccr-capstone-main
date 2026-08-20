@@ -1304,6 +1304,8 @@ window.closeConsultationOutwardReferralWizard =
     closeConsultationOutwardReferralWizard;
 window.outwardReferralWizardGoNext = outwardReferralWizardGoNext;
 window.outwardReferralWizardGoBack = outwardReferralWizardGoBack;
+window.showModal = showModal;
+window.hideModal = hideModal;
 window.safeFetch = safeFetch;
 
 // Auto-fit: scale the app to the viewport so smaller desktop displays

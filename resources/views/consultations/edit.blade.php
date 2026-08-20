@@ -102,6 +102,9 @@
                                             @if ($prescription->dosage)
                                                 <p><span class="font-medium">Dosage:</span> {{ $prescription->dosage }}</p>
                                             @endif
+                                            @if ($prescription->route)
+                                                <p><span class="font-medium">Route:</span> {{ $prescription->route }}</p>
+                                            @endif
                                             @if ($prescription->frequency)
                                                 <p><span class="font-medium">Frequency:</span> {{ $prescription->frequency }}</p>
                                             @endif
@@ -111,10 +114,13 @@
                                             @if ($prescription->quantity)
                                                 <p><span class="font-medium">Quantity:</span> {{ $prescription->quantity }}</p>
                                             @endif
+                                            @if ($prescription->instructions)
+                                                <p class="col-span-2"><span class="font-medium">Instructions:</span> {{ $prescription->instructions }}</p>
+                                            @endif
                                         </div>
                                     </div>
                             <div class="flex items-center gap-2">
-                                <button type="button" class="p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--accent-blue)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="editPrescription({{ $prescription->id }}, {{ Js::from($medName) }}, {{ Js::from($prescription->dosage) }}, {{ Js::from($prescription->frequency) }}, {{ Js::from($prescription->duration) }}, {{ Js::from($prescription->quantity) }})">
+                                <button type="button" class="p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--accent-blue)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="editPrescription({{ $prescription->id }}, {{ Js::from($medName) }}, {{ Js::from($prescription->dosage) }}, {{ Js::from($prescription->route) }}, {{ Js::from($prescription->frequency) }}, {{ Js::from($prescription->duration) }}, {{ Js::from($prescription->quantity) }}, {{ Js::from($prescription->instructions) }})">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 </button>
                                 <button type="button" class="p-1 rounded text-[var(--ink-subtle)] hover:text-[var(--danger)] transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onclick="deletePrescription({{ $prescription->id }})">
@@ -174,12 +180,24 @@
 <!-- Diagnosis Modal -->
 <div id="diagnosisModal" x-show="$store.modals.diagnosis" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-[70] flex items-center justify-center p-4" style="display: none;">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeDiagnosisModal()"></div>
-    <div id="diagnosisPanel" x-show="$store.modals.diagnosis" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="bg-surface rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
+    <div id="diagnosisPanel" x-show="$store.modals.diagnosis" x-data="editDiagnosisSearch()" @set-diagnosis-query.window="setQuery($event.detail.query)" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="relative bg-surface rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
         <h3 id="diagnosisModalTitle" class="font-semibold text-lg">Add Diagnosis</h3>
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Diagnosis Name</label>
-                <input type="text" id="diagnosisName" placeholder="Enter diagnosis" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
+                <label for="diagnosisName" class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Diagnosis Name</label>
+                <div class="relative" @click.away="results = []">
+                    <input type="text" id="diagnosisName" x-model="query" @input.debounce.300ms="search()" @keydown.escape="results = []" placeholder="Search ICD-10 / disease name (e.g. Dengue, Hypertension)" autocomplete="off" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
+                    <div x-show="results.length > 0" class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border bg-surface" style="display:none; border-color: var(--border);">
+                        <ul>
+                            <template x-for="item in results" :key="item.id">
+                                <li @click="select(item)" class="px-3 py-2 cursor-pointer text-sm border-b hover:bg-black/5" style="border-color: var(--border); color: var(--ink);" x-text="item.text"></li>
+                            </template>
+                        </ul>
+                    </div>
+                    <div x-show="query.length >= 2 && results.length === 0 && !searching" class="absolute z-10 mt-1 w-full rounded-lg border bg-surface px-3 py-2 text-sm" style="display:none; border-color: var(--border); color: var(--ink-subtle);">
+                        No matches found. You can still type a custom name.
+                    </div>
+                </div>
             </div>
             <div>
                 <label class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Remarks</label>
@@ -196,12 +214,27 @@
 <!-- Prescription Modal -->
 <div id="prescriptionModal" x-show="$store.modals.prescription" x-transition.opacity.duration.200ms role="dialog" aria-modal="true" class="fixed inset-0 z-[70] flex items-center justify-center p-4" style="display: none;">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closePrescriptionModal()"></div>
-    <div id="prescriptionPanel" x-show="$store.modals.prescription" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="bg-surface rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
+    <div id="prescriptionPanel" x-show="$store.modals.prescription" x-data="editMedicineSearch()" @set-medicine-query.window="setQuery($event.detail.query)" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="relative bg-surface rounded-xl max-w-md w-full p-6 space-y-4 focus:outline-none" tabindex="-1" style="color: var(--ink);">
         <h3 id="prescriptionModalTitle" class="font-semibold text-lg">Add Prescription</h3>
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Medicine Name</label>
-                <input type="text" id="medicineName" placeholder="Enter medicine" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
+                <label for="medicineName" class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Medicine Name</label>
+                <div class="relative" @click.away="results = []">
+                    <input type="text" id="medicineName" x-model="query" @input.debounce.300ms="search()" @keydown.escape="results = []" placeholder="Search medicine (e.g. Paracetamol, Amoxicillin)" autocomplete="off" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
+                    <div x-show="results.length > 0" class="absolute inset-x-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-surface shadow-sm" style="display:none; border-color: var(--border);">
+                        <ul>
+                            <template x-for="item in results" :key="item.id">
+                                <li @click="select(item)" class="px-3 py-2 text-sm cursor-pointer border-b last:border-b-0 hover:bg-black/5" style="border-color: var(--border); color: var(--ink);">
+                                    <span x-text="item.text"></span>
+                                    <span x-show="item.form" class="ml-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style="background: var(--teal-soft); color: var(--primary);" x-text="item.form"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                    <div x-show="query.length >= 2 && results.length === 0 && !searching" class="absolute inset-x-0 top-full z-10 mt-1 rounded-lg border bg-surface px-3 py-2 text-sm" style="display:none; border-color: var(--border); color: var(--ink-subtle);">
+                        No matches found. You can still type a custom name.
+                    </div>
+                </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
@@ -209,18 +242,42 @@
                     <input type="text" id="dosage" placeholder="e.g., 500mg" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Frequency</label>
-                    <input type="text" id="frequency" placeholder="e.g., 3x daily" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
+                    <label class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Route</label>
+                    <select id="route" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
+                        <option value="">Select route</option>
+                        <option value="PO">PO (by mouth)</option>
+                        <option value="IV">IV (intravenous)</option>
+                        <option value="IM">IM (intramuscular)</option>
+                        <option value="SC">SC (subcutaneous)</option>
+                        <option value="Topical">Topical</option>
+                        <option value="Inhalation">Inhalation</option>
+                        <option value="Ophthalmic">Ophthalmic (eye)</option>
+                        <option value="Otic">Otic (ear)</option>
+                        <option value="Rectal">Rectal</option>
+                        <option value="Vaginal">Vaginal</option>
+                        <option value="Sublingual">Sublingual</option>
+                        <option value="Other">Other</option>
+                    </select>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Frequency</label>
+                    <input type="text" id="frequency" placeholder="e.g., TID (3x daily)" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
+                </div>
+                <div>
                     <label class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Duration</label>
                     <input type="text" id="duration" placeholder="e.g., 7 days" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
                 </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Quantity</label>
-                    <input type="number" id="quantity" placeholder="e.g., 21" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
+                    <input type="number" id="quantity" placeholder="e.g., 21" min="1" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--ink-muted);">Instructions</label>
+                    <input type="text" id="instructions" placeholder="e.g., After meals" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition" style="border-color: var(--border); --tw-ring-color: var(--primary);">
                 </div>
             </div>
         </div>
@@ -238,18 +295,79 @@ const CSRF_TOKEN = document.querySelector('input[name="_token"]').value;
 let editMode = { diagnosis: false, prescription: false };
 let editId = { diagnosis: null, prescription: null };
 
+function editDiagnosisSearch() {
+    return {
+        query: '',
+        results: [],
+        searching: false,
+        async search() {
+            if (this.query.length < 2) {
+                this.results = [];
+                return;
+            }
+            this.searching = true;
+            try {
+                const response = await safeFetch('{{ route('search.diagnoses') }}?query=' + encodeURIComponent(this.query));
+                this.results = response.ok ? await response.json() : [];
+            } catch (error) {
+                this.results = [];
+            } finally {
+                this.searching = false;
+            }
+        },
+        select(item) {
+            this.query = item.text;
+            this.results = [];
+        },
+        setQuery(term) {
+            this.query = term;
+            this.results = [];
+        },
+    };
+}
+
+function editMedicineSearch() {
+    return {
+        query: '',
+        results: [],
+        searching: false,
+        async search() {
+            if (this.query.length < 2) {
+                this.results = [];
+                return;
+            }
+            this.searching = true;
+            try {
+                const response = await safeFetch('{{ route('search.medicines') }}?query=' + encodeURIComponent(this.query));
+                this.results = response.ok ? await response.json() : [];
+            } catch (error) {
+                this.results = [];
+            } finally {
+                this.searching = false;
+            }
+        },
+        select(item) {
+            this.query = item.text;
+            this.results = [];
+        },
+        setQuery(term) {
+            this.query = term;
+            this.results = [];
+        },
+    };
+}
+
 function openDiagnosisModal() {
     editMode.diagnosis = false;
     editId.diagnosis = null;
     document.getElementById('diagnosisModalTitle').textContent = 'Add Diagnosis';
     document.getElementById('diagnosisSubmitBtn').textContent = 'Add';
-    Alpine.store('modals').diagnosis = true;
-    document.getElementById('diagnosisName').focus();
+    showModal('diagnosisModal', 'diagnosisPanel');
 }
 
 function closeDiagnosisModal() {
-    Alpine.store('modals').diagnosis = false;
-    document.getElementById('diagnosisName').value = '';
+    hideModal('diagnosisModal', 'diagnosisPanel');
+    window.dispatchEvent(new CustomEvent('set-diagnosis-query', { detail: { query: '' } }));
     document.getElementById('diagnosisRemarks').value = '';
     editMode.diagnosis = false;
     editId.diagnosis = null;
@@ -260,17 +378,18 @@ function openPrescriptionModal() {
     editId.prescription = null;
     document.getElementById('prescriptionModalTitle').textContent = 'Add Prescription';
     document.getElementById('prescriptionSubmitBtn').textContent = 'Add';
-    Alpine.store('modals').prescription = true;
-    document.getElementById('medicineName').focus();
+    showModal('prescriptionModal', 'prescriptionPanel');
 }
 
 function closePrescriptionModal() {
-    Alpine.store('modals').prescription = false;
-    document.getElementById('medicineName').value = '';
+    hideModal('prescriptionModal', 'prescriptionPanel');
+    window.dispatchEvent(new CustomEvent('set-medicine-query', { detail: { query: '' } }));
     document.getElementById('dosage').value = '';
+    document.getElementById('route').value = '';
     document.getElementById('frequency').value = '';
     document.getElementById('duration').value = '';
     document.getElementById('quantity').value = '';
+    document.getElementById('instructions').value = '';
     editMode.prescription = false;
     editId.prescription = null;
 }
@@ -319,24 +438,30 @@ function editDiagnosis(id, name, remarks) {
     editId.diagnosis = id;
     document.getElementById('diagnosisModalTitle').textContent = 'Edit Diagnosis';
     document.getElementById('diagnosisSubmitBtn').textContent = 'Update';
-    document.getElementById('diagnosisName').value = name || '';
+    window.dispatchEvent(new CustomEvent('set-diagnosis-query', { detail: { query: name || '' } }));
     document.getElementById('diagnosisRemarks').value = remarks || '';
-    Alpine.store('modals').diagnosis = true;
+    showModal('diagnosisModal', 'diagnosisPanel');
 }
 
 function addPrescription() {
     const medicineName = document.getElementById('medicineName').value.trim();
     const dosage = document.getElementById('dosage').value.trim();
+    const route = document.getElementById('route').value;
     const frequency = document.getElementById('frequency').value.trim();
     const duration = document.getElementById('duration').value.trim();
     const quantity = document.getElementById('quantity').value.trim();
+    const instructions = document.getElementById('instructions').value.trim();
 
     if (!medicineName) {
         Swal.fire({title: 'Missing medicine', text: 'Please enter a medicine name.', icon: 'warning', confirmButtonColor: 'var(--primary)'});
         return;
     }
+    if (!route) {
+        Swal.fire({title: 'Missing route', text: 'Please select a route of administration.', icon: 'warning', confirmButtonColor: 'var(--primary)'});
+        return;
+    }
 
-    const payload = { medicine_name: medicineName, dosage, frequency, duration, quantity: quantity ? parseInt(quantity) : null };
+    const payload = { medicine_name: medicineName, dosage, route, frequency, duration, quantity: quantity ? parseInt(quantity) : null, instructions };
     const url = editMode.prescription && editId.prescription
         ? `/consultations/${CONSULTATION_ID}/prescriptions/${editId.prescription}`
         : `/consultations/${CONSULTATION_ID}/edit-prescription`;
@@ -366,17 +491,19 @@ function addPrescription() {
     });
 }
 
-function editPrescription(id, medicineName, dosage, frequency, duration, quantity) {
+function editPrescription(id, medicineName, dosage, route, frequency, duration, quantity, instructions) {
     editMode.prescription = true;
     editId.prescription = id;
     document.getElementById('prescriptionModalTitle').textContent = 'Edit Prescription';
     document.getElementById('prescriptionSubmitBtn').textContent = 'Update';
-    document.getElementById('medicineName').value = medicineName || '';
+    window.dispatchEvent(new CustomEvent('set-medicine-query', { detail: { query: medicineName || '' } }));
     document.getElementById('dosage').value = dosage || '';
+    document.getElementById('route').value = route || '';
     document.getElementById('frequency').value = frequency || '';
     document.getElementById('duration').value = duration || '';
     document.getElementById('quantity').value = quantity || '';
-    Alpine.store('modals').prescription = true;
+    document.getElementById('instructions').value = instructions || '';
+    showModal('prescriptionModal', 'prescriptionPanel');
 }
 
 function deleteDiagnosis(id) {
