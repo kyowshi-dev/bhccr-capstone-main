@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Tests\Concerns\AssignsRolesAndPermissions;
@@ -159,5 +160,17 @@ class SettingsTest extends TestCase
         $this->actingAs($user)
             ->post(route('settings.backups.import'))
             ->assertSessionHasErrors(['current_password', 'backup_file']);
+    }
+
+    public function test_import_backup_rejects_garbage_file(): void
+    {
+        $user = $this->createUserWithPermissions(['users']);
+
+        $this->actingAs($user)
+            ->post(route('settings.backups.import'), [
+                'current_password' => 'password',
+                'backup_file' => UploadedFile::fake()->createWithContent('backup.sqlite', 'this is not a database file'),
+            ])
+            ->assertSessionHas('error', 'The uploaded file does not appear to be a valid SQLite database.');
     }
 }
