@@ -73,7 +73,7 @@ class ProfileController extends Controller
     public function updateSettings(Request $request)
     {
         $validated = $request->validate([
-            'session_timeout' => ['required', 'integer', 'min:5', 'max:2880'], // 5 minutes to 2 days
+            'session_timeout' => ['required', 'integer', 'min:1', 'max:2880'], // 1 minute to 2 days
             'login_max_attempts' => ['required', 'integer', 'min:1', 'max:20'],
             'lockout_duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
             'password_min_length' => ['required', 'integer', 'min:8', 'max:64'],
@@ -83,7 +83,7 @@ class ProfileController extends Controller
         ], [
             'session_timeout.required' => 'Session timeout is required.',
             'session_timeout.integer' => 'Session timeout must be a number.',
-            'session_timeout.min' => 'Session timeout must be at least 5 minutes.',
+            'session_timeout.min' => 'Session timeout must be at least 1 minute.',
             'session_timeout.max' => 'Session timeout cannot exceed 2880 minutes (2 days).',
             'login_max_attempts.min' => 'Login attempts must be at least 1.',
             'login_max_attempts.max' => 'Login attempts cannot exceed 20.',

@@ -120,13 +120,13 @@ class SessionTimeoutTest extends TestCase
             ->assertJsonPath('ok', true);
     }
 
-    public function test_session_status_lifetime_is_clamped_to_at_least_five_minutes(): void
+    public function test_session_status_lifetime_is_clamped_to_at_least_one_minute(): void
     {
         ApplicationSetting::set('session_timeout', 0);
 
         $this->refreshApplication();
         $this->artisan('migrate');
 
-        $this->assertGreaterThanOrEqual(5, (int) config('session.lifetime'));
+        $this->assertGreaterThanOrEqual(1, (int) config('session.lifetime'));
     }
 }

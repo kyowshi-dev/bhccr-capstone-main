@@ -45,8 +45,8 @@
                 </label>
                 <div class="space-y-3">
                     <div>
-                        <input type="number" name="session_timeout" id="session_timeout" value="{{ old('session_timeout', $sessionTimeout) }}" min="5" max="2880" class="block w-full border border-[var(--border)] rounded-lg p-3 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2" style="focus:ring-color: var(--primary);">
-                        <p class="text-xs mt-2" style="color: var(--ink-subtle);">Minimum: 5 minutes | Maximum: 2880 minutes (2 days)</p>
+                        <input type="number" name="session_timeout" id="session_timeout" value="{{ old('session_timeout', $sessionTimeout) }}" min="1" max="2880" class="block w-full border border-[var(--border)] rounded-lg p-3 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2" style="focus:ring-color: var(--primary);">
+                        <p class="text-xs mt-2" style="color: var(--ink-subtle);">Minimum: 1 minute | Maximum: 2880 minutes (2 days)</p>
                     </div>
 
                     <!-- Quick presets -->

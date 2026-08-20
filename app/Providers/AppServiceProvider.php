@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
         // Set session lifetime from database setting
         try {
             $sessionTimeout = (int) ApplicationSetting::get('session_timeout', 120);
-            Config::set('session.lifetime', max(5, $sessionTimeout));
+            Config::set('session.lifetime', max(1, $sessionTimeout));
         } catch (\Exception $e) {
             // Table might not exist during migrations or tests
             Config::set('session.lifetime', 120);
