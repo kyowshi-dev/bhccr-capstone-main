@@ -235,9 +235,11 @@ final class ConsultationQueryService
                 'medicines_lookup.name as medicine_name',
                 'prescriptions.custom_medicine_name',
                 'prescriptions.dosage',
+                'prescriptions.route',
                 'prescriptions.frequency',
                 'prescriptions.duration',
-                'prescriptions.quantity'
+                'prescriptions.quantity',
+                'prescriptions.instructions'
             )
             ->get();
     }

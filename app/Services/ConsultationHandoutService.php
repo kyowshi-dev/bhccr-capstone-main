@@ -66,9 +66,11 @@ final class ConsultationHandoutService
             ->select(
                 'medicines_lookup.name as medicine_name',
                 'prescriptions.dosage',
+                'prescriptions.route',
                 'prescriptions.frequency',
                 'prescriptions.duration',
-                'prescriptions.quantity'
+                'prescriptions.quantity',
+                'prescriptions.instructions'
             )
             ->orderBy('prescriptions.id')
             ->get();

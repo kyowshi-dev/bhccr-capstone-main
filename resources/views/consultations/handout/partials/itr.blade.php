@@ -31,9 +31,11 @@
         $parts = array_filter([
             $rx->medicine_name,
             $rx->dosage,
+            $rx->route,
             $rx->frequency,
-            $rx->duration,
+            $rx->duration ? 'x '.$rx->duration : null,
             $rx->quantity ? 'Qty '.$rx->quantity : null,
+            $rx->instructions,
         ]);
 
         return implode(' · ', $parts);

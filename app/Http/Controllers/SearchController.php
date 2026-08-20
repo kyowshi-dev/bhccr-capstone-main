@@ -296,7 +296,7 @@ class SearchController extends Controller
         $medicines = DB::table('medicines_lookup')
             ->whereNull('deleted_at')
             ->where('name', 'LIKE', "%{$query}%")
-            ->select('id', 'name')
+            ->select('id', 'name', 'form')
             ->limit(15)
             ->get();
 
@@ -304,6 +304,7 @@ class SearchController extends Controller
             return [
                 'id' => $m->id,
                 'text' => $m->name,
+                'form' => $m->form,
             ];
         });
 

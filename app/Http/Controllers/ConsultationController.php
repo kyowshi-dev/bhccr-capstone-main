@@ -372,6 +372,8 @@ class ConsultationController extends Controller
     {
         $this->authorizePermission('consultations');
 
+        $this->requireDoctor();
+
         if (! ConsultationService::deletePrescription($consultation, (int) $prescriptionId)) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Prescription not found'], 404);
@@ -414,6 +416,8 @@ class ConsultationController extends Controller
     {
         $this->authorizePermission('consultations');
 
+        $this->requireDoctor();
+
         $record = DB::table('prescriptions')
             ->where('consultation_id', $consultation->id)
             ->where('id', $prescriptionId)
@@ -428,9 +432,11 @@ class ConsultationController extends Controller
             ->update([
                 'custom_medicine_name' => $request->input('medicine_name'),
                 'dosage' => $request->input('dosage'),
+                'route' => $request->input('route'),
                 'frequency' => $request->input('frequency'),
                 'duration' => $request->input('duration'),
                 'quantity' => $request->input('quantity'),
+                'instructions' => $request->input('instructions'),
                 'updated_at' => now(),
             ]);
 
@@ -460,19 +466,30 @@ class ConsultationController extends Controller
     {
         $this->authorizePermission('consultations');
 
+        $this->requireDoctor();
+
         DB::table('prescriptions')->insert([
             'consultation_id' => $consultation->id,
             'medicine_id' => null,
             'custom_medicine_name' => $request->input('medicine_name'),
             'dosage' => $request->input('dosage'),
+            'route' => $request->input('route'),
             'frequency' => $request->input('frequency'),
             'duration' => $request->input('duration'),
             'quantity' => $request->input('quantity'),
+            'instructions' => $request->input('instructions'),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         return response()->json(['success' => true, 'message' => 'Prescription added successfully.']);
+    }
+
+    private function requireDoctor(): void
+    {
+        if (! $this->currentWorker()->isDoctor()) {
+            abort(403, 'Only doctors can modify prescriptions.');
+        }
     }
 
     private function currentWorker(): HealthWorker

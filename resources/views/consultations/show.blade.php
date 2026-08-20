@@ -281,9 +281,11 @@
                         <thead>
                             <tr class="bg-teal-soft" style="color: var(--ink-muted);">
                                 <th class="text-left px-3 py-2">Medicine</th>
-                                <th class="text-left px-3 py-2">Dosage/Frequency</th>
+                                <th class="text-left px-3 py-2">Dose / Route</th>
+                                <th class="text-left px-3 py-2">Frequency</th>
                                 <th class="text-left px-3 py-2">Duration</th>
                                 <th class="text-left px-3 py-2">Qty</th>
+                                <th class="text-left px-3 py-2">Instructions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -295,9 +297,16 @@
                                             <span class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style="background: var(--border); color: var(--ink-muted);">Custom</span>
                                         @endif
                                     </td>
-                                    <td class="px-3 py-2">{{ $rx->dosage }}{{ $rx->frequency ? ' · '.$rx->frequency : '' }}</td>
+                                    <td class="px-3 py-2">
+                                        <span class="font-medium">{{ $rx->dosage }}</span>
+                                        @if ($rx->route)
+                                            <span class="ml-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase" style="background: var(--teal-soft); color: var(--primary);">{{ $rx->route }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-3 py-2">{{ $rx->frequency ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $rx->duration ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $rx->quantity ?? '-' }}</td>
+                                    <td class="px-3 py-2" style="color: var(--ink-muted);">{{ $rx->instructions ?? '-' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -308,11 +317,18 @@
             @endif
 
             @if ($clinicalReviewOpen && ($canAddPrescription ?? false))
-            <form action="{{ route('consultations.prescription', $consultation->id) }}" method="POST" x-data="medicineSearch()" class="space-y-4 mt-4 pt-4 border-t" style="border-color: var(--border);">
+            <form action="{{ route('consultations.prescription', $consultation->id) }}" method="POST" x-data="medicineSearch(@js([
+                'dosage' => old('dosage'),
+                'route' => old('route'),
+                'frequency' => old('frequency'),
+                'duration' => old('duration'),
+                'quantity' => old('quantity'),
+                'instructions' => old('instructions'),
+            ]))" class="space-y-4 mt-4 pt-4 border-t" style="border-color: var(--border);">
                 @csrf
                 <div class="space-y-3">
                     <div class="flex items-center justify-between gap-2 mb-1">
-                        <label class="block text-xs font-medium" style="color: var(--ink-muted);">Medicine search</label>
+                        <label class="block text-xs font-medium" style="color: var(--ink-muted);">Medicine search <span class="text-[var(--danger)]">*</span></label>
                     </div>
                     <div class="relative" @click.away="results = []">
                         <input type="text" x-model="query" @input.debounce.300ms="search()" @keydown.escape="results = []" placeholder="e.g. Paracetamol, Amoxicillin..." class="w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" autocomplete="off" aria-autocomplete="list" aria-expanded="false" :aria-expanded="results.length > 0">
@@ -321,7 +337,10 @@
                         <div x-show="results.length > 0" class="absolute inset-x-0 top-full z-10 mt-1 rounded-2xl border bg-surface shadow-sm max-h-56 overflow-y-auto" style="display:none; border-color: var(--border);">
                             <ul>
                                 <template x-for="item in results" :key="item.id">
-                                    <li @click="select(item)" class="px-3 py-2 text-sm cursor-pointer border-b last:border-b-0 hover:bg-black/5" style="border-color: var(--border); color: var(--ink);" x-text="item.text"></li>
+                                    <li @click="select(item)" class="px-3 py-2 text-sm cursor-pointer border-b last:border-b-0 hover:bg-black/5" style="border-color: var(--border); color: var(--ink);">
+                                        <span x-text="item.text"></span>
+                                        <span x-show="item.form" class="ml-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style="background: var(--teal-soft); color: var(--primary);" x-text="item.form"></span>
+                                    </li>
                                 </template>
                             </ul>
                         </div>
@@ -339,35 +358,91 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div class="space-y-2">
-                        <label class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Dosage</label>
-                        <input id="rx_dosage" type="text" name="dosage" value="{{ old('dosage') }}" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" required>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="appendSig('rx_dosage', '1 tab')" class="px-3 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)]">1 tab</button>
-                            <button type="button" onclick="appendSig('rx_dosage', '2 tabs')" class="px-3 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)]">2 tabs</button>
+                        <label for="rx_dosage" class="block text-xs font-medium" style="color: var(--ink-muted);">Dosage <span class="text-[var(--danger)]">*</span></label>
+                        <input id="rx_dosage" type="text" name="dosage" x-model="dosage" placeholder="e.g. 1 tab or 500 mg" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" required>
+                        <div class="flex flex-wrap gap-1.5">
+                            <template x-for="unit in dosageUnits" :key="unit">
+                                <button type="button" @click="setDosage(unit)" class="px-2.5 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)] transition hover:opacity-80" x-text="unit"></button>
+                            </template>
                         </div>
                     </div>
+
                     <div class="space-y-2">
-                        <label class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Frequency</label>
-                        <input id="rx_frequency" type="text" name="frequency" value="{{ old('frequency') }}" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);">
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="appendSig('rx_frequency', 'Before meals')" class="px-3 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)]">Before Meals</button>
-                            <button type="button" onclick="appendSig('rx_frequency', 'After meals')" class="px-3 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)]">After Meals</button>
-                            <button type="button" onclick="appendSig('rx_frequency', 'At bedtime')" class="px-3 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)]">At Bedtime</button>
+                        <label for="rx_route" class="block text-xs font-medium" style="color: var(--ink-muted);">Route <span class="text-[var(--danger)]">*</span></label>
+                        <select id="rx_route" name="route" x-model="route" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" required>
+                            <option value="">Select route</option>
+                            <option value="PO">PO (by mouth)</option>
+                            <option value="IV">IV (intravenous)</option>
+                            <option value="IM">IM (intramuscular)</option>
+                            <option value="SC">SC (subcutaneous)</option>
+                            <option value="Topical">Topical</option>
+                            <option value="Inhalation">Inhalation</option>
+                            <option value="Ophthalmic">Ophthalmic (eye)</option>
+                            <option value="Otic">Otic (ear)</option>
+                            <option value="Rectal">Rectal</option>
+                            <option value="Vaginal">Vaginal</option>
+                            <option value="Sublingual">Sublingual</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <div class="flex flex-wrap gap-1.5">
+                            <template x-for="r in ['PO', 'IV', 'IM', 'Topical', 'Inhalation']" :key="r">
+                                <button type="button" @click="route = r" class="px-2.5 py-1 rounded-full text-xs transition hover:opacity-80" :class="route === r ? 'bg-[var(--primary)] text-white' : 'bg-teal-soft text-[var(--primary)]'" x-text="r"></button>
+                            </template>
                         </div>
                     </div>
+
                     <div class="space-y-2">
-                        <label class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Duration</label>
-                        <input type="text" name="duration" value="{{ old('duration') }}" placeholder="e.g. 7 days" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);">
+                        <label for="rx_frequency" class="block text-xs font-medium" style="color: var(--ink-muted);">Frequency <span class="text-[var(--danger)]">*</span></label>
+                        <input id="rx_frequency" type="text" name="frequency" x-model="frequency" placeholder="e.g. TID (3 times daily)" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" required>
+                        <div class="flex flex-wrap gap-1.5">
+                            <template x-for="f in frequencyOptions" :key="f">
+                                <button type="button" @click="setFrequency(f)" class="px-2.5 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)] transition hover:opacity-80" x-text="f"></button>
+                            </template>
+                        </div>
                     </div>
+
                     <div class="space-y-2">
-                        <label class="block text-xs font-medium mb-1" style="color: var(--ink-muted);">Quantity</label>
-                        <input type="number" name="quantity" value="{{ old('quantity') }}" min="1" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);">
+                        <label for="rx_duration" class="block text-xs font-medium" style="color: var(--ink-muted);">Duration <span class="text-[var(--danger)]">*</span></label>
+                        <input id="rx_duration" type="text" name="duration" x-model="duration" placeholder="e.g. 7 days" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" required>
+                        <div class="flex flex-wrap gap-1.5">
+                            <template x-for="d in durationOptions" :key="d">
+                                <button type="button" @click="setDuration(d)" class="px-2.5 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)] transition hover:opacity-80" x-text="d"></button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="rx_quantity" class="block text-xs font-medium" style="color: var(--ink-muted);">Quantity <span class="text-[var(--danger)]">*</span></label>
+                        <div class="flex items-center gap-2">
+                            <input id="rx_quantity" type="number" name="quantity" x-model.number="quantity" min="1" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);" required>
+                            <button type="button" x-show="suggestedQuantity" @click="fillQuantity()" class="shrink-0 px-2.5 py-2 rounded-lg text-xs font-semibold border transition hover:opacity-80" style="display:none; border-color: var(--primary); color: var(--primary); background: var(--teal-soft);">
+                                Suggested: <span x-text="suggestedQuantity"></span>
+                            </button>
+                        </div>
+                        <p class="text-[11px]" style="color: var(--ink-subtle);">Computed from dose, frequency and duration.</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="rx_instructions" class="block text-xs font-medium" style="color: var(--ink-muted);">Instructions</label>
+                        <input id="rx_instructions" type="text" name="instructions" x-model="instructions" placeholder="e.g. Take after meals" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition" style="border-color: var(--border); color: var(--ink);">
+                        <div class="flex flex-wrap gap-1.5">
+                            <template x-for="i in instructionOptions" :key="i">
+                                <button type="button" @click="setInstructions(i)" class="px-2.5 py-1 rounded-full text-xs bg-teal-soft text-[var(--primary)] transition hover:opacity-80" x-text="i"></button>
+                            </template>
+                        </div>
                     </div>
                 </div>
+
+                <div x-show="rxPreview" class="rounded-xl border px-3 py-2 text-sm" style="display:none; border-color: var(--primary); background: var(--teal-soft); color: var(--ink);">
+                    <span class="font-semibold uppercase tracking-wide text-[11px]" style="color: var(--primary);">Rx preview</span>
+                    <p class="mt-0.5 font-medium" x-text="rxPreview"></p>
+                </div>
+
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-[var(--ink-subtle)]" x-show="!selectedId" style="display:none;">Please choose a medicine from the results before adding a prescription.</p>
+                    <p class="text-xs text-[var(--ink-subtle)]" x-show="selectedId && !completeSig" style="display:none;">Complete dosage, route, frequency, duration and quantity to enable the add button.</p>
                     <button type="submit" :disabled="!canSubmitPrescription" class="rounded-xl bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">Add prescription</button>
                 </div>
             </form>
@@ -602,20 +677,59 @@
             },
         };
     }
-    function medicineSearch() {
+    function medicineSearch(initial = {}) {
         return {
             query: '',
             results: [],
             selectedId: null,
             selectedText: '',
+            selectedForm: '',
             searching: false,
+            dosage: initial.dosage || '',
+            route: initial.route || '',
+            frequency: initial.frequency || '',
+            duration: initial.duration || '',
+            quantity: initial.quantity || null,
+            instructions: initial.instructions || '',
+            frequencyOptions: ['OD (once daily)', 'BID (2x daily)', 'TID (3x daily)', 'QID (4x daily)', 'Every 4 hours', 'Every 6 hours', 'Every 8 hours', 'PRN (as needed)', 'At bedtime'],
+            durationOptions: ['1 day', '3 days', '5 days', '7 days', '10 days', '14 days', '1 month'],
+            instructionOptions: ['Before meals', 'After meals', 'With food', 'On empty stomach', 'At bedtime'],
             get canSubmitPrescription() {
-                return Boolean(this.selectedId);
+                return Boolean(this.selectedId) && this.completeSig;
+            },
+            get completeSig() {
+                return Boolean(this.dosage && this.route && this.frequency && this.duration && this.quantity && Number(this.quantity) >= 1);
+            },
+            get dosageUnits() {
+                const form = (this.selectedForm || '').toLowerCase();
+                if (form.includes('cap')) return ['1 cap', '2 caps'];
+                if (form.includes('syr') || form.includes('susp') || form.includes('drop') || form.includes('elix')) return ['5 mL', '10 mL'];
+                if (form.includes('amp') || form.includes('vial') || form.includes('inj')) return ['1 amp', '1 vial'];
+                if (form.includes('sachet') || form.includes('powder') || form.includes('granule')) return ['1 sachet'];
+                if (form.includes('cream') || form.includes('oint') || form.includes('lotion') || form.includes('gel')) return ['Apply thinly', 'Apply generously'];
+                if (form.includes('spray') || form.includes('inhal')) return ['1 puff', '2 puffs'];
+                return ['1 tab', '2 tabs'];
+            },
+            get rxPreview() {
+                if (!this.selectedText) return '';
+                const parts = [this.dosage, this.route, this.frequency, this.duration ? 'x ' + this.duration : ''].filter(Boolean);
+                let line = this.selectedText + ' \u2014 ' + parts.join(' ');
+                if (this.instructions) line += '. ' + this.instructions;
+                if (this.quantity) line += ' (Qty ' + this.quantity + ')';
+                return line;
+            },
+            get suggestedQuantity() {
+                const units = this.parseDosageUnits();
+                const times = this.parseFrequencyTimes();
+                const days = this.parseDurationDays();
+                if (!units || !times || !days) return null;
+                return units * times * days;
             },
             async search() {
                 if (this.selectedText && this.query !== this.selectedText) {
                     this.selectedId = null;
                     this.selectedText = '';
+                    this.selectedForm = '';
                 }
                 if (this.query.length < 2) {
                     this.results = [];
@@ -635,24 +749,56 @@
                 this.query = item.text;
                 this.selectedId = item.id;
                 this.selectedText = item.text;
+                this.selectedForm = item.form || '';
                 this.results = [];
             },
             clearSelection() {
                 this.selectedId = null;
                 this.selectedText = '';
+                this.selectedForm = '';
                 this.query = '';
                 this.results = [];
             },
+            setDosage(value) {
+                this.dosage = value;
+            },
+            setFrequency(value) {
+                this.frequency = value;
+            },
+            setDuration(value) {
+                this.duration = value;
+            },
+            setInstructions(value) {
+                this.instructions = value;
+            },
+            fillQuantity() {
+                if (this.suggestedQuantity) {
+                    this.quantity = this.suggestedQuantity;
+                }
+            },
+            parseDosageUnits() {
+                const match = this.dosage.trim().match(/^(\d+(?:\.\d+)?)\s*(tab|tabs|tablet|tablets|cap|caps|capsule|capsules|mL|ml|sachet|puff|drop|drops|amp|vial)/i);
+                return match ? parseFloat(match[1]) : null;
+            },
+            parseFrequencyTimes() {
+                const f = this.frequency.toLowerCase();
+                if (f.includes('every 4')) return 6;
+                if (f.includes('every 6')) return 4;
+                if (f.includes('every 8')) return 3;
+                if (f.includes('qid') || f.includes('4x') || f.includes('4 times')) return 4;
+                if (f.includes('tid') || f.includes('3x') || f.includes('3 times')) return 3;
+                if (f.includes('bid') || f.includes('2x') || f.includes('2 times')) return 2;
+                if (f.includes('od') || f.includes('once daily') || f.includes('daily') || f.includes('bedtime') || f.includes('nocte')) return 1;
+                return null;
+            },
+            parseDurationDays() {
+                const match = this.duration.trim().match(/^(\d+)\s*(day|days)/i);
+                if (match) return parseInt(match[1], 10);
+                if (/^1\s*month/i.test(this.duration)) return 30;
+                if (/^2\s*month/i.test(this.duration)) return 60;
+                return null;
+            },
         };
-    }
-    function appendSig(targetId, value) {
-        const input = document.getElementById(targetId);
-        if (! input) {
-            return;
-        }
-        const current = input.value.trim();
-        input.value = current ? `${current}; ${value}` : value;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
     }
     function confirmVitalsDelete(form) {
         Swal.fire({

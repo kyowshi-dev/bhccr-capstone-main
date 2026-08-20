@@ -120,9 +120,11 @@ final class ConsultationService
             'consultation_id' => $consultation->id,
             'medicine_id' => $validated['medicine_id'],
             'dosage' => $validated['dosage'],
+            'route' => $validated['route'] ?? null,
             'frequency' => $validated['frequency'] ?? null,
             'duration' => $validated['duration'] ?? null,
             'quantity' => $validated['quantity'] ?? null,
+            'instructions' => $validated['instructions'] ?? null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

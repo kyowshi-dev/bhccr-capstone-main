@@ -13,8 +13,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $custom_medicine_name
  * @property int|null $quantity
  * @property string $dosage
+ * @property string|null $route
  * @property string|null $frequency
  * @property string $duration
+ * @property string|null $instructions
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Consultation $consultation
@@ -30,8 +32,10 @@ use Illuminate\Support\Carbon;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Prescription whereDuration($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Prescription whereFrequency($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Prescription whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Prescription whereInstructions($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Prescription whereMedicineId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Prescription whereQuantity($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Prescription whereRoute($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Prescription whereUpdatedAt($value)
  *
  * @mixin \Eloquent
@@ -44,8 +48,10 @@ class Prescription extends Model
         'custom_medicine_name',
         'quantity',
         'dosage',
+        'route',
         'frequency',
         'duration',
+        'instructions',
     ];
 
     protected function casts(): array
