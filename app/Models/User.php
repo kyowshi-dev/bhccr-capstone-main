@@ -206,11 +206,20 @@ class User extends Authenticatable
     }
 
     /**
+     * Per-request memoized scope id lists so the dashboard's many
+     * zone-scoped widgets do not each re-run the zones -> households ->
+     * patients query chain.
+     *
+     * @var array{zoneIds?: list<int>, householdIds?: list<int>, patientIds?: list<int>}
+     */
+    private array $memoizedScopeIds = [];
+
+    /**
      * @return list<int>
      */
     public function accessibleZoneIds(): array
     {
-        return $this->healthWorker?->zones()->pluck('zones.id')->all() ?? [];
+        return $this->memoizedScopeIds['zoneIds'] ??= $this->healthWorker?->zones()->pluck('zones.id')->all() ?? [];
     }
 
     /**
@@ -218,10 +227,14 @@ class User extends Authenticatable
      */
     public function accessibleHouseholdIds(): array
     {
-        return Household::query()
-            ->whereIn('zone_id', $this->accessibleZoneIds())
-            ->pluck('id')
-            ->all();
+        if (! isset($this->memoizedScopeIds['householdIds'])) {
+            $this->memoizedScopeIds['householdIds'] = Household::query()
+                ->whereIn('zone_id', $this->accessibleZoneIds())
+                ->pluck('id')
+                ->all();
+        }
+
+        return $this->memoizedScopeIds['householdIds'];
     }
 
     /**
@@ -229,10 +242,14 @@ class User extends Authenticatable
      */
     public function accessiblePatientIds(): array
     {
-        return Patient::query()
-            ->whereIn('household_id', $this->accessibleHouseholdIds())
-            ->pluck('id')
-            ->all();
+        if (! isset($this->memoizedScopeIds['patientIds'])) {
+            $this->memoizedScopeIds['patientIds'] = Patient::query()
+                ->whereIn('household_id', $this->accessibleHouseholdIds())
+                ->pluck('id')
+                ->all();
+        }
+
+        return $this->memoizedScopeIds['patientIds'];
     }
 
     public function canAccessPatient(Patient $patient): bool

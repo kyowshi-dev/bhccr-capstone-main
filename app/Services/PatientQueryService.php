@@ -13,21 +13,17 @@ final class PatientQueryService
     {
         $query = Patient::query()
             ->join('households', 'patients.household_id', '=', 'households.id')
-            ->leftJoinSub(
-                DB::table('consultations')
-                    ->select('patient_id', DB::raw('MAX(created_at) as last_visit'))
-                    ->groupBy('patient_id'),
-                'latest_consultations',
-                function ($join) {
-                    $join->on('patients.id', '=', 'latest_consultations.patient_id');
-                }
-            )
             ->select(
                 'patients.*',
                 'households.family_name_head',
                 'households.zone_id',
-                'households.contact_number',
-                'latest_consultations.last_visit'
+                'households.contact_number'
+            )
+            ->selectSub(
+                DB::table('consultations')
+                    ->selectRaw('MAX(created_at)')
+                    ->whereColumn('consultations.patient_id', 'patients.id'),
+                'last_visit'
             );
 
         if ($user !== null) {
@@ -42,8 +38,8 @@ final class PatientQueryService
                 ? $query->orderByDesc('patients.date_of_birth')
                 : $query->orderBy('patients.date_of_birth', 'asc'),
             'last_visit' => $query
-                ->orderByRaw('latest_consultations.last_visit IS NULL ASC')
-                ->orderBy('latest_consultations.last_visit', $dir),
+                ->orderByRaw('last_visit IS NULL ASC')
+                ->orderBy('last_visit', $dir),
             default => $query->orderBy('patients.created_at', $dir),
         };
 

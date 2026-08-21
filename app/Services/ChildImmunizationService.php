@@ -9,7 +9,8 @@ use App\Models\Patient;
 use App\Models\Vaccine;
 use App\Models\VaccineSchedule;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 
 class ChildImmunizationService
@@ -31,6 +32,16 @@ class ChildImmunizationService
     public const int OVERDUE_LOOKBACK_DAYS = 730;
 
     /**
+     * How long computed queue results stay fresh. Computing the queues is
+     * O(enrolled patients x vaccines) in PHP, which is expensive on large
+     * registries; a short TTL with write-time invalidation keeps the index
+     * page fast without ever showing stale clinical data.
+     */
+    public const int QUEUE_CACHE_TTL = 600;
+
+    public const string QUEUE_GENERATION_KEY = 'immunization_queue_generation';
+
+    /**
      * Per-request cache of each patient's immunization records, keyed by
      * patient id, so status computation does not re-query per (patient, vaccine).
      *
@@ -48,9 +59,60 @@ class ChildImmunizationService
     /**
      * Per-request cache of vaccine ids grouped by group_key.
      *
-     * @var array<string, \Illuminate\Support\Collection<int, int>>
+     * @var array<string, Collection<int, int>>
      */
     private array $groupMemberCache = [];
+
+    /**
+     * Per-request cache of a patient's records filtered to one vaccine,
+     * keyed by patient id then vaccine id.
+     *
+     * @var array<int, array<int, Collection<int, Immunization>>>
+     */
+    private array $recordsByVaccineCache = [];
+
+    /**
+     * Per-request cache of a patient's real (non-no-show) records grouped by
+     * vaccine id, so the "given" count never re-scans the records collection.
+     * Keyed by patient id then vaccine id.
+     *
+     * @var array<int, array<int, Collection<int, Immunization>>>
+     */
+    private array $givenByVaccineCache = [];
+
+    /**
+     * Per-request cache of a patient's status events filtered to one vaccine,
+     * sorted by event date descending. Keyed by patient id then vaccine id.
+     *
+     * @var array<int, array<int, Collection<int, ImmunizationStatusEvent>>>
+     */
+    private array $eventsByVaccineCache = [];
+
+    /**
+     * Per-request cache of sibling-group satisfaction, keyed by patient id,
+     * group key, then vaccine id, so the group scan runs once per
+     * (patient, group, vaccine) not once per (patient, vaccine).
+     *
+     * @var array<int, array<string, array<int, bool>>>
+     */
+    private array $siblingGroupCache = [];
+
+    /**
+     * Per-request status matrix: [patient_id][vaccine_id] => ['status', 'earliest'].
+     * The index page builds three queues (due / overdue / no_show) over the
+     * same patient-vaccine matrix; computing each pair once and reusing the
+     * result across the modes avoids a 3x full matrix scan.
+     *
+     * @var array<int, array<int, array{status: string, earliest: ?Carbon}>>
+     */
+    private array $statusMatrix = [];
+
+    private ?Carbon $today = null;
+
+    private function today(): Carbon
+    {
+        return $this->today ??= Carbon::today();
+    }
 
     /**
      * @return array{years: int, months: int, days: int}
@@ -68,39 +130,55 @@ class ChildImmunizationService
 
     public function statusFor(Patient $patient, Vaccine $vaccine): string
     {
-        $records = $this->recordsFor($patient, $vaccine);
+        return $this->matrixFor($patient, $vaccine)['status'];
+    }
+
+    /**
+     * Status + earliest dose date for a (patient, vaccine) pair, computed
+     * once per request and reused by statusFor(), nextDoseDate() and queue().
+     *
+     * @return array{status: string, earliest: ?Carbon}
+     */
+    private function matrixFor(Patient $patient, Vaccine $vaccine): array
+    {
+        return $this->statusMatrix[$patient->id][$vaccine->id] ??= $this->computeMatrix($patient, $vaccine);
+    }
+
+    /**
+     * @return array{status: string, earliest: ?Carbon}
+     */
+    private function computeMatrix(Patient $patient, Vaccine $vaccine): array
+    {
+        $schedules = $vaccine->schedules;
+        $given = $this->givenByVaccine($patient, $vaccine->id);
 
         if ($this->siblingGroupSatisfied($patient, $vaccine)) {
-            return self::STATUS_COMPLETED;
+            return ['status' => self::STATUS_COMPLETED, 'earliest' => null];
         }
 
         if ($this->unresolvedMissed($patient, $vaccine) !== null) {
-            return self::STATUS_NO_SHOW;
+            return ['status' => self::STATUS_NO_SHOW, 'earliest' => $this->nextDoseDate($patient, $vaccine)];
         }
-
-        $schedules = $vaccine->schedules;
 
         if ($schedules->isEmpty()) {
-            return self::STATUS_WAITING;
+            return ['status' => self::STATUS_WAITING, 'earliest' => null];
         }
 
-        $given = $records->where('no_show', false)->count();
-
-        if ($vaccine->repeat_months === null && $given >= $schedules->count()) {
-            return self::STATUS_COMPLETED;
+        if ($vaccine->repeat_months === null && $given->count() >= $schedules->count()) {
+            return ['status' => self::STATUS_COMPLETED, 'earliest' => null];
         }
 
         $earliest = $this->nextDoseDate($patient, $vaccine);
 
-        if ($earliest === null || Carbon::today()->lt($earliest)) {
-            return self::STATUS_WAITING;
+        if ($earliest === null || $this->today()->lt($earliest)) {
+            return ['status' => self::STATUS_WAITING, 'earliest' => $earliest];
         }
 
-        if ($this->isOutOfWindow($patient, $vaccine)) {
-            return self::STATUS_OUT_OF_WINDOW;
+        if ($this->isOutOfWindow($patient, $vaccine, $earliest)) {
+            return ['status' => self::STATUS_OUT_OF_WINDOW, 'earliest' => $earliest];
         }
 
-        return self::STATUS_OVERDUE;
+        return ['status' => self::STATUS_OVERDUE, 'earliest' => $earliest];
     }
 
     /**
@@ -145,7 +223,7 @@ class ChildImmunizationService
 
     public function nextDoseNumber(Patient $patient, Vaccine $vaccine): int
     {
-        return $this->recordsFor($patient, $vaccine)->where('no_show', false)->count() + 1;
+        return $this->givenByVaccine($patient, $vaccine->id)->count() + 1;
     }
 
     /**
@@ -163,7 +241,7 @@ class ChildImmunizationService
             return null;
         }
 
-        $given = $this->recordsFor($patient, $vaccine)->where('no_show', false)->values();
+        $given = $this->givenByVaccine($patient, $vaccine->id);
         $nextIndex = $doseIndex ?? $given->count();
         $schedule = $schedules->get($nextIndex);
 
@@ -193,25 +271,24 @@ class ChildImmunizationService
         return $earliest;
     }
 
-    public function projectedCompletionDate(Patient $patient, Vaccine $vaccine): ?Carbon
+    public function projectedCompletionDate(Patient $patient, Vaccine $vaccine, ?Carbon $next = null): ?Carbon
     {
-        $records = $this->recordsFor($patient, $vaccine);
         $schedules = $vaccine->schedules;
 
         if ($schedules->isEmpty()) {
             return null;
         }
 
-        $nextIndex = $records->where('no_show', false)->count();
-        $next = $this->nextDoseDate($patient, $vaccine, $nextIndex);
+        $givenCount = $this->givenByVaccine($patient, $vaccine->id)->count();
+        $next = $next ?? $this->nextDoseDate($patient, $vaccine, $givenCount);
 
         if ($next === null) {
             return null;
         }
 
-        $cursor = Carbon::today()->greaterThan($next) ? Carbon::today() : $next->copy();
+        $cursor = $this->today()->greaterThan($next) ? $this->today() : $next->copy();
 
-        for ($i = $nextIndex; $i < $schedules->count() - 1; $i++) {
+        for ($i = $givenCount; $i < $schedules->count() - 1; $i++) {
             $gap = $schedules->get($i)->gap_days;
             if ($gap !== null) {
                 $cursor = $cursor->copy()->addDays($gap);
@@ -262,6 +339,7 @@ class ChildImmunizationService
         ]);
 
         $this->forgetRecords($patient);
+        $this->bumpQueueGeneration();
 
         return $record;
     }
@@ -283,7 +361,11 @@ class ChildImmunizationService
             ]);
         }
 
-        return $this->logEvent($patient, $vaccine, ImmunizationStatusEvent::TYPE_MISSED, $doseNumber ?? ($records->where('no_show', false)->count() + 1), $data);
+        $event = $this->logEvent($patient, $vaccine, ImmunizationStatusEvent::TYPE_MISSED, $doseNumber ?? ($records->where('no_show', false)->count() + 1), $data);
+
+        $this->bumpQueueGeneration();
+
+        return $event;
     }
 
     /**
@@ -297,7 +379,11 @@ class ChildImmunizationService
             return null;
         }
 
-        return $this->logEvent($patient, $vaccine, ImmunizationStatusEvent::TYPE_CLEARED, $missed->dose_number, $data);
+        $event = $this->logEvent($patient, $vaccine, ImmunizationStatusEvent::TYPE_CLEARED, $missed->dose_number, $data);
+
+        $this->bumpQueueGeneration();
+
+        return $event;
     }
 
     /**
@@ -306,10 +392,7 @@ class ChildImmunizationService
      */
     public function unresolvedMissed(Patient $patient, Vaccine $vaccine): ?ImmunizationStatusEvent
     {
-        $events = $this->statusEventsFor($patient)
-            ->where('vaccine_id', $vaccine->id)
-            ->sortByDesc('event_date')
-            ->values();
+        $events = $this->eventsByVaccine($patient, $vaccine->id);
 
         $missed = $events->first(fn (ImmunizationStatusEvent $event) => $event->event_type === ImmunizationStatusEvent::TYPE_MISSED);
 
@@ -323,8 +406,7 @@ class ChildImmunizationService
             return null;
         }
 
-        $hasDoseAfterMiss = $this->recordsFor($patient, $vaccine)
-            ->where('no_show', false)
+        $hasDoseAfterMiss = $this->givenByVaccine($patient, $vaccine->id)
             ->where('date_given', '>=', $missed->event_date)
             ->isNotEmpty();
 
@@ -377,7 +459,7 @@ class ChildImmunizationService
         $motherId = $data['mother_id'] ?? null;
         $mother = $motherId !== null ? Patient::find($motherId) : null;
 
-        return Patient::create([
+        $patient = Patient::create([
             'household_id' => $householdId,
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
@@ -398,6 +480,10 @@ class ChildImmunizationService
             'civil_status' => 'Single',
             'is_immunization_enrolled' => true,
         ]);
+
+        $this->bumpQueueGeneration();
+
+        return $patient;
     }
 
     /**
@@ -407,6 +493,8 @@ class ChildImmunizationService
     {
         $patient->is_immunization_enrolled = true;
         $patient->save();
+
+        $this->bumpQueueGeneration();
 
         return $patient;
     }
@@ -424,9 +512,45 @@ class ChildImmunizationService
      * window start is "overdue".
      *
      * @param  list<string>  $categories
-     * @return \Illuminate\Support\Collection<int, array{patient: Patient, vaccine: Vaccine, status: string, dose_number: int, due_date: Carbon}>
+     * @return Collection<int, array{patient: Patient, vaccine: Vaccine, status: string, dose_number: int, due_date: Carbon}>
      */
-    public function queue(string $mode, ?int $zoneId = null, ?Carbon $from = null, ?Carbon $to = null, array $categories = ['Child', 'Both']): \Illuminate\Support\Collection
+    public function queue(string $mode, ?int $zoneId = null, ?Carbon $from = null, ?Carbon $to = null, array $categories = ['Child', 'Both']): Collection
+    {
+        return Cache::remember(
+            $this->queueCacheKey($mode, $zoneId, $from, $to, $categories),
+            self::QUEUE_CACHE_TTL,
+            fn () => $this->buildQueue($mode, $zoneId, $from, $to, $categories)
+        );
+    }
+
+    private function queueCacheKey(string $mode, ?int $zoneId, ?Carbon $from, ?Carbon $to, array $categories): string
+    {
+        $generation = (int) Cache::get(self::QUEUE_GENERATION_KEY, 0);
+
+        return implode('_', [
+            'immunization_queue',
+            $generation,
+            $mode,
+            $zoneId ?? 'all',
+            $from?->toDateString() ?? 'none',
+            $to?->toDateString() ?? 'none',
+            implode('-', $categories),
+        ]);
+    }
+
+    /**
+     * Invalidate cached queue results after any immunization write.
+     */
+    private function bumpQueueGeneration(): void
+    {
+        Cache::increment(self::QUEUE_GENERATION_KEY);
+    }
+
+    /**
+     * @param  list<string>  $categories
+     * @return Collection<int, array{patient: Patient, vaccine: Vaccine, status: string, dose_number: int, due_date: Carbon}>
+     */
+    private function buildQueue(string $mode, ?int $zoneId = null, ?Carbon $from = null, ?Carbon $to = null, array $categories = ['Child', 'Both']): Collection
     {
         $query = Patient::query()->whereHas('household')->where('is_immunization_enrolled', true);
 
@@ -453,13 +577,14 @@ class ChildImmunizationService
             }
 
             foreach ($vaccines as $vaccine) {
-                $earliest = $this->nextDoseDate($patient, $vaccine);
+                $matrix = $this->matrixFor($patient, $vaccine);
+                $earliest = $matrix['earliest'];
 
                 if ($earliest === null) {
                     continue;
                 }
 
-                $status = $this->statusFor($patient, $vaccine);
+                $status = $matrix['status'];
 
                 if ($mode === self::QUEUE_DUE) {
                     if (in_array($status, [self::STATUS_NO_SHOW, self::STATUS_OUT_OF_WINDOW, self::STATUS_COMPLETED], true)) {
@@ -490,10 +615,7 @@ class ChildImmunizationService
                 }
 
                 if ($mode === self::STATUS_OVERDUE) {
-                    $dosesGiven = $patient->immunizationRecords
-                        ->where('vaccine_id', $vaccine->id)
-                        ->where('no_show', false)
-                        ->count();
+                    $dosesGiven = $this->givenByVaccine($patient, $vaccine->id)->count();
 
                     if ($dosesGiven === 0 && $earliest->lt($from->copy()->subDays(self::OVERDUE_LOOKBACK_DAYS))) {
                         continue;
@@ -516,7 +638,7 @@ class ChildImmunizationService
     /**
      * Attach a schedule-derived next due date to each recent record row.
      */
-    public function withNextDue(\Illuminate\Support\Collection $records): \Illuminate\Support\Collection
+    public function withNextDue(Collection $records): Collection
     {
         $patientIds = $records->pluck('patient_id')->unique()->all();
         $vaccineIds = $records->pluck('vaccine_id')->unique()->all();
@@ -627,6 +749,20 @@ class ChildImmunizationService
             return false;
         }
 
+        $existing = $this->siblingGroupCache[$patient->id][$vaccine->group_key][$vaccine->id] ?? null;
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $result = $this->computeSiblingGroupSatisfied($patient, $vaccine);
+        $this->siblingGroupCache[$patient->id][$vaccine->group_key][$vaccine->id] = $result;
+
+        return $result;
+    }
+
+    private function computeSiblingGroupSatisfied(Patient $patient, Vaccine $vaccine): bool
+    {
         $groupMembers = $this->groupMemberCache[$vaccine->group_key] ??= Vaccine::where('group_key', $vaccine->group_key)->pluck('id');
 
         $siblingIds = $groupMembers->filter(fn ($id) => $id !== $vaccine->id);
@@ -641,7 +777,7 @@ class ChildImmunizationService
             ->isNotEmpty();
     }
 
-    private function isOutOfWindow(Patient $patient, Vaccine $vaccine): bool
+    private function isOutOfWindow(Patient $patient, Vaccine $vaccine, ?Carbon $earliest = null): bool
     {
         if ($vaccine->complete_before_days === null) {
             return false;
@@ -651,7 +787,7 @@ class ChildImmunizationService
             return false;
         }
 
-        $projected = $this->projectedCompletionDate($patient, $vaccine);
+        $projected = $this->projectedCompletionDate($patient, $vaccine, $earliest);
 
         return $projected !== null
             && $projected->greaterThan($patient->date_of_birth->copy()->addDays($vaccine->complete_before_days));
@@ -662,10 +798,59 @@ class ChildImmunizationService
      */
     private function recordsFor(Patient $patient, Vaccine $vaccine): Collection
     {
-        return $this->patientRecords($patient)
-            ->where('vaccine_id', $vaccine->id)
-            ->sortBy('dose_number')
-            ->values();
+        return $this->recordsByVaccine($patient, $vaccine->id);
+    }
+
+    /**
+     * A patient's records for one vaccine, sorted by dose number, fetched
+     * once per (patient, vaccine) per request.
+     *
+     * @return Collection<int, Immunization>
+     */
+    private function recordsByVaccine(Patient $patient, int $vaccineId): Collection
+    {
+        if (! isset($this->recordsByVaccineCache[$patient->id])) {
+            $this->recordsByVaccineCache[$patient->id] = $this->patientRecords($patient)
+                ->groupBy('vaccine_id')
+                ->map(fn (Collection $group) => $group->sortBy('dose_number')->values());
+        }
+
+        return $this->recordsByVaccineCache[$patient->id][$vaccineId] ?? collect();
+    }
+
+    /**
+     * A patient's real (non-no-show) records for one vaccine, fetched once
+     * per (patient, vaccine) per request.
+     *
+     * @return Collection<int, Immunization>
+     */
+    private function givenByVaccine(Patient $patient, int $vaccineId): Collection
+    {
+        if (! isset($this->givenByVaccineCache[$patient->id])) {
+            $this->givenByVaccineCache[$patient->id] = $this->patientRecords($patient)
+                ->where('no_show', false)
+                ->groupBy('vaccine_id')
+                ->map(fn (Collection $group) => $group->values());
+        }
+
+        return $this->givenByVaccineCache[$patient->id][$vaccineId] ?? collect();
+    }
+
+    /**
+     * A patient's status events for one vaccine, sorted by event date
+     * descending, fetched once per (patient, vaccine) per request.
+     *
+     * @return Collection<int, ImmunizationStatusEvent>
+     */
+    private function eventsByVaccine(Patient $patient, int $vaccineId): Collection
+    {
+        if (! isset($this->eventsByVaccineCache[$patient->id])) {
+            $this->eventsByVaccineCache[$patient->id] = $this->statusEventsFor($patient)
+                ->groupBy('vaccine_id')
+                ->map(fn (Collection $group) => $group->sortByDesc('event_date')->values());
+        }
+
+        return $this->eventsByVaccineCache[$patient->id][$vaccineId] ?? collect();
     }
 
     /**
@@ -679,7 +864,7 @@ class ChildImmunizationService
     }
 
     /**
-     * All of a patient's status events, fetched once per request.
+     * All of a patient's status events, sorted by event date, fetched once per request.
      *
      * @return Collection<int, ImmunizationStatusEvent>
      */
@@ -708,12 +893,18 @@ class ChildImmunizationService
     private function forgetRecords(Patient $patient): void
     {
         unset($this->recordsCache[$patient->id]);
+        unset($this->recordsByVaccineCache[$patient->id]);
+        unset($this->givenByVaccineCache[$patient->id]);
+        unset($this->siblingGroupCache[$patient->id]);
+        unset($this->statusMatrix[$patient->id]);
         $patient->unsetRelation('immunizationRecords');
     }
 
     private function forgetEvents(Patient $patient): void
     {
         unset($this->eventsCache[$patient->id]);
+        unset($this->eventsByVaccineCache[$patient->id]);
+        unset($this->statusMatrix[$patient->id]);
         $patient->unsetRelation('immunizationStatusEvents');
     }
 
